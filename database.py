@@ -35,6 +35,23 @@ def init_db():
                 key   TEXT PRIMARY KEY,
                 value TEXT
             );
+            CREATE TABLE IF NOT EXISTS blacklisted_users (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                guild_id   TEXT NOT NULL,
+                user_id    TEXT NOT NULL,
+                reason     TEXT,
+                added_by   TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(guild_id, user_id)
+            );
+            CREATE TABLE IF NOT EXISTS blacklisted_words (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                guild_id   TEXT NOT NULL,
+                word       TEXT NOT NULL,
+                added_by   TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(guild_id, word)
+            );
         """)
         conn.commit()
 
@@ -56,6 +73,12 @@ def get_warnings(guild_id, user_id):
         ).fetchall()
 
 
+def delete_warning(warning_id):
+    with closing(get_conn()) as conn:
+        conn.execute("DELETE FROM warnings WHERE id=?", (warning_id,))
+        conn.commit()
+
+
 def log_action(guild_id, action, target_id, moderator_id, reason=None):
     with closing(get_conn()) as conn:
         conn.execute(
@@ -70,6 +93,14 @@ def recent_logs(guild_id, limit=50):
         return conn.execute(
             "SELECT * FROM mod_logs WHERE guild_id=? ORDER BY created_at DESC LIMIT ?",
             (guild_id, limit),
+        ).fetchall()
+
+
+def logs_for_user(guild_id, user_id):
+    with closing(get_conn()) as conn:
+        return conn.execute(
+            "SELECT * FROM mod_logs WHERE guild_id=? AND target_id=? ORDER BY created_at DESC",
+            (guild_id, user_id),
         ).fetchall()
 
 
@@ -100,3 +131,74 @@ def set_setting(key, value):
             (key, value),
         )
         conn.commit()
+
+
+# ── Blacklisted users ──────────────────────────────────────────────────────────
+
+def add_blacklisted_user(guild_id, user_id, reason=None, added_by=None):
+    with closing(get_conn()) as conn:
+        try:
+            conn.execute(
+                "INSERT OR IGNORE INTO blacklisted_users (guild_id,user_id,reason,added_by) VALUES (?,?,?,?)",
+                (guild_id, user_id, reason, added_by),
+            )
+            conn.commit()
+        except Exception:
+            pass
+
+
+def remove_blacklisted_user(guild_id, user_id):
+    with closing(get_conn()) as conn:
+        conn.execute("DELETE FROM blacklisted_users WHERE guild_id=? AND user_id=?", (guild_id, user_id))
+        conn.commit()
+
+
+def get_blacklisted_users(guild_id):
+    with closing(get_conn()) as conn:
+        return conn.execute(
+            "SELECT * FROM blacklisted_users WHERE guild_id=? ORDER BY created_at DESC",
+            (guild_id,),
+        ).fetchall()
+
+
+def is_user_blacklisted(guild_id, user_id):
+    with closing(get_conn()) as conn:
+        row = conn.execute(
+            "SELECT 1 FROM blacklisted_users WHERE guild_id=? AND user_id=?",
+            (guild_id, user_id),
+        ).fetchone()
+        return row is not None
+
+
+# ── Blacklisted words ─────────────────────────────────────────────────────────
+
+def add_blacklisted_word(guild_id, word, added_by=None):
+    with closing(get_conn()) as conn:
+        conn.execute(
+            "INSERT OR IGNORE INTO blacklisted_words (guild_id,word,added_by) VALUES (?,?,?)",
+            (guild_id, word.lower().strip(), added_by),
+        )
+        conn.commit()
+
+
+def remove_blacklisted_word(guild_id, word):
+    with closing(get_conn()) as conn:
+        conn.execute(
+            "DELETE FROM blacklisted_words WHERE guild_id=? AND word=?",
+            (guild_id, word.lower().strip()),
+        )
+        conn.commit()
+
+
+def get_blacklisted_words(guild_id):
+    with closing(get_conn()) as conn:
+        return conn.execute(
+            "SELECT * FROM blacklisted_words WHERE guild_id=? ORDER BY created_at DESC",
+            (guild_id,),
+        ).fetchall()
+
+
+def get_blacklisted_words_list(guild_id):
+    """Returns a plain list of word strings."""
+    rows = get_blacklisted_words(guild_id)
+    return [r["word"] for r in rows]

@@ -1,39 +1,49 @@
-{% extends "base.html" %}
-{% block title %}Settings{% endblock %}
-{% block page_title %}Settings{% endblock %}
+{% extends 'base.html' %}
+{% block topbar_title %}Settings{% endblock %}
 {% block content %}
 <div class="page-header">
   <h1>Settings</h1>
   <p>Configure bot behaviour and review your environment values.</p>
 </div>
-<div class="card" style="margin-bottom:var(--space-6)">
-  <div class="card-header"><h2>Bot Configuration</h2><span>Saved to database</span></div>
-  <div class="card-body">
-    <form method="POST">
-      <div class="form-grid">
-        <div class="form-group">
-          <label for="auto_role_id">Auto-Role ID</label>
-          <input type="text" id="auto_role_id" name="auto_role_id" value="{{ cfg.auto_role_id }}" placeholder="e.g. 123456789012345678">
-          <span class="hint">Role assigned to new members on join.</span>
-        </div>
-        <div class="form-group">
-          <label for="bad_words">Blocked Words</label>
-          <input type="text" id="bad_words" name="bad_words" value="{{ cfg.bad_words }}" placeholder="word1,word2,word3">
-          <span class="hint">Comma-separated list. Messages containing these are deleted.</span>
-        </div>
+
+<form method="POST">
+  <div class="cards-grid">
+
+    <div class="card">
+      <div class="card-header"><h2>Auto-Role</h2></div>
+      <div class="form-group">
+        <label>AUTO-ROLE ID</label>
+        <input type="text" name="auto_role_id" value="{{ cfg.auto_role_id }}" placeholder="e.g. 123456789012345678" class="input">
+        <span class="hint">Role assigned to new members on join.</span>
       </div>
-      <div style="margin-top:var(--space-6)"><button type="submit" class="btn btn-primary">Save changes</button></div>
-    </form>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h2>Anti-Spam</h2></div>
+      <div class="form-group">
+        <label>Max Messages</label>
+        <input type="number" name="spam_limit" value="{{ cfg.spam_limit }}" class="input" min="1" max="50">
+        <span class="hint">Messages before timeout triggers.</span>
+      </div>
+      <div class="form-group">
+        <label>Window (seconds)</label>
+        <input type="number" name="spam_window" value="{{ cfg.spam_window }}" class="input" min="1" max="60">
+        <span class="hint">Time window to measure spam.</span>
+      </div>
+      <div class="form-group">
+        <label>Timeout Duration (minutes)</label>
+        <input type="number" name="spam_timeout" value="{{ cfg.spam_timeout }}" class="input" min="1" max="1440">
+        <span class="hint">How long to timeout spammers.</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h2>Environment <span class="badge">Read-only</span></h2></div>
+      <div class="env-row"><span>Discord Client ID</span><code>{{ cfg.client_id or '—' }}</code></div>
+      <div class="env-row"><span>OAuth Redirect URI</span><code>{{ cfg.redirect_uri or '—' }}</code></div>
+    </div>
+
   </div>
-</div>
-<div class="card">
-  <div class="card-header"><h2>Environment</h2><span>Read-only · edit in .env</span></div>
-  <div class="card-body">
-    <p style="font-size:var(--text-xs);color:var(--text-muted);margin-bottom:var(--space-5)">These values are pulled from your environment file and are shown here for reference only.</p>
-    <table class="config-table">
-      <tr><td>Discord Client ID</td><td>{{ cfg.client_id or '—' }}</td></tr>
-      <tr><td>OAuth Redirect URI</td><td>{{ cfg.redirect_uri or '—' }}</td></tr>
-    </table>
-  </div>
-</div>
+  <button type="submit" class="btn btn-primary" style="margin-top:1.5rem">Save changes</button>
+</form>
 {% endblock %}

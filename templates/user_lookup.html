@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block topbar_title %}User Lookup{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>User Lookup</h1>
+  <p>Search a user's full moderation history by their Discord user ID.</p>
+</div>
+
+<div class="card" style="max-width:480px; margin-bottom:2rem">
+  <form method="POST" class="inline-form">
+    <input type="text" name="user_id" placeholder="Enter Discord User ID..." class="input" required>
+    <button type="submit" class="btn btn-primary">Look Up</button>
+  </form>
+</div>
+
+{% if result %}
+<div class="cards-grid">
+
+  <div class="card">
+    <div class="card-header">
+      <h2>User <code>{{ result.user_id }}</code></h2>
+      {% if result.blacklisted %}
+        <span class="badge badge-danger">Blacklisted</span>
+      {% else %}
+        <span class="badge badge-ok">Clear</span>
+      {% endif %}
+    </div>
+    <div class="stat-row">
+      <div class="stat"><span class="stat-value">{{ result.warnings|length }}</span><span class="stat-label">Warnings</span></div>
+      <div class="stat"><span class="stat-value">{{ result.logs|length }}</span><span class="stat-label">Mod Actions</span></div>
+    </div>
+  </div>
+
+  {% if result.warnings %}
+  <div class="card full-width">
+    <div class="card-header"><h2>Warnings</h2></div>
+    <table class="log-table">
+      <thead><tr><th>#</th><th>Reason</th><th>Moderator</th><th>Date</th></tr></thead>
+      <tbody>
+        {% for w in result.warnings %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>{{ w.reason or '—' }}</td>
+          <td><code>{{ w.moderator_id }}</code></td>
+          <td>{{ w.created_at[:16] }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  {% if result.logs %}
+  <div class="card full-width">
+    <div class="card-header"><h2>Mod Log History</h2></div>
+    <table class="log-table">
+      <thead><tr><th>Action</th><th>Reason</th><th>Moderator</th><th>Date</th></tr></thead>
+      <tbody>
+        {% for l in result.logs %}
+        <tr>
+          <td><span class="action-badge action-{{ l.action }}">{{ l.action }}</span></td>
+          <td>{{ l.reason or '—' }}</td>
+          <td><code>{{ l.moderator_id }}</code></td>
+          <td>{{ l.created_at[:16] }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% block topbar_title %}Moderation{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Moderation</h1>
+  <p>Manage word blacklists, user blacklists, and moderation settings.</p>
+</div>
+
+<div class="cards-grid">
+
+  <!-- Word Blacklist -->
+  <div class="card full-width">
+    <div class="card-header">
+      <h2>Word Blacklist</h2>
+      <span class="badge">{{ bl_words|length }} words</span>
+    </div>
+    <form method="POST" class="inline-form">
+      <input type="hidden" name="action" value="add_word">
+      <input type="text" name="word" placeholder="Add a blocked word..." class="input" required>
+      <button type="submit" class="btn btn-primary">Add Word</button>
+    </form>
+    {% if bl_words %}
+    <div class="tag-list">
+      {% for w in bl_words %}
+      <div class="tag">
+        <span>{{ w.word }}</span>
+        <form method="POST" style="display:inline">
+          <input type="hidden" name="action" value="remove_word">
+          <input type="hidden" name="word" value="{{ w.word }}">
+          <button type="submit" class="tag-remove" title="Remove">&#x2715;</button>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="empty-msg">No blacklisted words yet.</p>
+    {% endif %}
+  </div>
+
+  <!-- User Blacklist -->
+  <div class="card full-width">
+    <div class="card-header">
+      <h2>User Blacklist</h2>
+      <span class="badge">{{ bl_users|length }} users</span>
+    </div>
+    <form method="POST" class="inline-form">
+      <input type="hidden" name="action" value="add_user">
+      <input type="text" name="user_id" placeholder="User ID" class="input" required>
+      <input type="text" name="reason" placeholder="Reason (optional)" class="input">
+      <button type="submit" class="btn btn-danger">Blacklist User</button>
+    </form>
+    {% if bl_users %}
+    <table class="log-table">
+      <thead>
+        <tr><th>User ID</th><th>Reason</th><th>Added</th><th>Action</th></tr>
+      </thead>
+      <tbody>
+        {% for u in bl_users %}
+        <tr>
+          <td><code>{{ u.user_id }}</code></td>
+          <td>{{ u.reason or '—' }}</td>
+          <td>{{ u.created_at[:16] }}</td>
+          <td>
+            <form method="POST" style="display:inline">
+              <input type="hidden" name="action" value="remove_user">
+              <input type="hidden" name="user_id" value="{{ u.user_id }}">
+              <button type="submit" class="btn btn-sm btn-ghost">Remove</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="empty-msg">No blacklisted users.</p>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
