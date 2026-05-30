@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Overview{% endblock %}
+{% block page_title %}Overview{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Overview</h1>
+  <p>Track actions, monitor events, and keep your server under control.</p>
+</div>
+<div class="kpi-grid">
+  <div class="kpi-card accent"><div class="kpi-label">Total Actions</div><div class="kpi-value">{{ summary.total_logs or 0 }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Kicks</div><div class="kpi-value">{{ summary.get('kick', 0) }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Bans</div><div class="kpi-value">{{ summary.get('ban', 0) }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Timeouts</div><div class="kpi-value">{{ summary.get('timeout', 0) }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Warnings</div><div class="kpi-value">{{ summary.get('warn', 0) }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Purges</div><div class="kpi-value">{{ summary.get('purge', 0) }}</div></div>
+</div>
+<div class="card">
+  <div class="card-header"><h2>Recent Mod Logs</h2><span>Last 50 actions</span></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Action</th><th>Target ID</th><th>Moderator ID</th><th>Reason</th><th>Date</th></tr></thead>
+      <tbody>
+        {% for log in logs %}
+        <tr>
+          <td><span class="action-pill pill-{{ log['action'] }}">{{ log['action'] }}</span></td>
+          <td>{{ log['target_id'] }}</td>
+          <td>{{ log['moderator_id'] }}</td>
+          <td>{{ log['reason'] or '—' }}</td>
+          <td>{{ log['created_at'][:19] }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" style="text-align:center;color:var(--text-faint);padding:2rem;">No actions recorded yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
