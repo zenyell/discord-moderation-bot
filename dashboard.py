@@ -21,10 +21,10 @@ HEARTBEAT_FILE = os.getenv("HEARTBEAT_PATH", "/tmp/bot_heartbeat")
 
 DISCORD_API = "https://discord.com/api/v10"
 
-db.init_db()
+db.init_db_sync()
 
 
-# ── Error handlers ────────────────────────────────────────────────────────────
+# ── Error handlers ─────────────────────────────────────────────────────
 
 @app.errorhandler(500)
 def internal_error(e):
@@ -66,7 +66,7 @@ def unhandled_exception(e):
     )
 
 
-# ── Discord API helpers ───────────────────────────────────────────────────────
+# ── Discord API helpers ───────────────────────────────────────────────
 
 def _discord_headers():
     return {
@@ -179,17 +179,17 @@ def login_required(f):
     return decorated
 
 
-# ── Core routes ───────────────────────────────────────────────────────────────
+# ── Core routes ─────────────────────────────────────────────────────
 
 @app.route("/", methods=["GET"])
 @login_required
 def index():
     try:
-        stats = db.log_stats(GUILD_ID)
+        stats = db.log_stats_sync(GUILD_ID)
     except Exception:
         stats = {"total": 0, "kicks": 0, "bans": 0, "timeouts": 0, "warnings": 0, "purges": 0}
     try:
-        logs = db.recent_logs(GUILD_ID, 15)
+        logs = db.recent_logs_sync(GUILD_ID, 15)
     except Exception:
         logs = []
     return render_template("dashboard.html", stats=stats, logs=logs)
@@ -215,10 +215,6 @@ def logout():
 @app.route("/api/status")
 @login_required
 def api_status():
-    """
-    Reads the heartbeat file written by the bot every 20 seconds.
-    If the file is missing or older than 60 seconds, the bot is considered offline.
-    """
     try:
         with open(HEARTBEAT_FILE, "r") as f:
             parts = f.read().strip().split("|")
@@ -235,32 +231,32 @@ def api_status():
         return jsonify({"online": False, "reason": str(e)})
 
 
-# ── Settings ──────────────────────────────────────────────────────────────────
+# ── Settings ────────────────────────────────────────────────────────
 
 @app.route("/settings", methods=["GET", "POST"])
 @login_required
 def settings():
     if request.method == "POST":
-        db.set_setting("auto_role_id", request.form.get("auto_role_id", ""))
-        db.set_setting("bad_words",    request.form.get("bad_words", ""))
-        db.set_setting("spam_limit",   request.form.get("spam_limit", ""))
-        db.set_setting("spam_window",  request.form.get("spam_window", ""))
-        db.set_setting("spam_timeout", request.form.get("spam_timeout", ""))
+        db.set_setting_sync("auto_role_id", request.form.get("auto_role_id", ""))
+        db.set_setting_sync("bad_words",    request.form.get("bad_words", ""))
+        db.set_setting_sync("spam_limit",   request.form.get("spam_limit", ""))
+        db.set_setting_sync("spam_window",  request.form.get("spam_window", ""))
+        db.set_setting_sync("spam_timeout", request.form.get("spam_timeout", ""))
         flash("Settings saved.")
         return redirect(url_for("settings"))
     cfg = {
-        "auto_role_id": db.get_setting("auto_role_id", ""),
-        "bad_words":    db.get_setting("bad_words", os.getenv("BAD_WORDS", "")),
-        "spam_limit":   db.get_setting("spam_limit",  os.getenv("SPAM_MESSAGE_LIMIT", "6")),
-        "spam_window":  db.get_setting("spam_window", os.getenv("SPAM_WINDOW_SECONDS", "8")),
-        "spam_timeout": db.get_setting("spam_timeout", os.getenv("SPAM_TIMEOUT_MINUTES", "5")),
+        "auto_role_id": db.get_setting_sync("auto_role_id", ""),
+        "bad_words":    db.get_setting_sync("bad_words", os.getenv("BAD_WORDS", "")),
+        "spam_limit":   db.get_setting_sync("spam_limit",  os.getenv("SPAM_MESSAGE_LIMIT", "6")),
+        "spam_window":  db.get_setting_sync("spam_window", os.getenv("SPAM_WINDOW_SECONDS", "8")),
+        "spam_timeout": db.get_setting_sync("spam_timeout", os.getenv("SPAM_TIMEOUT_MINUTES", "5")),
         "client_id":    os.getenv("DISCORD_CLIENT_ID", ""),
         "redirect_uri": os.getenv("DISCORD_REDIRECT_URI", ""),
     }
     return render_template("settings.html", cfg=cfg)
 
 
-# ── Moderation ────────────────────────────────────────────────────────────────
+# ── Moderation ───────────────────────────────────────────────────────
 
 @app.route("/moderation", methods=["GET", "POST"])
 @login_required
@@ -270,29 +266,29 @@ def moderation():
         if action == "add_word":
             word = request.form.get("word", "").strip()
             if word:
-                db.add_blacklisted_word(GUILD_ID, word, "dashboard")
+                db.add_blacklisted_word_sync(GUILD_ID, word, "dashboard")
                 flash(f"Word '{word}' added to blacklist.")
         elif action == "remove_word":
             word = request.form.get("word", "").strip()
-            db.remove_blacklisted_word(GUILD_ID, word)
+            db.remove_blacklisted_word_sync(GUILD_ID, word)
             flash(f"Word '{word}' removed.")
         elif action == "add_user":
             uid    = request.form.get("user_id", "").strip()
             reason = request.form.get("reason", "").strip()
             if uid:
-                db.add_blacklisted_user(GUILD_ID, uid, reason, "dashboard")
+                db.add_blacklisted_user_sync(GUILD_ID, uid, reason, "dashboard")
                 flash(f"User {uid} blacklisted.")
         elif action == "remove_user":
             uid = request.form.get("user_id", "").strip()
-            db.remove_blacklisted_user(GUILD_ID, uid)
+            db.remove_blacklisted_user_sync(GUILD_ID, uid)
             flash(f"User {uid} removed from blacklist.")
         return redirect(url_for("moderation"))
-    words = db.get_blacklisted_words(GUILD_ID)
-    users = db.get_blacklisted_users(GUILD_ID)
+    words = db.get_blacklisted_words_sync(GUILD_ID)
+    users = db.get_blacklisted_users_sync(GUILD_ID)
     return render_template("moderation.html", words=words, users=users)
 
 
-# ── Logging ───────────────────────────────────────────────────────────────────
+# ── Logging ──────────────────────────────────────────────────────────
 
 LOG_EVENTS = [
     {"key": "ban",     "label": "Bans",             "desc": "Member bans"},
@@ -312,19 +308,19 @@ LOG_EVENTS = [
 @login_required
 def logging_page():
     if request.method == "POST":
-        db.set_setting("log_channel_id", request.form.get("log_channel_id", ""))
+        db.set_setting_sync("log_channel_id", request.form.get("log_channel_id", ""))
         for e in LOG_EVENTS:
             val = "1" if request.form.get(f"log_{e['key']}") else "0"
-            db.set_setting(f"log_{e['key']}", val)
+            db.set_setting_sync(f"log_{e['key']}", val)
         flash("Logging settings saved.")
         return redirect(url_for("logging_page"))
-    cfg = {"log_channel_id": db.get_setting("log_channel_id", "")}
+    cfg = {"log_channel_id": db.get_setting_sync("log_channel_id", "")}
     for e in LOG_EVENTS:
-        cfg[f"log_{e['key']}"] = db.get_setting(f"log_{e['key']}", "1")
+        cfg[f"log_{e['key']}"] = db.get_setting_sync(f"log_{e['key']}", "1")
     return render_template("logging.html", cfg=cfg, events=LOG_EVENTS)
 
 
-# ── Reaction Roles ────────────────────────────────────────────────────────────
+# ── Reaction Roles ─────────────────────────────────────────────────
 
 @app.route("/reaction-roles", methods=["GET", "POST"])
 @login_required
@@ -332,7 +328,7 @@ def reaction_roles():
     if request.method == "POST":
         action = request.form.get("action")
         if action == "add":
-            db.add_reaction_role(
+            db.add_reaction_role_sync(
                 GUILD_ID,
                 request.form.get("message_id", "").strip(),
                 request.form.get("channel_id", "").strip(),
@@ -341,13 +337,13 @@ def reaction_roles():
             )
             flash("Reaction role added.")
         elif action == "remove":
-            db.remove_reaction_role(request.form.get("rr_id"))
+            db.remove_reaction_role_sync(request.form.get("rr_id"))
             flash("Reaction role removed.")
         return redirect(url_for("reaction_roles"))
-    return render_template("reaction_roles.html", rr_list=db.get_reaction_roles(GUILD_ID))
+    return render_template("reaction_roles.html", rr_list=db.get_reaction_roles_sync(GUILD_ID))
 
 
-# ── Autoroles ─────────────────────────────────────────────────────────────────
+# ── Autoroles ──────────────────────────────────────────────────────
 
 @app.route("/autoroles", methods=["GET", "POST"])
 @login_required
@@ -357,16 +353,16 @@ def autoroles():
         if action == "add":
             role_id = request.form.get("role_id", "").strip()
             if role_id:
-                db.add_autorole(GUILD_ID, role_id)
+                db.add_autorole_sync(GUILD_ID, role_id)
                 flash(f"Autorole {role_id} added.")
         elif action == "remove":
-            db.remove_autorole(GUILD_ID, request.form.get("role_id", ""))
+            db.remove_autorole_sync(GUILD_ID, request.form.get("role_id", ""))
             flash("Autorole removed.")
         return redirect(url_for("autoroles"))
-    return render_template("autoroles.html", autoroles=db.get_autoroles(GUILD_ID))
+    return render_template("autoroles.html", autoroles=db.get_autoroles_sync(GUILD_ID))
 
 
-# ── Tags ──────────────────────────────────────────────────────────────────────
+# ── Tags ──────────────────────────────────────────────────────────
 
 @app.route("/tags", methods=["GET", "POST"])
 @login_required
@@ -377,16 +373,16 @@ def tags():
             name    = request.form.get("tag_name", "").strip()
             content = request.form.get("tag_content", "").strip()
             if name and content:
-                db.add_tag(GUILD_ID, name, content)
+                db.add_tag_sync(GUILD_ID, name, content)
                 flash(f"Tag '{name}' saved.")
         elif action == "remove":
-            db.remove_tag(GUILD_ID, request.form.get("tag_name", ""))
+            db.remove_tag_sync(GUILD_ID, request.form.get("tag_name", ""))
             flash("Tag deleted.")
         return redirect(url_for("tags"))
-    return render_template("tags.html", tags=db.get_tags(GUILD_ID))
+    return render_template("tags.html", tags=db.get_tags_sync(GUILD_ID))
 
 
-# ── Triggers ──────────────────────────────────────────────────────────────────
+# ── Triggers ────────────────────────────────────────────────────────
 
 @app.route("/triggers", methods=["GET", "POST"])
 @login_required
@@ -397,16 +393,16 @@ def triggers():
             phrase   = request.form.get("trigger_phrase", "").strip()
             response = request.form.get("trigger_response", "").strip()
             if phrase and response:
-                db.add_trigger(GUILD_ID, phrase, response)
+                db.add_trigger_sync(GUILD_ID, phrase, response)
                 flash(f"Trigger '{phrase}' added.")
         elif action == "remove":
-            db.remove_trigger(request.form.get("trigger_id"))
+            db.remove_trigger_sync(request.form.get("trigger_id"))
             flash("Trigger deleted.")
         return redirect(url_for("triggers"))
-    return render_template("triggers.html", triggers=db.get_triggers(GUILD_ID))
+    return render_template("triggers.html", triggers=db.get_triggers_sync(GUILD_ID))
 
 
-# ── Greetings ─────────────────────────────────────────────────────────────────
+# ── Greetings ───────────────────────────────────────────────────────
 
 _GREETING_KEYS = [
     "welcome_enabled", "welcome_channel", "welcome_message",
@@ -420,9 +416,9 @@ def greetings():
     if request.method == "POST":
         for k in _GREETING_KEYS:
             if k.endswith("_enabled"):
-                db.set_setting(k, "1" if request.form.get(k) else "0")
+                db.set_setting_sync(k, "1" if request.form.get(k) else "0")
             else:
-                db.set_setting(k, request.form.get(k, ""))
+                db.set_setting_sync(k, request.form.get(k, ""))
         flash("Greetings saved.")
         return redirect(url_for("greetings"))
 
@@ -430,11 +426,11 @@ def greetings():
         pass
     cfg = Cfg()
     for k in _GREETING_KEYS:
-        setattr(cfg, k, db.get_setting(k, ""))
+        setattr(cfg, k, db.get_setting_sync(k, ""))
     return render_template("greetings.html", cfg=cfg)
 
 
-# ── Starboard ─────────────────────────────────────────────────────────────────
+# ── Starboard ───────────────────────────────────────────────────────
 
 _STARBOARD_KEYS = ["starboard_enabled", "starboard_channel", "starboard_min", "starboard_emoji"]
 
@@ -445,9 +441,9 @@ def starboard():
     if request.method == "POST":
         for k in _STARBOARD_KEYS:
             if k == "starboard_enabled":
-                db.set_setting(k, "1" if request.form.get(k) else "0")
+                db.set_setting_sync(k, "1" if request.form.get(k) else "0")
             else:
-                db.set_setting(k, request.form.get(k, ""))
+                db.set_setting_sync(k, request.form.get(k, ""))
         flash("Starboard settings saved.")
         return redirect(url_for("starboard"))
 
@@ -455,30 +451,30 @@ def starboard():
         pass
     cfg = Cfg()
     for k in _STARBOARD_KEYS:
-        setattr(cfg, k, db.get_setting(k, ""))
+        setattr(cfg, k, db.get_setting_sync(k, ""))
     return render_template("starboard.html", cfg=cfg)
 
 
-# ── Suggestions ───────────────────────────────────────────────────────────────
+# ── Suggestions ───────────────────────────────────────────────────────
 
 @app.route("/suggestions", methods=["GET", "POST"])
 @login_required
 def suggestions():
     if request.method == "POST":
-        db.set_setting("suggestions_enabled", "1" if request.form.get("suggestions_enabled") else "0")
-        db.set_setting("suggestions_channel", request.form.get("suggestions_channel", ""))
+        db.set_setting_sync("suggestions_enabled", "1" if request.form.get("suggestions_enabled") else "0")
+        db.set_setting_sync("suggestions_channel", request.form.get("suggestions_channel", ""))
         flash("Suggestions settings saved.")
         return redirect(url_for("suggestions"))
 
     class Cfg:
         pass
     cfg = Cfg()
-    cfg.suggestions_enabled = db.get_setting("suggestions_enabled", "0")
-    cfg.suggestions_channel = db.get_setting("suggestions_channel", "")
-    return render_template("suggestions.html", cfg=cfg, suggestions=db.get_suggestions(GUILD_ID))
+    cfg.suggestions_enabled = db.get_setting_sync("suggestions_enabled", "0")
+    cfg.suggestions_channel = db.get_setting_sync("suggestions_channel", "")
+    return render_template("suggestions.html", cfg=cfg, suggestions=db.get_suggestions_sync(GUILD_ID))
 
 
-# ── Command settings ──────────────────────────────────────────────────────────
+# ── Command settings ─────────────────────────────────────────────────
 
 @app.route("/command-settings", methods=["GET", "POST"])
 @login_required
@@ -490,7 +486,7 @@ def command_settings():
             blacklist_mods  = request.form.get(f"{cmd}_blacklist_mods",  "").strip()
             whitelist_users = request.form.get(f"{cmd}_whitelist_users", "").strip()
             blacklist_users = request.form.get(f"{cmd}_blacklist_users", "").strip()
-            db.set_command_setting(
+            db.set_command_setting_sync(
                 GUILD_ID, cmd,
                 enabled=enabled,
                 whitelist_roles=whitelist_roles,
@@ -500,11 +496,11 @@ def command_settings():
             )
         flash("Command settings saved. Changes take effect immediately on the bot.")
         return redirect(url_for("command_settings"))
-    cmd_settings = db.get_command_settings(GUILD_ID)
+    cmd_settings = db.get_command_settings_sync(GUILD_ID)
     return render_template("command_settings.html", commands=db.ALL_COMMANDS, cmd_settings=cmd_settings)
 
 
-# ── User lookup ───────────────────────────────────────────────────────────────
+# ── User lookup ─────────────────────────────────────────────────────
 
 @app.route("/user-lookup")
 @login_required
@@ -529,16 +525,16 @@ def user_lookup():
 @login_required
 def user_profile(user_id):
     try:
-        warns = db.get_warnings(GUILD_ID, user_id)
+        warns = db.get_warnings_sync(GUILD_ID, user_id)
     except Exception:
         warns = []
     try:
-        logs = db.logs_for_user(GUILD_ID, user_id)
+        logs = db.logs_for_user_sync(GUILD_ID, user_id)
     except Exception:
         logs = []
     bl = False
     try:
-        bl = db.is_user_blacklisted(GUILD_ID, user_id)
+        bl = db.is_user_blacklisted_sync(GUILD_ID, user_id)
     except Exception:
         pass
 
@@ -584,11 +580,8 @@ def user_profile(user_id):
     }
 
     try:
-        db.cache_profile(
-            user_id, profile["username"], profile["global_name"],
-            avatar_url, banner_url, accent_color, bio,
-            ", ".join(b[0] for b in badges)
-        )
+        db.get_cached_profile_sync(user_id)  # ensure profile is accessible
+        # cache updated via bot on next userinfo command
     except Exception:
         pass
 
@@ -602,13 +595,13 @@ def user_profile(user_id):
     )
 
 
-# ── API ───────────────────────────────────────────────────────────────────────
+# ── API ─────────────────────────────────────────────────────────────
 
 @app.route("/api/profile/<user_id>")
 @login_required
 def api_profile(user_id):
     try:
-        cached = db.get_cached_profile(user_id)
+        cached = db.get_cached_profile_sync(user_id)
         if cached:
             return jsonify(cached)
     except Exception:
@@ -634,5 +627,5 @@ def api_debug(user_id):
 
 
 if __name__ == "__main__":
-    db.init_db()
+    db.init_db_sync()
     app.run(host="0.0.0.0", port=5000, debug=False)
