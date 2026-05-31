@@ -1,70 +1,80 @@
 {% extends 'base.html' %}
 {% block title %}Moderation{% endblock %}
+{% block page_title %}Moderation{% endblock %}
 {% block content %}
-<div class="page-header">
-  <h1>Moderation</h1>
-  <p>Manage blacklisted words and users. Changes sync with the bot immediately.</p>
-</div>
-
-<div class="card">
-  <div class="card-header">
-    <span class="card-title">Word Blacklist</span>
-    <span class="badge badge-neutral">{{ words | length }} words</span>
-  </div>
-  <div class="card-body">
-    <form method="POST" style="margin-bottom:16px">
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Word Blacklist
+    </div>
+    <form method="post" style="display:flex;gap:8px;margin-bottom:16px">
       <input type="hidden" name="action" value="add_word">
-      <div class="add-row">
-        <input type="text" name="word" placeholder="Enter a word to blacklist…" required>
-        <button type="submit" class="btn btn-primary">Add Word</button>
-      </div>
+      <input type="text" name="word" class="form-control" placeholder="Add a word..." required style="flex:1">
+      <button type="submit" class="btn btn-primary btn-sm">Add</button>
     </form>
     {% if words %}
-    <div class="tag-list">
-      {% for w in words %}
-      <form method="POST" style="display:inline">
-        <input type="hidden" name="action" value="remove_word">
-        <input type="hidden" name="word" value="{{ w.word }}">
-        <span class="tag">{{ w.word }}<button class="tag-remove" type="submit">×</button></span>
-      </form>
-      {% endfor %}
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Word</th><th>Added By</th><th></th></tr></thead>
+        <tbody>
+          {% for w in words %}
+          <tr>
+            <td><code>{{ w.word }}</code></td>
+            <td class="td-muted">{{ w.added_by or '—' }}</td>
+            <td style="text-align:right">
+              <form method="post" style="display:inline">
+                <input type="hidden" name="action" value="remove_word">
+                <input type="hidden" name="word" value="{{ w.word }}">
+                <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
     {% else %}
-    <p style="color:var(--text-muted);font-size:13px">No blacklisted words yet.</p>
+    <div class="empty"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg><h3>No words blacklisted</h3><p>Add words above to block them.</p></div>
     {% endif %}
   </div>
-</div>
 
-<div class="card">
-  <div class="card-header">
-    <span class="card-title">User Blacklist</span>
-    <span class="badge badge-neutral">{{ users | length }} users</span>
-  </div>
-  <div class="card-body">
-    <form method="POST" style="margin-bottom:16px">
+  <div class="card">
+    <div class="card-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="4" x2="17" y2="10"/><line x1="17" y1="4" x2="23" y2="10"/></svg>
+      User Blacklist
+    </div>
+    <form method="post" style="display:flex;gap:8px;margin-bottom:8px">
       <input type="hidden" name="action" value="add_user">
-      <div class="add-row">
-        <input type="text" name="user_id" placeholder="User ID" style="max-width:200px" required>
-        <input type="text" name="reason" placeholder="Reason (optional)" style="flex:2">
-        <button type="submit" class="btn btn-primary">Blacklist User</button>
-      </div>
+      <input type="text" name="user_id" class="form-control" placeholder="User ID..." required style="flex:1">
+      <button type="submit" class="btn btn-primary btn-sm">Add</button>
     </form>
+    <div class="form-group" style="margin-bottom:16px">
+      <input type="text" name="reason" class="form-control" placeholder="Reason (optional)">
+    </div>
     {% if users %}
-    <table>
-      <thead><tr><th>User ID</th><th>Reason</th><th>Added by</th><th></th></tr></thead>
-      <tbody>
-      {% for u in users %}
-      <tr>
-        <td><code style="font-size:12px;color:var(--accent)">{{ u.user_id }}</code></td>
-        <td style="color:var(--text-muted)">{{ u.reason or '—' }}</td>
-        <td style="color:var(--text-muted)">{{ u.added_by or '—' }}</td>
-        <td><form method="POST"><input type="hidden" name="action" value="remove_user"><input type="hidden" name="user_id" value="{{ u.user_id }}"><button type="submit" class="btn btn-danger btn-sm">Remove</button></form></td>
-      </tr>
-      {% endfor %}
-      </tbody>
-    </table>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>User ID</th><th>Reason</th><th></th></tr></thead>
+        <tbody>
+          {% for u in users %}
+          <tr>
+            <td><code>{{ u.user_id }}</code></td>
+            <td class="td-muted">{{ u.reason or '—' }}</td>
+            <td style="text-align:right">
+              <form method="post" style="display:inline">
+                <input type="hidden" name="action" value="remove_user">
+                <input type="hidden" name="user_id" value="{{ u.user_id }}">
+                <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
     {% else %}
-    <p style="color:var(--text-muted);font-size:13px">No blacklisted users.</p>
+    <div class="empty"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><h3>No users blacklisted</h3><p>Blacklisted users are auto-banned on join.</p></div>
     {% endif %}
   </div>
 </div>

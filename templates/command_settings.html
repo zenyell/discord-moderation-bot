@@ -1,35 +1,36 @@
 {% extends 'base.html' %}
-{% block title %}Commands{% endblock %}
+{% block title %}Command Settings{% endblock %}
+{% block page_title %}Command Settings{% endblock %}
 {% block content %}
-<div class="page-header">
-  <h1>Commands</h1>
-  <p>Enable or disable slash commands. Changes take effect on the bot immediately.</p>
-</div>
-
-<form method="POST">
+<form method="post">
   <div class="card">
-    <div class="card-header">
-      <span class="card-title">Slash Commands</span>
-      <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
+    <div class="card-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      Per-Command Permissions
     </div>
-    <div class="card-body" style="padding:8px 18px">
-      {% for cmd in commands %}
-      {% set s = cmd_settings.get(cmd, {}) %}
-      <div class="toggle-row">
-        <div class="toggle-info">
-          <span class="toggle-name">/{{ cmd }}</span>
-          <span class="toggle-desc">{{ s.get('whitelist_roles', '') or 'No role restrictions' }}</span>
-        </div>
-        <label class="switch">
-          <input type="checkbox" name="{{ cmd }}_enabled" {% if s.get('enabled', 1) %}checked{% endif %}>
-          <span class="slider"></span>
+    {% for cmd in commands %}
+    {% set cs = cmd_settings.get(cmd, {}) %}
+    <div style="padding:14px 0;border-bottom:1px solid var(--border);{% if loop.last %}border-bottom:none{% endif %}">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <code style="font-size:13px">/{{ cmd }}</code>
+        <label class="toggle">
+          <input type="checkbox" name="{{ cmd }}_enabled" {% if cs.get('enabled',1) %}checked{% endif %}>
+          <span class="toggle-track"></span>
         </label>
       </div>
-      {% endfor %}
+      <div class="grid-2" style="gap:8px">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Whitelist Roles (IDs, comma-sep)</label>
+          <input type="text" name="{{ cmd }}_whitelist_roles" class="form-control" value="{{ cs.get('whitelist_roles','') }}" placeholder="Leave blank for all">
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Blacklist Mods (IDs)</label>
+          <input type="text" name="{{ cmd }}_blacklist_mods" class="form-control" value="{{ cs.get('blacklist_mods','') }}">
+        </div>
+      </div>
     </div>
+    {% endfor %}
   </div>
-  <div style="margin-top:16px">
-    <button type="submit" class="btn btn-primary">Save Changes</button>
-  </div>
+  <button type="submit" class="btn btn-primary">Save Command Settings</button>
 </form>
 {% endblock %}

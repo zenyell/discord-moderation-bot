@@ -2,69 +2,61 @@
 {% block title %}Reaction Roles{% endblock %}
 {% block page_title %}Reaction Roles{% endblock %}
 {% block content %}
-<div class="page-header">
-  <h1>Reaction Roles</h1>
-  <p>Let members self-assign roles by reacting to a message with an emoji.</p>
-</div>
-
-<div class="card" style="margin-bottom:20px">
-  <div class="card-header"><span class="card-title">Add Reaction Role</span></div>
-  <div class="card-body">
-    <form method="POST">
-      <input type="hidden" name="action" value="add">
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:14px">
-        <div class="form-group" style="margin-bottom:0">
-          <label>Message ID</label>
-          <input type="text" name="message_id" placeholder="Discord message ID" required>
-        </div>
-        <div class="form-group" style="margin-bottom:0">
-          <label>Channel ID</label>
-          <input type="text" name="channel_id" placeholder="Channel ID" required>
-        </div>
-        <div class="form-group" style="margin-bottom:0">
-          <label>Emoji</label>
-          <input type="text" name="emoji" placeholder="&#x1F44D; or :emoji_name:" required>
-        </div>
-        <div class="form-group" style="margin-bottom:0">
-          <label>Role ID</label>
-          <input type="text" name="role_id" placeholder="Role to assign" required>
-        </div>
+<div class="card" style="max-width:560px;margin-bottom:16px">
+  <div class="card-title">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Add Reaction Role
+  </div>
+  <form method="post">
+    <input type="hidden" name="action" value="add">
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Message ID</label>
+        <input type="text" name="message_id" class="form-control" placeholder="Message ID" required>
       </div>
-      <button type="submit" class="btn btn-primary">Add Reaction Role</button>
-    </form>
-  </div>
+      <div class="form-group">
+        <label class="form-label">Channel ID</label>
+        <input type="text" name="channel_id" class="form-control" placeholder="Channel ID" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Emoji</label>
+        <input type="text" name="emoji" class="form-control" placeholder="👍 or :custom:" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Role ID</label>
+        <input type="text" name="role_id" class="form-control" placeholder="Role ID to assign" required>
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary">Add Reaction Role</button>
+  </form>
 </div>
-
 <div class="card">
-  <div class="card-header">
-    <span class="card-title">Active Reaction Roles</span>
-    <span class="badge badge-neutral">{{ rr_list | length }} entries</span>
-  </div>
-  <div class="card-body" style="padding:0">
-    {% if rr_list %}
+  <div class="card-title">Active Reaction Roles</div>
+  {% if rr_list %}
+  <div class="table-wrap">
     <table>
-      <thead><tr><th>Message ID</th><th>Channel ID</th><th>Emoji</th><th>Role ID</th><th></th></tr></thead>
+      <thead><tr><th>Emoji</th><th>Role ID</th><th>Message ID</th><th>Channel ID</th><th></th></tr></thead>
       <tbody>
-      {% for rr in rr_list %}
-      <tr>
-        <td><code style="font-size:12px;color:var(--accent)">{{ rr.message_id }}</code></td>
-        <td style="color:var(--text-muted)">{{ rr.channel_id }}</td>
-        <td>{{ rr.emoji }}</td>
-        <td><code style="font-size:12px;color:var(--accent)">{{ rr.role_id }}</code></td>
-        <td>
-          <form method="POST">
-            <input type="hidden" name="action" value="remove">
-            <input type="hidden" name="rr_id" value="{{ rr.id }}">
-            <button type="submit" class="btn btn-danger btn-sm">Remove</button>
-          </form>
-        </td>
-      </tr>
-      {% endfor %}
+        {% for rr in rr_list %}
+        <tr>
+          <td style="font-size:18px">{{ rr.emoji }}</td>
+          <td><code>{{ rr.role_id }}</code></td>
+          <td class="td-muted"><code>{{ rr.message_id }}</code></td>
+          <td class="td-muted"><code>{{ rr.channel_id }}</code></td>
+          <td style="text-align:right">
+            <form method="post" style="display:inline">
+              <input type="hidden" name="action" value="remove">
+              <input type="hidden" name="rr_id" value="{{ rr.id }}">
+              <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
       </tbody>
     </table>
-    {% else %}
-    <div style="padding:32px;text-align:center;color:var(--text-muted);font-size:13px">No reaction roles configured yet.</div>
-    {% endif %}
   </div>
+  {% else %}
+  <div class="empty"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg><h3>No reaction roles yet</h3><p>Add one above to get started.</p></div>
+  {% endif %}
 </div>
 {% endblock %}

@@ -1,66 +1,44 @@
 {% extends 'base.html' %}
-{% block title %}Bot Settings{% endblock %}
+{% block title %}Settings{% endblock %}
+{% block page_title %}Settings{% endblock %}
 {% block content %}
-<div class="page-header">
-  <h1>Bot Settings</h1>
-  <p>Configure auto-roles, spam detection, and filtered words. Saved settings sync with the bot in real time.</p>
-</div>
-
-<form method="POST">
-  <div class="card" style="margin-bottom:20px">
-    <div class="card-header"><span class="card-title">Auto Role</span></div>
-    <div class="card-body">
+<div style="max-width:600px">
+  <form method="post">
+    <div class="card">
+      <div class="card-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        General
+      </div>
       <div class="form-group">
-        <label>Auto Role ID</label>
-        <input type="text" name="auto_role_id" value="{{ cfg.auto_role_id }}" placeholder="Role ID to assign on join">
-        <div class="form-hint">Leave blank to disable auto-role on member join.</div>
+        <label class="form-label">Auto Role ID</label>
+        <input type="text" name="auto_role_id" class="form-control" value="{{ cfg.auto_role_id }}" placeholder="Role ID assigned on join">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Blacklisted Words (comma-separated)</label>
+        <textarea name="bad_words" class="form-control" placeholder="word1, word2, word3">{{ cfg.bad_words }}</textarea>
       </div>
     </div>
-  </div>
-
-  <div class="card" style="margin-bottom:20px">
-    <div class="card-header"><span class="card-title">Spam Detection</span></div>
-    <div class="card-body">
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px">
-        <div class="form-group" style="margin-bottom:0">
-          <label>Message Limit</label>
-          <input type="number" name="spam_limit" value="{{ cfg.spam_limit }}" min="1">
-          <div class="form-hint">Max messages per window.</div>
+    <div class="card">
+      <div class="card-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        Spam Protection
+      </div>
+      <div class="grid-3">
+        <div class="form-group">
+          <label class="form-label">Message Limit</label>
+          <input type="number" name="spam_limit" class="form-control" value="{{ cfg.spam_limit }}">
         </div>
-        <div class="form-group" style="margin-bottom:0">
-          <label>Window (seconds)</label>
-          <input type="number" name="spam_window" value="{{ cfg.spam_window }}" min="1">
-          <div class="form-hint">Rolling time window.</div>
+        <div class="form-group">
+          <label class="form-label">Window (seconds)</label>
+          <input type="number" name="spam_window" class="form-control" value="{{ cfg.spam_window }}">
         </div>
-        <div class="form-group" style="margin-bottom:0">
-          <label>Timeout (minutes)</label>
-          <input type="number" name="spam_timeout" value="{{ cfg.spam_timeout }}" min="1">
-          <div class="form-hint">Duration of spam timeout.</div>
+        <div class="form-group">
+          <label class="form-label">Timeout (minutes)</label>
+          <input type="number" name="spam_timeout" class="form-control" value="{{ cfg.spam_timeout }}">
         </div>
       </div>
     </div>
-  </div>
-
-  <div class="card" style="margin-bottom:20px">
-    <div class="card-header"><span class="card-title">Filtered Words</span></div>
-    <div class="card-body">
-      <div class="form-group" style="margin-bottom:0">
-        <label>Bad Words (comma-separated)</label>
-        <textarea name="bad_words" rows="3" placeholder="badword1, badword2, …">{{ cfg.bad_words }}</textarea>
-        <div class="form-hint">Messages containing these words will be automatically deleted.</div>
-      </div>
-    </div>
-  </div>
-
-  {% if cfg.client_id %}
-  <div class="card" style="margin-bottom:20px">
-    <div class="card-header"><span class="card-title">Invite Bot</span></div>
-    <div class="card-body">
-      <a href="https://discord.com/oauth2/authorize?client_id={{ cfg.client_id }}&permissions=8&scope=bot+applications.commands" target="_blank" class="btn btn-primary">Invite Bot (Admin)</a>
-    </div>
-  </div>
-  {% endif %}
-
-  <button type="submit" class="btn btn-primary">Save Settings</button>
-</form>
+    <button type="submit" class="btn btn-primary">Save Settings</button>
+  </form>
+</div>
 {% endblock %}

@@ -2,44 +2,33 @@
 {% block title %}Starboard{% endblock %}
 {% block page_title %}Starboard{% endblock %}
 {% block content %}
-<div class="page-header">
-  <h1>Starboard</h1>
-  <p>Messages that receive enough ⭐ reactions get pinned to a special starboard channel.</p>
-</div>
-
-<form method="POST">
-  <div class="card" style="margin-bottom:20px">
-    <div class="card-header">
-      <span class="card-title">Starboard Settings</span>
-      <label class="switch" style="margin-left:auto;cursor:pointer">
-        <input type="checkbox" name="starboard_enabled" {% if cfg.starboard_enabled == '1' %}checked{% endif %}>
-        <span class="slider"></span>
-      </label>
-    </div>
-    <div class="card-body">
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px">
-        <div class="form-group" style="margin-bottom:0">
-          <label>Starboard Channel ID</label>
-          <input type="text" name="starboard_channel" value="{{ cfg.starboard_channel }}" placeholder="Channel ID">
-          <div class="form-hint">Where starred messages are posted.</div>
+<div style="max-width:500px">
+  <form method="post">
+    <div class="card">
+      <div class="card-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        Starboard Configuration
+      </div>
+      <div class="toggle-row">
+        <div class="toggle-info"><h4>Enable Starboard</h4><p>Pin highly-reacted messages to a channel</p></div>
+        <label class="toggle"><input type="checkbox" name="starboard_enabled" {% if cfg.starboard_enabled == '1' %}checked{% endif %}><span class="toggle-track"></span></label>
+      </div>
+      <div class="form-group" style="margin-top:16px">
+        <label class="form-label">Starboard Channel ID</label>
+        <input type="text" name="starboard_channel" class="form-control" value="{{ cfg.starboard_channel }}" placeholder="Channel ID">
+      </div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label class="form-label">Minimum Stars</label>
+          <input type="number" name="starboard_min" class="form-control" value="{{ cfg.starboard_min or 3 }}" min="1">
         </div>
-        <div class="form-group" style="margin-bottom:0">
-          <label>Minimum Stars</label>
-          <input type="number" name="starboard_min" value="{{ cfg.starboard_min or '3' }}" min="1" max="99">
-          <div class="form-hint">Stars needed to post.</div>
-        </div>
-        <div class="form-group" style="margin-bottom:0">
-          <label>Star Emoji</label>
-          <input type="text" name="starboard_emoji" value="{{ cfg.starboard_emoji or '⭐' }}" placeholder="⭐">
-          <div class="form-hint">Emoji to count as a star.</div>
+        <div class="form-group">
+          <label class="form-label">Star Emoji</label>
+          <input type="text" name="starboard_emoji" class="form-control" value="{{ cfg.starboard_emoji or '⭐' }}">
         </div>
       </div>
     </div>
-  </div>
-
-  <button type="submit" class="btn btn-primary">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-    Save Starboard
-  </button>
-</form>
+    <button type="submit" class="btn btn-primary">Save Starboard</button>
+  </form>
+</div>
 {% endblock %}

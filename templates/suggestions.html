@@ -2,70 +2,43 @@
 {% block title %}Suggestions{% endblock %}
 {% block page_title %}Suggestions{% endblock %}
 {% block content %}
-<div class="page-header">
-  <h1>Suggestions</h1>
-  <p>Members submit suggestions with <code style="background:var(--surface-2);padding:1px 6px;border-radius:4px">/suggest</code>; the bot posts them with 👍/👎 reactions.</p>
-</div>
-
-<form method="POST" style="margin-bottom:24px">
-  <div class="card" style="margin-bottom:20px">
-    <div class="card-header">
-      <span class="card-title">Suggestions Channel</span>
-      <label class="switch" style="margin-left:auto;cursor:pointer">
-        <input type="checkbox" name="suggestions_enabled" {% if cfg.suggestions_enabled == '1' %}checked{% endif %}>
-        <span class="slider"></span>
-      </label>
-    </div>
-    <div class="card-body">
-      <div class="form-group" style="margin-bottom:0">
-        <label>Channel ID</label>
-        <input type="text" name="suggestions_channel" value="{{ cfg.suggestions_channel }}" placeholder="Where suggestions are posted">
-        <div class="form-hint">The bot will post each suggestion here and add reaction voting.</div>
+<div style="max-width:500px;margin-bottom:20px">
+  <form method="post">
+    <div class="card">
+      <div class="card-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Suggestions Setup
+      </div>
+      <div class="toggle-row">
+        <div class="toggle-info"><h4>Enable Suggestions</h4><p>Allow members to submit suggestions via a command</p></div>
+        <label class="toggle"><input type="checkbox" name="suggestions_enabled" {% if cfg.suggestions_enabled == '1' %}checked{% endif %}><span class="toggle-track"></span></label>
+      </div>
+      <div class="form-group" style="margin-top:16px">
+        <label class="form-label">Suggestions Channel ID</label>
+        <input type="text" name="suggestions_channel" class="form-control" value="{{ cfg.suggestions_channel }}" placeholder="Channel ID">
       </div>
     </div>
-  </div>
-  <button type="submit" class="btn btn-primary">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-    Save
-  </button>
-</form>
-
+    <button type="submit" class="btn btn-primary">Save</button>
+  </form>
+</div>
+{% if suggestions %}
 <div class="card">
-  <div class="card-header">
-    <span class="card-title">Recent Suggestions</span>
-    <span class="badge badge-neutral">{{ suggestions | length }}</span>
-  </div>
-  <div class="card-body" style="padding:0">
-    {% if suggestions %}
+  <div class="card-title">Recent Suggestions</div>
+  <div class="table-wrap">
     <table>
-      <thead>
-        <tr>
-          <th>Author ID</th>
-          <th>Suggestion</th>
-          <th style="text-align:center">👍</th>
-          <th style="text-align:center">👎</th>
-          <th>Date</th>
-        </tr>
-      </thead>
+      <thead><tr><th>User</th><th>Suggestion</th><th>Status</th><th>Date</th></tr></thead>
       <tbody>
-      {% for s in suggestions %}
-      <tr>
-        <td style="color:var(--text-muted);font-size:12px;font-family:monospace">{{ s.author_id }}</td>
-        <td style="max-width:360px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ s.content }}</td>
-        <td style="color:var(--success);text-align:center;font-variant-numeric:tabular-nums">{{ s.upvotes }}</td>
-        <td style="color:var(--danger);text-align:center;font-variant-numeric:tabular-nums">{{ s.downvotes }}</td>
-        <td style="color:var(--text-faint);font-size:12px">{{ s.created_at[:10] }}</td>
-      </tr>
-      {% endfor %}
+        {% for s in suggestions %}
+        <tr>
+          <td class="td-muted"><code>{{ s.user_id }}</code></td>
+          <td>{{ s.content[:80] }}{% if s.content|length > 80 %}…{% endif %}</td>
+          <td><span class="badge badge-muted">{{ s.status or 'pending' }}</span></td>
+          <td class="td-muted" style="font-size:12px">{{ s.created_at[:10] if s.created_at else '—' }}</td>
+        </tr>
+        {% endfor %}
       </tbody>
     </table>
-    {% else %}
-    <div class="empty-state">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      <h3>No suggestions yet</h3>
-      <p>Once members use <code>/suggest</code>, their submissions will appear here.</p>
-    </div>
-    {% endif %}
   </div>
 </div>
+{% endif %}
 {% endblock %}

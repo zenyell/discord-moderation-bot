@@ -2,58 +2,49 @@
 {% block title %}Triggers{% endblock %}
 {% block page_title %}Triggers{% endblock %}
 {% block content %}
-<div class="page-header">
-  <h1>Triggers</h1>
-  <p>Auto-respond when a message contains a specific keyword or phrase.</p>
-</div>
-
-<div class="card" style="margin-bottom:20px">
-  <div class="card-header"><span class="card-title">Add Trigger</span></div>
-  <div class="card-body">
-    <form method="POST">
-      <input type="hidden" name="action" value="add">
-      <div class="form-group">
-        <label>Trigger Phrase</label>
-        <input type="text" name="trigger_phrase" placeholder="e.g. hello, good morning" required>
-        <div class="form-hint">Case-insensitive. The bot replies when any message contains this text.</div>
-      </div>
-      <div class="form-group">
-        <label>Response</label>
-        <textarea name="trigger_response" rows="3" placeholder="Bot's reply…" required></textarea>
-      </div>
-      <button type="submit" class="btn btn-primary">Add Trigger</button>
-    </form>
+<div class="card" style="max-width:560px;margin-bottom:16px">
+  <div class="card-title">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+    Add Trigger
   </div>
+  <form method="post">
+    <input type="hidden" name="action" value="add">
+    <div class="form-group">
+      <label class="form-label">Trigger Phrase</label>
+      <input type="text" name="trigger_phrase" class="form-control" placeholder="Keyword or phrase to detect" required>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Auto Response</label>
+      <textarea name="trigger_response" class="form-control" placeholder="Bot will reply with this message" required></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Add Trigger</button>
+  </form>
 </div>
-
 <div class="card">
-  <div class="card-header">
-    <span class="card-title">Active Triggers</span>
-    <span class="badge badge-neutral">{{ triggers | length }}</span>
-  </div>
-  <div class="card-body" style="padding:0">
-    {% if triggers %}
+  <div class="card-title">Active Triggers</div>
+  {% if triggers %}
+  <div class="table-wrap">
     <table>
-      <thead><tr><th>Trigger</th><th>Response (preview)</th><th></th></tr></thead>
+      <thead><tr><th>Phrase</th><th>Response</th><th></th></tr></thead>
       <tbody>
-      {% for t in triggers %}
-      <tr>
-        <td><span class="badge badge-accent">{{ t.phrase }}</span></td>
-        <td style="color:var(--text-muted);max-width:360px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ t.response }}</td>
-        <td>
-          <form method="POST">
-            <input type="hidden" name="action" value="remove">
-            <input type="hidden" name="trigger_id" value="{{ t.id }}">
-            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-          </form>
-        </td>
-      </tr>
-      {% endfor %}
+        {% for t in triggers %}
+        <tr>
+          <td><code>{{ t.phrase }}</code></td>
+          <td class="td-muted" style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ t.response }}</td>
+          <td style="text-align:right">
+            <form method="post" style="display:inline">
+              <input type="hidden" name="action" value="remove">
+              <input type="hidden" name="trigger_id" value="{{ t.id }}">
+              <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
       </tbody>
     </table>
-    {% else %}
-    <div style="padding:32px;text-align:center;color:var(--text-muted);font-size:13px">No triggers yet.</div>
-    {% endif %}
   </div>
+  {% else %}
+  <div class="empty"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><h3>No triggers yet</h3><p>Triggers auto-respond when a keyword is detected in a message.</p></div>
+  {% endif %}
 </div>
 {% endblock %}

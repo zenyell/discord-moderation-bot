@@ -1,203 +1,623 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}Dashboard{% endblock %} — ModPanel</title>
+  <title>{% block title %}Control Panel{% endblock %} — ModPanel</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d0d0f;
+      --surface:   #131316;
+      --surface-2: #1a1a1f;
+      --surface-3: #202027;
+      --border:    rgba(255,255,255,0.07);
+      --border-2:  rgba(255,255,255,0.12);
+      --text:      #e8e8f0;
+      --muted:     #6b6b80;
+      --faint:     #3a3a50;
+      --accent:    #7c6bff;
+      --accent-2:  #9d8fff;
+      --accent-glow: rgba(124,107,255,0.15);
+      --danger:    #ff4d6a;
+      --success:   #34d988;
+      --warning:   #ffb344;
+      --sidebar-w: 240px;
+      --topbar-h:  56px;
+      --radius:    10px;
+      --radius-sm: 6px;
+      --transition: 200ms cubic-bezier(0.16,1,0.3,1);
+    }
+
+    html { -webkit-font-smoothing: antialiased; scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* ── Page transition ── */
+    #page-wrapper {
+      opacity: 0;
+      transform: translateY(6px);
+      animation: pageIn 320ms cubic-bezier(0.16,1,0.3,1) forwards;
+    }
+    @keyframes pageIn {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: var(--sidebar-w);
+      min-height: 100vh;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0;
+      z-index: 100;
+      transition: transform var(--transition);
+    }
+
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 20px 18px;
+      border-bottom: 1px solid var(--border);
+      text-decoration: none;
+    }
+    .sidebar-logo svg { flex-shrink: 0; }
+    .sidebar-logo-text {
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--text);
+      letter-spacing: -0.3px;
+    }
+    .sidebar-logo-sub {
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .sidebar-nav {
+      flex: 1;
+      padding: 10px 10px;
+      overflow-y: auto;
+      scrollbar-width: none;
+    }
+    .sidebar-nav::-webkit-scrollbar { display: none; }
+
+    .nav-section {
+      margin-bottom: 4px;
+    }
+    .nav-section-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--faint);
+      padding: 10px 8px 5px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      color: var(--muted);
+      font-size: 13.5px;
+      font-weight: 500;
+      transition: all var(--transition);
+      position: relative;
+      margin-bottom: 1px;
+    }
+    .nav-item:hover {
+      color: var(--text);
+      background: var(--surface-2);
+    }
+    .nav-item.active {
+      color: var(--accent-2);
+      background: var(--accent-glow);
+    }
+    .nav-item.active::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 20%; bottom: 20%;
+      width: 2px;
+      border-radius: 2px;
+      background: var(--accent);
+    }
+    .nav-item svg { flex-shrink: 0; opacity: 0.75; }
+    .nav-item.active svg { opacity: 1; }
+
+    .sidebar-footer {
+      padding: 12px 10px;
+      border-top: 1px solid var(--border);
+    }
+    .sidebar-footer a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all var(--transition);
+    }
+    .sidebar-footer a:hover { color: var(--danger); background: rgba(255,77,106,0.08); }
+
+    /* ── Main layout ── */
+    .main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      height: 100vh;
+    }
+
+    /* ── Topbar ── */
+    .topbar {
+      height: var(--topbar-h);
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(12px);
+    }
+    .topbar-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      flex: 1;
+    }
+    .topbar-title span {
+      color: var(--muted);
+      font-weight: 400;
+    }
+
+    /* ── Content ── */
+    .content {
+      padding: 28px 28px;
+      flex: 1;
+    }
+
+    /* ── Flash messages ── */
+    .flash-list { margin-bottom: 20px; display: flex; flex-direction: column; gap: 8px; }
+    .flash {
+      padding: 11px 16px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 500;
+      border: 1px solid;
+      animation: flashIn 250ms ease;
+    }
+    @keyframes flashIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:none; } }
+    .flash-success { background: rgba(52,217,136,0.08); border-color: rgba(52,217,136,0.25); color: var(--success); }
+    .flash-error   { background: rgba(255,77,106,0.08); border-color: rgba(255,77,106,0.25); color: var(--danger); }
+    .flash-info    { background: rgba(124,107,255,0.08); border-color: rgba(124,107,255,0.25); color: var(--accent-2); }
+
+    /* ── Page header ── */
+    .page-header {
+      margin-bottom: 24px;
+    }
+    .page-header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.4px;
+      margin-bottom: 4px;
+    }
+    .page-header p {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+      animation: cardIn 280ms cubic-bezier(0.16,1,0.3,1) both;
+    }
+    @keyframes cardIn {
+      from { opacity:0; transform:translateY(8px); }
+      to   { opacity:1; transform:none; }
+    }
+    .card:nth-child(2) { animation-delay: 40ms; }
+    .card:nth-child(3) { animation-delay: 80ms; }
+    .card:nth-child(4) { animation-delay: 120ms; }
+    .card:nth-child(5) { animation-delay: 160ms; }
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-title svg { color: var(--accent); }
+
+    /* ── Grid ── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+    @media(max-width:900px) { .grid-2,.grid-3,.grid-4 { grid-template-columns:1fr; } }
+
+    /* ── Stat cards ── */
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      animation: cardIn 280ms cubic-bezier(0.16,1,0.3,1) both;
+    }
+    .stat-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); margin-bottom: 8px; }
+    .stat-value { font-size: 28px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; letter-spacing: -1px; }
+    .stat-sub   { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+    /* ── Forms ── */
+    .form-group { margin-bottom: 16px; }
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 7px;
+    }
+    .form-control {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border-2);
+      border-radius: var(--radius-sm);
+      padding: 9px 12px;
+      font-size: 13.5px;
+      color: var(--text);
+      font-family: inherit;
+      outline: none;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    .form-control:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+    .form-control::placeholder { color: var(--faint); }
+    textarea.form-control { resize: vertical; min-height: 90px; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all var(--transition);
+      white-space: nowrap;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-primary:hover { background: var(--accent-2); transform: translateY(-1px); box-shadow: 0 4px 16px var(--accent-glow); }
+    .btn-primary:active { transform: none; }
+    .btn-ghost {
+      background: var(--surface-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { background: var(--surface-3); border-color: var(--border-2); }
+    .btn-danger {
+      background: rgba(255,77,106,0.1);
+      color: var(--danger);
+      border: 1px solid rgba(255,77,106,0.2);
+    }
+    .btn-danger:hover { background: rgba(255,77,106,0.2); }
+    .btn-sm { padding: 5px 11px; font-size: 12px; }
+
+    /* ── Table ── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+      padding: 0 12px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background var(--transition);
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--surface-2); }
+    tbody td { padding: 10px 12px; font-size: 13px; color: var(--text); }
+    .td-muted { color: var(--muted); }
+
+    /* ── Badge ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+    }
+    .badge-accent  { background: var(--accent-glow); color: var(--accent-2); }
+    .badge-danger  { background: rgba(255,77,106,0.12); color: var(--danger); }
+    .badge-success { background: rgba(52,217,136,0.12); color: var(--success); }
+    .badge-warning { background: rgba(255,179,68,0.12); color: var(--warning); }
+    .badge-muted   { background: var(--surface-3); color: var(--muted); }
+
+    /* ── Toggle switch ── */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .toggle-row:last-child { border-bottom: none; }
+    .toggle-info h4 { font-size: 13.5px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
+    .toggle-info p  { font-size: 12px; color: var(--muted); }
+    .toggle {
+      position: relative;
+      width: 40px;
+      height: 22px;
+      flex-shrink: 0;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-track {
+      position: absolute;
+      inset: 0;
+      background: var(--surface-3);
+      border-radius: 100px;
+      border: 1px solid var(--border-2);
+      cursor: pointer;
+      transition: background var(--transition);
+    }
+    .toggle-track::after {
+      content: '';
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: var(--muted);
+      transition: all var(--transition);
+    }
+    .toggle input:checked + .toggle-track { background: var(--accent); border-color: var(--accent); }
+    .toggle input:checked + .toggle-track::after { transform: translateX(18px); background: #fff; }
+
+    /* ── Empty state ── */
+    .empty {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--muted);
+    }
+    .empty svg { margin: 0 auto 12px; opacity: 0.3; }
+    .empty h3 { font-size: 15px; color: var(--text); margin-bottom: 6px; }
+    .empty p  { font-size: 13px; }
+
+    /* ── Divider ── */
+    .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 10px; }
+
+    /* ── Link transitions ── */
+    a { transition: color var(--transition); }
+
+    /* ── Code ── */
+    code {
+      background: var(--surface-3);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-size: 12px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      color: var(--accent-2);
+    }
+
+    /* Page transition for clicks */
+    .nav-transition-out {
+      animation: pageOut 180ms ease forwards;
+    }
+    @keyframes pageOut {
+      to { opacity:0; transform:translateY(-4px); }
+    }
+  </style>
 </head>
 <body>
 
-<aside class="sidebar" id="sidebar">
-  <div class="sidebar-brand">
-    <div class="brand-logo">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-      </svg>
-    </div>
+<!-- Sidebar -->
+<nav class="sidebar">
+  <a href="{{ url_for('index') }}" class="sidebar-logo">
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+      <rect width="28" height="28" rx="7" fill="#7c6bff" fill-opacity="0.15"/>
+      <path d="M7 9.5C7 8.12 8.12 7 9.5 7h9C19.88 7 21 8.12 21 9.5v4C21 14.88 19.88 16 18.5 16H13l-4 4v-4H9.5C8.12 16 7 14.88 7 13.5v-4Z" stroke="#7c6bff" stroke-width="1.5" stroke-linejoin="round"/>
+      <circle cx="11" cy="11.5" r="1" fill="#7c6bff"/>
+      <circle cx="14" cy="11.5" r="1" fill="#7c6bff"/>
+      <circle cx="17" cy="11.5" r="1" fill="#7c6bff"/>
+    </svg>
     <div>
-      <div class="brand-name">ModPanel</div>
-      <div class="brand-sub">Discord Mod Bot</div>
+      <div class="sidebar-logo-text">ModPanel</div>
+      <div class="sidebar-logo-sub">Control Panel</div>
     </div>
+  </a>
+
+  <div class="sidebar-nav">
+
+    <div class="nav-section">
+      <div class="nav-section-label">Overview</div>
+      <a href="{{ url_for('index') }}" class="nav-item {% if request.endpoint=='index' %}active{% endif %}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-label">Moderation</div>
+      <a href="{{ url_for('moderation') }}" class="nav-item {% if request.endpoint=='moderation' %}active{% endif %}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Moderation
+      </a>
+      <a href="{{ url_for('logging_page') }}" class="nav-item {% if request.endpoint=='logging_page' %}active{% endif %}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Logging
+      </a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-label">Roles</div>
+      <a href="{{ url_for('reaction_roles') }}" class="nav-item {% if request.endpoint=='reaction_roles' %}active{% endif %}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+        Reaction Roles
+      </a>
+      <a href="{{ url_for('autoroles') }}" class="nav-item {% if request.endpoint=='autoroles' %}active{% endif %}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Auto Roles
+      </a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-label">Custom Commands</div>
+      <a href="{{ url_for('tags') }}" class="nav-item {% if request.endpoint=='tags' %}active{% endif %}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+        Tags
+      </a>
+      <a href="{{ url_for('triggers') }}" class="nav-item {% if request.endpoint=='triggers' %}active{% endif %}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        Triggers
+      </a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-label">Features</div>
+      <a href="{{ url_for('greetings') }}" class="nav-item {% if request.endpoint=='greetings' %}active{% endif %}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Greetings
+      </a>
+      <a href="{{ url_for('starboard') }}" class="nav-item {% if request.endpoint=='starboard' %}active{% endif %}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        Starboard
+      </a>
+      <a href="{{ url_for('suggestions') }}" class="nav-item {% if request.endpoint=='suggestions' %}active{% endif %}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Suggestions
+      </a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-label">Settings</div>
+      <a href="{{ url_for('command_settings') }}" class="nav-item {% if request.endpoint=='command_settings' %}active{% endif %}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        Commands
+      </a>
+      <a href="{{ url_for('settings') }}" class="nav-item {% if request.endpoint=='settings' %}active{% endif %}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Settings
+      </a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-label">Users</div>
+      <a href="{{ url_for('user_lookup') }}" class="nav-item {% if request.endpoint in ['user_lookup','user_profile'] %}active{% endif %}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        User Lookup
+      </a>
+    </div>
+
   </div>
-
-  <nav class="sidebar-nav">
-
-    <div class="nav-section">
-      <div class="nav-section-header {% if request.path == '/' %}open{% endif %}" onclick="toggleSection(this)">
-        <span>Overview</span>
-        <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-      </div>
-      <div class="nav-section-body {% if request.path == '/' %}open{% endif %}">
-        <a href="/" class="nav-item {% if request.path == '/' %}active{% endif %}">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
-          Dashboard
-        </a>
-      </div>
-    </div>
-
-    <div class="nav-section">
-      <div class="nav-section-header {% if request.path in ['/moderation', '/logging'] %}open{% endif %}" onclick="toggleSection(this)">
-        <span>Moderation</span>
-        <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-      </div>
-      <div class="nav-section-body {% if request.path in ['/moderation', '/logging'] %}open{% endif %}">
-        <a href="/moderation" class="nav-item {% if request.path == '/moderation' %}active{% endif %}">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          Automod &amp; Blacklists
-        </a>
-        <a href="/logging" class="nav-item {% if request.path == '/logging' %}active{% endif %}">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-          Logging
-        </a>
-      </div>
-    </div>
-
-    <div class="nav-section">
-      <div class="nav-section-header {% if request.path in ['/reaction-roles', '/autoroles'] %}open{% endif %}" onclick="toggleSection(this)">
-        <span>Roles</span>
-        <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-      </div>
-      <div class="nav-section-body {% if request.path in ['/reaction-roles', '/autoroles'] %}open{% endif %}">
-        <a href="/reaction-roles" class="nav-item {% if request.path == '/reaction-roles' %}active{% endif %}">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-          Reaction Roles
-        </a>
-        <a href="/autoroles" class="nav-item {% if request.path == '/autoroles' %}active{% endif %}">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          Autoroles
-        </a>
-      </div>
-    </div>
-
-    <div class="nav-section">
-      <div class="nav-section-header {% if request.path in ['/tags', '/triggers'] %}open{% endif %}" onclick="toggleSection(this)">
-        <span>Custom Commands</span>
-        <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-      </div>
-      <div class="nav-section-body {% if request.path in ['/tags', '/triggers'] %}open{% endif %}">
-        <a href="/tags" class="nav-item {% if request.path == '/tags' %}active{% endif %}">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-          Tags
-        </a>
-        <a href="/triggers" class="nav-item {% if request.path == '/triggers' %}active{% endif %}">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-          Triggers
-        </a>
-      </div>
-    </div>
-
-    <div class="nav-section">
-      <div class="nav-section-header {% if request.path in ['/greetings', '/starboard', '/suggestions'] %}open{% endif %}" onclick="toggleSection(this)">
-        <span>Utility</span>
-        <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-      </div>
-      <div class="nav-section-body {% if request.path in ['/greetings', '/starboard', '/suggestions'] %}open{% endif %}">
-        <a href="/greetings" class="nav-item {% if request.path == '/greetings' %}active{% endif %}">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-          Greetings
-        </a>
-        <a href="/starboard" class="nav-item {% if request.path == '/starboard' %}active{% endif %}">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-          Starboard
-        </a>
-        <a href="/suggestions" class="nav-item {% if request.path == '/suggestions' %}active{% endif %}">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          Suggestions
-        </a>
-      </div>
-    </div>
-
-    <div class="nav-section">
-      <div class="nav-section-header {% if request.path in ['/settings', '/command-settings'] %}open{% endif %}" onclick="toggleSection(this)">
-        <span>Settings</span>
-        <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-      </div>
-      <div class="nav-section-body {% if request.path in ['/settings', '/command-settings'] %}open{% endif %}">
-        <a href="/settings" class="nav-item {% if request.path == '/settings' %}active{% endif %}">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          Bot Settings
-        </a>
-        <a href="/command-settings" class="nav-item {% if request.path == '/command-settings' %}active{% endif %}">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-          Commands
-        </a>
-      </div>
-    </div>
-
-    <div class="nav-section">
-      <div class="nav-section-header {% if request.path.startswith('/user-lookup') %}open{% endif %}" onclick="toggleSection(this)">
-        <span>Users</span>
-        <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-      </div>
-      <div class="nav-section-body {% if request.path.startswith('/user-lookup') %}open{% endif %}">
-        <a href="/user-lookup" class="nav-item {% if request.path.startswith('/user-lookup') %}active{% endif %}">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          User Lookup
-        </a>
-      </div>
-    </div>
-
-  </nav>
 
   <div class="sidebar-footer">
-    <a href="/logout" class="logout-btn">
+    <a href="{{ url_for('logout') }}">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-      Log out
+      Logout
     </a>
   </div>
-</aside>
+</nav>
 
-<div class="main-wrap">
-  <header class="topbar">
+<!-- Main -->
+<div class="main">
+  <div class="topbar">
     <div class="topbar-title">{% block page_title %}Dashboard{% endblock %}</div>
-    <div class="topbar-right">
-      <div class="bot-status" id="botStatus">
-        <span class="status-dot" id="statusDot"></span>
-        <span id="statusText">Checking…</span>
-      </div>
+    {% block topbar_extra %}{% endblock %}
+  </div>
+  <div class="content">
+    <div id="page-wrapper">
+      {% with messages = get_flashed_messages() %}
+        {% if messages %}
+          <div class="flash-list">
+            {% for msg in messages %}
+              <div class="flash flash-success">{{ msg }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
     </div>
-  </header>
-  <main class="main-content">
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}
-        {% for msg in messages %}
-          <div class="flash">{{ msg }}</div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
-    {% block content %}{% endblock %}
-  </main>
+  </div>
 </div>
 
 <script>
-function toggleSection(header) {
-  header.classList.toggle('open');
-  header.nextElementSibling.classList.toggle('open');
-}
-async function checkBotStatus() {
-  try {
-    const r = await fetch('/api/status', { signal: AbortSignal.timeout(4000) });
-    const d = await r.json();
-    const dot = document.getElementById('statusDot');
-    const txt = document.getElementById('statusText');
-    if (d.online) {
-      dot.classList.remove('offline');
-      txt.textContent = d.name ? d.name + ' — Online' : 'Bot Online';
-    } else {
-      dot.classList.add('offline');
-      txt.textContent = 'Bot Offline';
-    }
-  } catch(e) {
-    document.getElementById('statusDot').classList.add('offline');
-    document.getElementById('statusText').textContent = 'Bot Offline';
-  }
-}
-checkBotStatus();
-setInterval(checkBotStatus, 30000);
+// Animate page out before navigation
+document.querySelectorAll('a.nav-item').forEach(link => {
+  link.addEventListener('click', function(e) {
+    const href = this.getAttribute('href');
+    if (!href || href.startsWith('#') || href === window.location.pathname) return;
+    e.preventDefault();
+    const wrapper = document.getElementById('page-wrapper');
+    wrapper.style.animation = 'none';
+    wrapper.style.opacity = '1';
+    wrapper.style.transform = 'none';
+    requestAnimationFrame(() => {
+      wrapper.style.transition = 'opacity 150ms ease, transform 150ms ease';
+      wrapper.style.opacity = '0';
+      wrapper.style.transform = 'translateY(-5px)';
+      setTimeout(() => { window.location.href = href; }, 160);
+    });
+  });
+});
 </script>
+
 </body>
 </html>
