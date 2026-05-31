@@ -21,8 +21,6 @@ DEFAULT_SPAM_LIMIT   = int(os.getenv("SPAM_MESSAGE_LIMIT", 6))
 DEFAULT_SPAM_WINDOW  = int(os.getenv("SPAM_WINDOW_SECONDS", 8))
 DEFAULT_SPAM_TIMEOUT = int(os.getenv("SPAM_TIMEOUT_MINUTES", 5))
 
-db.init_db()
-
 intents = discord.Intents.default()
 intents.members         = True
 intents.message_content = True
@@ -59,12 +57,12 @@ def _is_mod(interaction: discord.Interaction) -> bool:
     return interaction.user.guild_permissions.moderate_members
 
 
-def _spam_settings():
+async def _spam_settings():
     """Read spam settings live from DB so dashboard changes apply instantly."""
     try:
-        limit   = int(db.get_setting("spam_limit")   or DEFAULT_SPAM_LIMIT)
-        window  = int(db.get_setting("spam_window")  or DEFAULT_SPAM_WINDOW)
-        timeout = int(db.get_setting("spam_timeout") or DEFAULT_SPAM_TIMEOUT)
+        limit   = int(await db.get_setting("spam_limit")   or DEFAULT_SPAM_LIMIT)
+        window  = int(await db.get_setting("spam_window")  or DEFAULT_SPAM_WINDOW)
+        timeout = int(await db.get_setting("spam_timeout") or DEFAULT_SPAM_TIMEOUT)
     except Exception:
         limit, window, timeout = DEFAULT_SPAM_LIMIT, DEFAULT_SPAM_WINDOW, DEFAULT_SPAM_TIMEOUT
     return limit, window, timeout
@@ -73,7 +71,7 @@ def _spam_settings():
 async def _send_log(guild: discord.Guild, message: str):
     """Send a message to the configured log channel if set and enabled."""
     try:
-        ch_id = db.get_setting("log_channel_id")
+        ch_id = await db.get_setting("log_channel_id")
         if not ch_id:
             return
         channel = guild.get_channel(int(ch_id))
@@ -90,7 +88,7 @@ async def _check_command(interaction: discord.Interaction, command_name: str) ->
     Admins bypass whitelist but not blacklist.
     """
     guild_id = _get_guild_id(interaction)
-    cs = db.get_command_setting(guild_id, command_name)
+    cs = await db.get_command_setting(guild_id, command_name)
 
     if not cs["enabled"]:
         await interaction.response.send_message(
@@ -139,12 +137,13 @@ async def _check_command(interaction: discord.Interaction, command_name: str) ->
     return True
 
 
-def _get_bad_words(guild_id):
-    return list(set(BAD_WORDS + db.get_blacklisted_words_list(guild_id)))
+async def _get_bad_words(guild_id):
+    return list(set(BAD_WORDS + await db.get_blacklisted_words_list(guild_id)))
 
 
 @bot.event
 async def on_ready():
+    await db.init_db()
     try:
         synced = await bot.tree.sync(guild=TEST_GUILD)
     except Exception:
@@ -156,13 +155,13 @@ async def on_ready():
 @bot.event
 async def on_member_join(member: discord.Member):
     guild_id = str(member.guild.id)
-    if db.is_user_blacklisted(guild_id, str(member.id)):
+    if await db.is_user_blacklisted(guild_id, str(member.id)):
         await member.ban(reason="User is blacklisted")
-        db.log_action(guild_id, "auto-ban", str(member.id), str(bot.user.id), "Blacklisted user rejoined")
+        await db.log_action(guild_id, "auto-ban", str(member.id), str(bot.user.id), "Blacklisted user rejoined")
         return
 
     # Auto-roles from DB (dashboard-configured) take priority over env var
-    autoroles = db.get_autoroles(guild_id)
+    autoroles = await db.get_autoroles(guild_id)
     for row in autoroles:
         role = member.guild.get_role(int(row["role_id"]))
         if role:
@@ -173,20 +172,20 @@ async def on_member_join(member: discord.Member):
 
     # Fallback to env-var AUTO_ROLE_ID if no DB autoroles configured
     if not autoroles:
-        role_id = db.get_setting("auto_role_id") or (str(AUTO_ROLE_ID) if AUTO_ROLE_ID else None)
+        role_id = await db.get_setting("auto_role_id") or (str(AUTO_ROLE_ID) if AUTO_ROLE_ID else None)
         if role_id:
             role = member.guild.get_role(int(role_id))
             if role:
                 await member.add_roles(role, reason="Auto-role on join")
 
     # Log join event if enabled
-    if db.get_setting("log_join", "1") == "1":
+    if await db.get_setting("log_join", "1") == "1":
         await _send_log(member.guild, f"\U0001f7e2 **{member}** joined the server.")
 
 
 @bot.event
 async def on_member_remove(member: discord.Member):
-    if db.get_setting("log_leave", "1") == "1":
+    if await db.get_setting("log_leave", "1") == "1":
         await _send_log(member.guild, f"\U0001f534 **{member}** left the server.")
 
 
@@ -196,7 +195,7 @@ async def on_message_edit(before: discord.Message, after: discord.Message):
         return
     if before.content == after.content:
         return
-    if db.get_setting("log_edit", "1") == "1":
+    if await db.get_setting("log_edit", "1") == "1":
         await _send_log(
             before.guild,
             f"\u270f\ufe0f **{before.author}** edited a message in {before.channel.mention}\n"
@@ -209,7 +208,7 @@ async def on_message_edit(before: discord.Message, after: discord.Message):
 async def on_message_delete(message: discord.Message):
     if message.author.bot or not message.guild:
         return
-    if db.get_setting("log_delete", "1") == "1":
+    if await db.get_setting("log_delete", "1") == "1":
         await _send_log(
             message.guild,
             f"\U0001f5d1\ufe0f **{message.author}** deleted a message in {message.channel.mention}\n"
@@ -225,24 +224,24 @@ async def on_message(message: discord.Message):
     content_low = message.content.lower()
 
     # Word filter
-    bad_words = _get_bad_words(guild_id)
+    bad_words = await _get_bad_words(guild_id)
     if any(w in content_low for w in bad_words):
         await message.delete()
         await message.channel.send(
             f"{message.author.mention} That word is not allowed!", delete_after=5
         )
-        db.log_action(guild_id, "filter", str(message.author.id), str(bot.user.id), "Blacklisted word")
+        await db.log_action(guild_id, "filter", str(message.author.id), str(bot.user.id), "Blacklisted word")
         return
 
     # Trigger responses (from DB / dashboard)
-    triggers = db.get_all_triggers(guild_id)
+    triggers = await db.get_all_triggers(guild_id)
     for t in triggers:
         if t["phrase"] in content_low:
             await message.channel.send(t["response"])
             break
 
     # Spam detection — reads limits live from DB
-    spam_limit, spam_window, spam_timeout = _spam_settings()
+    spam_limit, spam_window, spam_timeout = await _spam_settings()
     uid = message.author.id
     now = time.monotonic()
     q   = _spam[uid]
@@ -257,7 +256,7 @@ async def on_message(message: discord.Message):
                 f"{message.author.mention} Spam detected {DASH} timed out for {spam_timeout}m.",
                 delete_after=10
             )
-            db.log_action(guild_id, "timeout", str(message.author.id), str(bot.user.id), "Spam")
+            await db.log_action(guild_id, "timeout", str(message.author.id), str(bot.user.id), "Spam")
         except discord.Forbidden:
             pass
 
@@ -274,8 +273,8 @@ tree = bot.tree
 async def kick(interaction: discord.Interaction, member: discord.Member, reason: str = "No reason provided"):
     if not await _check_command(interaction, "kick"): return
     await member.kick(reason=reason)
-    db.log_action(_get_guild_id(interaction), "kick", str(member.id), str(interaction.user.id), reason)
-    if db.get_setting("log_kick", "1") == "1":
+    await db.log_action(_get_guild_id(interaction), "kick", str(member.id), str(interaction.user.id), reason)
+    if await db.get_setting("log_kick", "1") == "1":
         await _send_log(interaction.guild, f"\U0001f462 **{member}** was kicked by {interaction.user.mention}. Reason: {reason}")
     await interaction.response.send_message(f"\U0001f462 **{member}** was kicked. Reason: {reason}")
 
@@ -285,8 +284,8 @@ async def kick(interaction: discord.Interaction, member: discord.Member, reason:
 async def ban(interaction: discord.Interaction, member: discord.Member, reason: str = "No reason provided"):
     if not await _check_command(interaction, "ban"): return
     await member.ban(reason=reason)
-    db.log_action(_get_guild_id(interaction), "ban", str(member.id), str(interaction.user.id), reason)
-    if db.get_setting("log_ban", "1") == "1":
+    await db.log_action(_get_guild_id(interaction), "ban", str(member.id), str(interaction.user.id), reason)
+    if await db.get_setting("log_ban", "1") == "1":
         await _send_log(interaction.guild, f"\U0001f528 **{member}** was banned by {interaction.user.mention}. Reason: {reason}")
     await interaction.response.send_message(f"\U0001f528 **{member}** was banned. Reason: {reason}")
 
@@ -298,8 +297,8 @@ async def unban(interaction: discord.Interaction, user_id: str, reason: str = "N
     try:
         user = await bot.fetch_user(int(user_id))
         await interaction.guild.unban(user, reason=reason)
-        db.log_action(_get_guild_id(interaction), "unban", user_id, str(interaction.user.id), reason)
-        if db.get_setting("log_unban", "1") == "1":
+        await db.log_action(_get_guild_id(interaction), "unban", user_id, str(interaction.user.id), reason)
+        if await db.get_setting("log_unban", "1") == "1":
             await _send_log(interaction.guild, f"\u2705 **{user}** was unbanned by {interaction.user.mention}. Reason: {reason}")
         await interaction.response.send_message(f"\u2705 **{user}** was unbanned.")
     except Exception as e:
@@ -311,8 +310,8 @@ async def unban(interaction: discord.Interaction, user_id: str, reason: str = "N
 async def timeout_cmd(interaction: discord.Interaction, member: discord.Member, minutes: int = 10, reason: str = "No reason provided"):
     if not await _check_command(interaction, "timeout"): return
     await member.timeout(timedelta(minutes=minutes), reason=reason)
-    db.log_action(_get_guild_id(interaction), "timeout", str(member.id), str(interaction.user.id), reason)
-    if db.get_setting("log_timeout", "1") == "1":
+    await db.log_action(_get_guild_id(interaction), "timeout", str(member.id), str(interaction.user.id), reason)
+    if await db.get_setting("log_timeout", "1") == "1":
         await _send_log(interaction.guild, f"\u23f1\ufe0f **{member}** timed out for {minutes}m by {interaction.user.mention}. Reason: {reason}")
     await interaction.response.send_message(f"\u23f1\ufe0f **{member}** timed out for {minutes}m. Reason: {reason}")
 
@@ -324,8 +323,8 @@ async def purge(interaction: discord.Interaction, amount: int):
     amount = max(1, min(amount, 100))
     await interaction.response.defer(ephemeral=True)
     deleted = await interaction.channel.purge(limit=amount)
-    db.log_action(_get_guild_id(interaction), "purge", str(interaction.channel.id), str(interaction.user.id), f"Deleted {len(deleted)}")
-    if db.get_setting("log_purge", "1") == "1":
+    await db.log_action(_get_guild_id(interaction), "purge", str(interaction.channel.id), str(interaction.user.id), f"Deleted {len(deleted)}")
+    if await db.get_setting("log_purge", "1") == "1":
         await _send_log(interaction.guild, f"\U0001f5d1\ufe0f **{interaction.user}** purged {len(deleted)} messages in {interaction.channel.mention}.")
     await interaction.followup.send(f"\U0001f5d1\ufe0f Deleted {len(deleted)} messages.", ephemeral=True)
 
@@ -334,9 +333,9 @@ async def purge(interaction: discord.Interaction, amount: int):
 @app_commands.describe(member="Member to warn", reason="Reason")
 async def warn(interaction: discord.Interaction, member: discord.Member, reason: str = "No reason provided"):
     if not await _check_command(interaction, "warn"): return
-    db.add_warning(_get_guild_id(interaction), str(member.id), str(interaction.user.id), reason)
-    db.log_action(_get_guild_id(interaction), "warn", str(member.id), str(interaction.user.id), reason)
-    if db.get_setting("log_warn", "1") == "1":
+    await db.add_warning(_get_guild_id(interaction), str(member.id), str(interaction.user.id), reason)
+    await db.log_action(_get_guild_id(interaction), "warn", str(member.id), str(interaction.user.id), reason)
+    if await db.get_setting("log_warn", "1") == "1":
         await _send_log(interaction.guild, f"\u26a0\ufe0f **{member}** was warned by {interaction.user.mention}. Reason: {reason}")
     await interaction.response.send_message(f"\u26a0\ufe0f **{member}** has been warned. Reason: {reason}")
 
@@ -345,7 +344,7 @@ async def warn(interaction: discord.Interaction, member: discord.Member, reason:
 @app_commands.describe(member="Member to check")
 async def warnings_cmd(interaction: discord.Interaction, member: discord.Member):
     if not await _check_command(interaction, "warnings"): return
-    rows = db.get_warnings(_get_guild_id(interaction), str(member.id))
+    rows = await db.get_warnings(_get_guild_id(interaction), str(member.id))
     if not rows:
         await interaction.response.send_message(f"\u2705 **{member}** has no warnings.")
         return
@@ -362,7 +361,7 @@ async def warnings_cmd(interaction: discord.Interaction, member: discord.Member)
 @app_commands.describe(limit="How many entries (default 10)")
 async def modlogs(interaction: discord.Interaction, limit: int = 10):
     if not await _check_command(interaction, "modlogs"): return
-    rows = db.recent_logs(_get_guild_id(interaction), limit)
+    rows = await db.recent_logs(_get_guild_id(interaction), limit)
     if not rows:
         await interaction.response.send_message("No mod logs yet.")
         return
@@ -377,8 +376,8 @@ async def modlogs(interaction: discord.Interaction, limit: int = 10):
 @app_commands.describe(member="Member to blacklist", reason="Reason")
 async def blacklist_cmd(interaction: discord.Interaction, member: discord.Member, reason: str = "No reason provided"):
     if not await _check_command(interaction, "blacklist"): return
-    db.add_blacklisted_user(_get_guild_id(interaction), str(member.id), reason, str(interaction.user.id))
-    db.log_action(_get_guild_id(interaction), "blacklist", str(member.id), str(interaction.user.id), reason)
+    await db.add_blacklisted_user(_get_guild_id(interaction), str(member.id), reason, str(interaction.user.id))
+    await db.log_action(_get_guild_id(interaction), "blacklist", str(member.id), str(interaction.user.id), reason)
     await interaction.response.send_message(f"\U0001f6ab **{member}** has been blacklisted. Reason: {reason}")
 
 
@@ -386,8 +385,8 @@ async def blacklist_cmd(interaction: discord.Interaction, member: discord.Member
 @app_commands.describe(user_id="User ID to remove from blacklist")
 async def unblacklist_cmd(interaction: discord.Interaction, user_id: str):
     if not await _check_command(interaction, "unblacklist"): return
-    db.remove_blacklisted_user(_get_guild_id(interaction), user_id)
-    db.log_action(_get_guild_id(interaction), "unblacklist", user_id, str(interaction.user.id))
+    await db.remove_blacklisted_user(_get_guild_id(interaction), user_id)
+    await db.log_action(_get_guild_id(interaction), "unblacklist", user_id, str(interaction.user.id))
     await interaction.response.send_message(f"\u2705 User `{user_id}` removed from blacklist.")
 
 
@@ -395,7 +394,7 @@ async def unblacklist_cmd(interaction: discord.Interaction, user_id: str):
 @app_commands.describe(word="Word to block")
 async def addword(interaction: discord.Interaction, word: str):
     if not await _check_command(interaction, "addword"): return
-    db.add_blacklisted_word(_get_guild_id(interaction), word, str(interaction.user.id))
+    await db.add_blacklisted_word(_get_guild_id(interaction), word, str(interaction.user.id))
     await interaction.response.send_message(f"\u2705 Word `{word}` added to blacklist.", ephemeral=True)
 
 
@@ -403,7 +402,7 @@ async def addword(interaction: discord.Interaction, word: str):
 @app_commands.describe(word="Word to unblock")
 async def removeword(interaction: discord.Interaction, word: str):
     if not await _check_command(interaction, "removeword"): return
-    db.remove_blacklisted_word(_get_guild_id(interaction), word)
+    await db.remove_blacklisted_word(_get_guild_id(interaction), word)
     await interaction.response.send_message(f"\u2705 Word `{word}` removed from blacklist.", ephemeral=True)
 
 
@@ -415,9 +414,9 @@ async def userinfo(interaction: discord.Interaction, member: discord.Member):
     if not await _check_command(interaction, "userinfo"): return
 
     guild_id    = _get_guild_id(interaction)
-    warns       = db.get_warnings(guild_id, str(member.id))
-    logs        = db.logs_for_user(guild_id, str(member.id))
-    blacklisted = db.is_user_blacklisted(guild_id, str(member.id))
+    warns       = await db.get_warnings(guild_id, str(member.id))
+    logs        = await db.logs_for_user(guild_id, str(member.id))
+    blacklisted = await db.is_user_blacklisted(guild_id, str(member.id))
 
     try:
         full_user = await bot.fetch_user(member.id)
@@ -494,7 +493,7 @@ async def userinfo(interaction: discord.Interaction, member: discord.Member):
 
     embed.set_footer(text=f"Requested by {interaction.user}", icon_url=interaction.user.display_avatar.url)
 
-    db.cache_profile(
+    await db.cache_profile(
         str(member.id),
         str(member.name),
         getattr(member, 'global_name', None) or str(member.name),
