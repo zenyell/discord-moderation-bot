@@ -1,206 +1,35 @@
 {% extends 'base.html' %}
-{% block title %}Command Settings{% endblock %}
+{% block title %}Commands{% endblock %}
 {% block content %}
-
-<style>
-.cmd-grid { display: grid; gap: 1rem; }
-.cmd-card {
-  background: #2b2d31;
-  border-radius: 10px;
-  overflow: hidden;
-  border: 1px solid #3d4045;
-}
-.cmd-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.8rem 1.1rem;
-  cursor: pointer;
-  user-select: none;
-  background: #313338;
-  border-bottom: 1px solid #3d4045;
-  transition: background .15s;
-}
-.cmd-header:hover { background: #383a40; }
-.cmd-name {
-  font-weight: 700;
-  font-size: 0.95rem;
-  color: #f2f3f5;
-  font-family: monospace;
-}
-.cmd-toggle-wrap {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-.toggle-label { font-size: 0.8rem; color: #b5bac1; }
-/* Toggle switch */
-.switch { position:relative; display:inline-block; width:42px; height:22px; flex-shrink:0; }
-.switch input { opacity:0; width:0; height:0; }
-.slider {
-  position:absolute; cursor:pointer;
-  top:0; left:0; right:0; bottom:0;
-  background:#4f545c; border-radius:22px;
-  transition:.2s;
-}
-.slider:before {
-  position:absolute; content:"";
-  height:16px; width:16px;
-  left:3px; bottom:3px;
-  background:#fff; border-radius:50%;
-  transition:.2s;
-}
-input:checked + .slider { background:#3ba55c; }
-input:checked + .slider:before { transform:translateX(20px); }
-.cmd-body {
-  padding: 0.9rem 1.1rem;
-  display: none;
-}
-.cmd-body.open { display: block; }
-.field-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
-}
-@media(max-width:540px){ .field-row { grid-template-columns:1fr; } }
-.field label {
-  display: block;
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  color: #b5bac1;
-  margin-bottom: 4px;
-}
-.field input[type=text] {
-  width: 100%;
-  background: #1e1f22;
-  border: 1px solid #3d4045;
-  border-radius: 6px;
-  color: #f2f3f5;
-  padding: 6px 10px;
-  font-size: 0.83rem;
-  outline: none;
-}
-.field input[type=text]:focus { border-color: #5865f2; }
-.field-hint { font-size: 0.7rem; color: #72767d; margin-top: 3px; }
-.section-note {
-  background: #1e1f22;
-  border-left: 3px solid #5865f2;
-  border-radius: 0 6px 6px 0;
-  padding: 0.55rem 0.9rem;
-  font-size: 0.78rem;
-  color: #b5bac1;
-  margin-bottom: 1.1rem;
-}
-.save-bar {
-  position: sticky;
-  bottom: 0;
-  background: #1e1f22;
-  border-top: 1px solid #3d4045;
-  padding: 0.85rem 1.25rem;
-  display: flex;
-  justify-content: flex-end;
-  z-index: 10;
-}
-.btn-save {
-  background: #5865f2;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  padding: 0.55rem 1.5rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background .15s;
-}
-.btn-save:hover { background: #4752c4; }
-.chevron { transition: transform .2s; font-size: 0.75rem; color: #b5bac1; }
-.cmd-header.open .chevron { transform: rotate(180deg); }
-</style>
-
-<h2 style="margin-bottom:.25rem;">Command Settings</h2>
-<div class="section-note">
-  Changes here take effect <strong>immediately</strong> on the bot — no restart needed.
-  IDs are comma-separated.
-  <strong>Blacklists</strong> block users even if they are admins.
-  <strong>Whitelists</strong> restrict usage to those roles/users only (admins bypass role/user whitelists, but not blacklists).
+<div class="page-header">
+  <h1>Commands</h1>
+  <p>Enable or disable slash commands. Changes take effect on the bot immediately.</p>
 </div>
-
-{% with messages = get_flashed_messages() %}
-  {% if messages %}
-    {% for msg in messages %}
-      <div style="background:#3ba55c;color:#fff;padding:.6rem 1rem;border-radius:6px;margin-bottom:1rem;">{{ msg }}</div>
-    {% endfor %}
-  {% endif %}
-{% endwith %}
 
 <form method="POST">
-<div class="cmd-grid">
-  {% for cmd in commands %}
-  {% set cs = cmd_settings[cmd] %}
-  <div class="cmd-card">
-    <div class="cmd-header" onclick="toggleCmd(this)">
-      <span class="cmd-name">/{{ cmd }}</span>
-      <div class="cmd-toggle-wrap" onclick="event.stopPropagation()">
-        <span class="toggle-label">{{ 'Enabled' if cs.enabled else 'Disabled' }}</span>
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Slash Commands</span>
+      <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
+    </div>
+    <div class="card-body" style="padding:8px 18px">
+      {% for cmd in commands %}
+      {% set s = cmd_settings.get(cmd, {}) %}
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <span class="toggle-name">/{{ cmd }}</span>
+          <span class="toggle-desc">{{ s.get('whitelist_roles', '') or 'No role restrictions' }}</span>
+        </div>
         <label class="switch">
-          <input type="checkbox" name="{{ cmd }}_enabled" value="on"
-            {% if cs.enabled %}checked{% endif %}
-            onchange="this.closest('.cmd-toggle-wrap').querySelector('.toggle-label').textContent = this.checked ? 'Enabled' : 'Disabled'">
+          <input type="checkbox" name="{{ cmd }}_enabled" {% if s.get('enabled', 1) %}checked{% endif %}>
           <span class="slider"></span>
         </label>
-        <span class="chevron">&#9660;</span>
       </div>
-    </div>
-    <div class="cmd-body">
-      <div class="field-row">
-        <div class="field">
-          <label>Whitelist Role IDs</label>
-          <input type="text" name="{{ cmd }}_whitelist_roles"
-                 value="{{ cs.whitelist_roles }}"
-                 placeholder="role_id1, role_id2">
-          <div class="field-hint">Only these roles can use this command (leave blank = all mods).</div>
-        </div>
-        <div class="field">
-          <label>Whitelist User IDs</label>
-          <input type="text" name="{{ cmd }}_whitelist_users"
-                 value="{{ cs.whitelist_users }}"
-                 placeholder="user_id1, user_id2">
-          <div class="field-hint">Allow specific users regardless of roles.</div>
-        </div>
-      </div>
-      <div class="field-row">
-        <div class="field">
-          <label>Blacklist Mod User IDs</label>
-          <input type="text" name="{{ cmd }}_blacklist_mods"
-                 value="{{ cs.blacklist_mods }}"
-                 placeholder="mod_id1, mod_id2">
-          <div class="field-hint">Block specific mods from using this command.</div>
-        </div>
-        <div class="field">
-          <label>Blacklist User IDs</label>
-          <input type="text" name="{{ cmd }}_blacklist_users"
-                 value="{{ cs.blacklist_users }}"
-                 placeholder="user_id1, user_id2">
-          <div class="field-hint">Block any user (even admins) from this command.</div>
-        </div>
-      </div>
+      {% endfor %}
     </div>
   </div>
-  {% endfor %}
-</div>
-
-<div class="save-bar">
-  <button type="submit" class="btn-save">&#128190; Save All Command Settings</button>
-</div>
+  <div style="margin-top:16px">
+    <button type="submit" class="btn btn-primary">Save Changes</button>
+  </div>
 </form>
-
-<script>
-function toggleCmd(header) {
-  const body = header.nextElementSibling;
-  header.classList.toggle('open');
-  body.classList.toggle('open');
-}
-</script>
 {% endblock %}

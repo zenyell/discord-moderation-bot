@@ -3,57 +3,71 @@
 {% block content %}
 <div class="page-header">
   <h1>Overview</h1>
-  <p class="subtitle">Track actions, monitor events, and keep your server under control.</p>
+  <p>Bot activity and moderation summary for your server.</p>
 </div>
 
 <div class="stats-grid">
-  <div class="stat-card">
+  <div class="stat-card accent">
     <div class="stat-label">Total Actions</div>
-    <div class="stat-value">{{ stats.total }}</div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-label">Kicks</div>
-    <div class="stat-value">{{ stats.kicks }}</div>
+    <div class="stat-value">{{ stats.total or 0 }}</div>
   </div>
   <div class="stat-card">
     <div class="stat-label">Bans</div>
-    <div class="stat-value">{{ stats.bans }}</div>
+    <div class="stat-value">{{ stats.bans or 0 }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Kicks</div>
+    <div class="stat-value">{{ stats.kicks or 0 }}</div>
   </div>
   <div class="stat-card">
     <div class="stat-label">Timeouts</div>
-    <div class="stat-value">{{ stats.timeouts }}</div>
+    <div class="stat-value">{{ stats.timeouts or 0 }}</div>
   </div>
   <div class="stat-card">
     <div class="stat-label">Warnings</div>
-    <div class="stat-value">{{ stats.warnings }}</div>
+    <div class="stat-value">{{ stats.warnings or 0 }}</div>
   </div>
   <div class="stat-card">
     <div class="stat-label">Purges</div>
-    <div class="stat-value">{{ stats.purges }}</div>
+    <div class="stat-value">{{ stats.purges or 0 }}</div>
   </div>
 </div>
 
-<div class="card mt-6">
+<div class="card">
   <div class="card-header">
-    <h2>Recent Mod Logs</h2>
+    <span class="card-title">Recent Activity</span>
+    <a href="/user-lookup" class="btn btn-ghost btn-sm">View all users</a>
   </div>
-  <table class="mod-table">
-    <thead>
-      <tr><th>Action</th><th>Target ID</th><th>Moderator ID</th><th>Reason</th><th>Date</th></tr>
-    </thead>
-    <tbody>
-      {% for row in logs %}
-      <tr>
-        <td><span class="badge badge-{{ row.action }}">{{ row.action.upper() }}</span></td>
-        <td class="mono">{{ row.target_id }}</td>
-        <td class="mono">{{ row.moderator_id }}</td>
-        <td>{{ row.reason or '—' }}</td>
-        <td class="muted">{{ row.created_at[:16] }}</td>
-      </tr>
-      {% else %}
-      <tr><td colspan="5" class="empty-row">No actions recorded yet.</td></tr>
+  <div class="card-body" style="padding:0">
+    {% if logs %}
+    <div class="log-list" style="padding:8px">
+      {% for log in logs %}
+      {% set action = log.action | lower %}
+      {% set ic = 'ban' if ('ban' in action and 'unban' not in action) else 'unban' if 'unban' in action else 'kick' if 'kick' in action else 'timeout' if 'timeout' in action else 'warn' if 'warn' in action else 'purge' if 'purge' in action else 'warn' %}
+      <div class="log-item">
+        <div class="log-icon {{ ic }}">
+          {% if ic == 'ban' %}<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+          {% elif ic == 'kick' %}<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          {% elif ic == 'timeout' %}<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          {% elif ic == 'unban' %}<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          {% elif ic == 'purge' %}<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+          {% else %}<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>{% endif %}
+        </div>
+        <div class="log-text">
+          <strong>{{ log.action }}</strong> — Target: <strong>{{ log.target_id }}</strong>
+          {% if log.reason %} · {{ log.reason[:60] }}{% endif %}
+        </div>
+        <div class="log-time">{{ log.timestamp[:16].replace('T',' ') if log.timestamp else '' }}</div>
+      </div>
       {% endfor %}
-    </tbody>
-  </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <h3>No activity yet</h3>
+      <p>Moderation actions will appear here once the bot is running.</p>
+    </div>
+    {% endif %}
+  </div>
 </div>
 {% endblock %}

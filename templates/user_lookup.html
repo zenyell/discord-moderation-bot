@@ -3,33 +3,46 @@
 {% block content %}
 <div class="page-header">
   <h1>User Lookup</h1>
-  <p class="subtitle">Search for a user by Discord ID to view their full profile and mod history.</p>
+  <p>Search for a member by Discord user ID.</p>
 </div>
 
-<form method="GET" class="search-form">
-  <input type="text" name="q" value="{{ query }}" placeholder="Enter Discord User ID..." class="search-input" autofocus>
-  <button type="submit" class="btn-primary">Search</button>
-</form>
+<div class="card" style="margin-bottom:20px">
+  <div class="card-body">
+    <form method="GET" action="/user-lookup">
+      <div class="add-row">
+        <input type="text" name="q" value="{{ query }}" placeholder="Enter Discord User ID…" style="max-width:340px">
+        <button type="submit" class="btn btn-primary">Search</button>
+      </div>
+    </form>
+  </div>
+</div>
 
-{% if query and results %}
-<div class="card mt-6">
-  <div class="card-header"><h2>Results for &ldquo;{{ query }}&rdquo;</h2></div>
-  <table class="mod-table">
-    <thead><tr><th>User ID</th><th>Actions</th></tr></thead>
-    <tbody>
-      {% for row in results %}
-      <tr>
-        <td class="mono">{{ row.target_id }}</td>
-        <td><a href="/user-lookup/{{ row.target_id }}" class="link-btn">View Profile</a></td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-{% elif query %}
-<div class="empty-state mt-6">
-  <p>No records found for <strong>{{ query }}</strong>. This user may have no mod actions yet.</p>
-  <a href="/user-lookup/{{ query }}" class="btn-primary mt-4">View profile anyway</a>
-</div>
+{% if query %}
+  {% if results %}
+  <div class="card">
+    <div class="card-header"><span class="card-title">Results for "{{ query }}"</span></div>
+    <div class="card-body" style="padding:0">
+      <table>
+        <thead><tr><th>User ID</th><th>Actions</th></tr></thead>
+        <tbody>
+        {% for r in results %}
+        <tr>
+          <td><code style="color:var(--accent);font-size:12.5px">{{ r.target_id }}</code></td>
+          <td><a href="/user-lookup/{{ r.target_id }}" class="btn btn-ghost btn-sm">View Profile →</a></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="card">
+    <div class="empty-state">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <h3>No results found</h3>
+      <p>No users matching "{{ query }}" were found in the moderation log.</p>
+    </div>
+  </div>
+  {% endif %}
 {% endif %}
 {% endblock %}

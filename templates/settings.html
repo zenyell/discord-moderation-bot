@@ -1,49 +1,66 @@
 {% extends 'base.html' %}
-{% block topbar_title %}Settings{% endblock %}
+{% block title %}Bot Settings{% endblock %}
 {% block content %}
 <div class="page-header">
-  <h1>Settings</h1>
-  <p>Configure bot behaviour and review your environment values.</p>
+  <h1>Bot Settings</h1>
+  <p>Configure auto-roles, spam detection, and filtered words. Saved settings sync with the bot in real time.</p>
 </div>
 
 <form method="POST">
-  <div class="cards-grid">
-
-    <div class="card">
-      <div class="card-header"><h2>Auto-Role</h2></div>
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-header"><span class="card-title">Auto Role</span></div>
+    <div class="card-body">
       <div class="form-group">
-        <label>AUTO-ROLE ID</label>
-        <input type="text" name="auto_role_id" value="{{ cfg.auto_role_id }}" placeholder="e.g. 123456789012345678" class="input">
-        <span class="hint">Role assigned to new members on join.</span>
+        <label>Auto Role ID</label>
+        <input type="text" name="auto_role_id" value="{{ cfg.auto_role_id }}" placeholder="Role ID to assign on join">
+        <div class="form-hint">Leave blank to disable auto-role on member join.</div>
       </div>
     </div>
-
-    <div class="card">
-      <div class="card-header"><h2>Anti-Spam</h2></div>
-      <div class="form-group">
-        <label>Max Messages</label>
-        <input type="number" name="spam_limit" value="{{ cfg.spam_limit }}" class="input" min="1" max="50">
-        <span class="hint">Messages before timeout triggers.</span>
-      </div>
-      <div class="form-group">
-        <label>Window (seconds)</label>
-        <input type="number" name="spam_window" value="{{ cfg.spam_window }}" class="input" min="1" max="60">
-        <span class="hint">Time window to measure spam.</span>
-      </div>
-      <div class="form-group">
-        <label>Timeout Duration (minutes)</label>
-        <input type="number" name="spam_timeout" value="{{ cfg.spam_timeout }}" class="input" min="1" max="1440">
-        <span class="hint">How long to timeout spammers.</span>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-header"><h2>Environment <span class="badge">Read-only</span></h2></div>
-      <div class="env-row"><span>Discord Client ID</span><code>{{ cfg.client_id or '—' }}</code></div>
-      <div class="env-row"><span>OAuth Redirect URI</span><code>{{ cfg.redirect_uri or '—' }}</code></div>
-    </div>
-
   </div>
-  <button type="submit" class="btn btn-primary" style="margin-top:1.5rem">Save changes</button>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-header"><span class="card-title">Spam Detection</span></div>
+    <div class="card-body">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px">
+        <div class="form-group" style="margin-bottom:0">
+          <label>Message Limit</label>
+          <input type="number" name="spam_limit" value="{{ cfg.spam_limit }}" min="1">
+          <div class="form-hint">Max messages per window.</div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Window (seconds)</label>
+          <input type="number" name="spam_window" value="{{ cfg.spam_window }}" min="1">
+          <div class="form-hint">Rolling time window.</div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Timeout (minutes)</label>
+          <input type="number" name="spam_timeout" value="{{ cfg.spam_timeout }}" min="1">
+          <div class="form-hint">Duration of spam timeout.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-header"><span class="card-title">Filtered Words</span></div>
+    <div class="card-body">
+      <div class="form-group" style="margin-bottom:0">
+        <label>Bad Words (comma-separated)</label>
+        <textarea name="bad_words" rows="3" placeholder="badword1, badword2, …">{{ cfg.bad_words }}</textarea>
+        <div class="form-hint">Messages containing these words will be automatically deleted.</div>
+      </div>
+    </div>
+  </div>
+
+  {% if cfg.client_id %}
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-header"><span class="card-title">Invite Bot</span></div>
+    <div class="card-body">
+      <a href="https://discord.com/oauth2/authorize?client_id={{ cfg.client_id }}&permissions=8&scope=bot+applications.commands" target="_blank" class="btn btn-primary">Invite Bot (Admin)</a>
+    </div>
+  </div>
+  {% endif %}
+
+  <button type="submit" class="btn btn-primary">Save Settings</button>
 </form>
 {% endblock %}
