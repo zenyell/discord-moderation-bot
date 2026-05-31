@@ -66,6 +66,14 @@
   letter-spacing: .05em;
   text-transform: uppercase;
 }
+.profile-bio {
+  color: #dbdee1;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  margin: 0.5rem 0 0.25rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
 .profile-badges {
   display: flex;
   gap: 6px;
@@ -212,6 +220,11 @@
     </div>
     <div class="profile-username">@{{ profile.username }}{% if profile.discriminator != '0' %}#{{ profile.discriminator }}{% endif %}</div>
 
+    {# ── Bio ── #}
+    {% if profile.bio %}
+      <p class="profile-bio">{{ profile.bio }}</p>
+    {% endif %}
+
     {# ── Badges ── #}
     {% if profile.badges %}
     <div class="profile-badges">
@@ -279,7 +292,7 @@
               {{ l['action'] | upper }}
             </span>
           </td>
-          <td>{{ l['reason'] or '—' }}</td>
+          <td>{{ l['reason'] or '\u2014' }}</td>
           <td><code>{{ l['moderator_id'] }}</code></td>
           <td style="white-space:nowrap">{{ l['created_at'][:16] }}</td>
         </tr>
@@ -299,7 +312,7 @@
         {% for w in warns %}
         <tr>
           <td>{{ loop.index }}</td>
-          <td>{{ w['reason'] or '—' }}</td>
+          <td>{{ w['reason'] or '\u2014' }}</td>
           <td><code>{{ w['moderator_id'] }}</code></td>
           <td>{{ w['created_at'][:16] }}</td>
         </tr>
