@@ -184,7 +184,6 @@
       color: var(--text);
       background: var(--surface-2);
     }
-    /* active: the pill highlight matching Workly */
     .nav-item.active {
       color: var(--text);
       background: linear-gradient(90deg, rgba(99,102,241,0.18) 0%, rgba(99,102,241,0.06) 100%);
@@ -212,60 +211,6 @@
       margin: 8px 0;
     }
 
-    /* ── Promo card ── */
-    .sidebar-promo {
-      margin: 0 10px 10px;
-      padding: 14px;
-      background: var(--surface-2);
-      border: 1px solid var(--border-2);
-      border-radius: var(--r-lg);
-      flex-shrink: 0;
-    }
-    .sidebar-promo-header {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      margin-bottom: 6px;
-    }
-    .sidebar-promo-icon {
-      color: var(--accent);
-      display: flex;
-    }
-    .sidebar-promo-title {
-      font-size: 12.5px;
-      font-weight: 600;
-      color: var(--text);
-    }
-    .sidebar-promo-title span { color: var(--accent); }
-    .sidebar-promo p {
-      font-size: 11.5px;
-      color: var(--muted);
-      line-height: 1.5;
-      margin-bottom: 10px;
-    }
-    .btn-promo {
-      display: block;
-      width: 100%;
-      text-align: center;
-      padding: 7px 12px;
-      background: var(--accent-btn);
-      color: #fff;
-      border: none;
-      border-radius: var(--r-sm);
-      font-size: 12.5px;
-      font-weight: 600;
-      font-family: inherit;
-      cursor: pointer;
-      text-decoration: none;
-      transition: background var(--dur) var(--ease), transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
-      box-shadow: 0 2px 10px rgba(91,95,214,0.35);
-    }
-    .btn-promo:hover {
-      background: var(--accent-btn-h);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 16px rgba(91,95,214,0.45);
-    }
-
     /* ── User footer ── */
     .sidebar-user {
       margin: 0 10px 10px;
@@ -282,13 +227,6 @@
       text-decoration: none;
     }
     .sidebar-user:hover { background: var(--surface-3); border-color: var(--border-3); }
-    .sidebar-user-avatar {
-      width: 32px; height: 32px;
-      border-radius: 50%;
-      object-fit: cover;
-      flex-shrink: 0;
-      background: var(--surface-3);
-    }
     .sidebar-user-info { flex: 1; min-width: 0; }
     .sidebar-user-name {
       font-size: 12.5px;
@@ -342,13 +280,6 @@
       z-index: 50;
       backdrop-filter: blur(20px) saturate(160%);
       -webkit-backdrop-filter: blur(20px) saturate(160%);
-    }
-    .topbar-title {
-      font-size: 17px;
-      font-weight: 700;
-      color: var(--text);
-      letter-spacing: -0.4px;
-      flex: 1;
     }
     .topbar-breadcrumb {
       display: flex;
@@ -809,18 +740,6 @@
 
   </div>
 
-  <!-- Promo Card -->
-  <div class="sidebar-promo">
-    <div class="sidebar-promo-header">
-      <span class="sidebar-promo-icon">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-      </span>
-      <span class="sidebar-promo-title">Boost with <span>AI</span></span>
-    </div>
-    <p>AI-powered mod actions, auto-insights, and tools that save hours.</p>
-    <a href="#" class="btn-promo">Upgrade to Pro</a>
-  </div>
-
   <!-- User footer -->
   <a href="{{ url_for('logout') }}" class="sidebar-user">
     <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#5b5fd6,#818cf8);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
@@ -874,7 +793,6 @@
   const loader  = document.getElementById('nav-loader');
   const wrapper = document.getElementById('page-wrapper');
 
-  // Page transition on nav clicks
   document.querySelectorAll('a.nav-item, a.sidebar-logo, a.topbar-breadcrumb-home').forEach(link => {
     link.addEventListener('click', function(e) {
       const href = this.getAttribute('href');
@@ -888,12 +806,10 @@
     });
   });
 
-  // Stagger card animations
   document.querySelectorAll('.card, .stat-card').forEach((card, i) => {
     card.style.animationDelay = (i * 45) + 'ms';
   });
 
-  // Sidebar search filter
   const searchInput = document.getElementById('sidebar-search-input');
   if (searchInput) {
     searchInput.addEventListener('input', function() {
@@ -903,7 +819,6 @@
         item.style.display = (!q || text.includes(q)) ? '' : 'none';
       });
     });
-    // Cmd/Ctrl+F focuses the search
     document.addEventListener('keydown', function(e) {
       if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
         e.preventDefault();
