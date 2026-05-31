@@ -1,5 +1,6 @@
 import os
 import json
+import traceback
 import urllib.request
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from dotenv import load_dotenv
@@ -9,6 +10,7 @@ load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "modpanel-secret-key-change-me")
+app.config["PROPAGATE_EXCEPTIONS"] = False  # keep False so our handler catches it
 
 DASHBOARD_USER = os.getenv("DASHBOARD_USERNAME", "admin")
 DASHBOARD_PASS = os.getenv("DASHBOARD_PASSWORD", "admin123")
@@ -18,6 +20,47 @@ BOT_TOKEN      = os.getenv("DISCORD_BOT_TOKEN", "")
 DISCORD_API = "https://discord.com/api/v10"
 
 db.init_db()
+
+
+# ── Error handler: shows real traceback so we can diagnose 500s ──────────────
+@app.errorhandler(500)
+def internal_error(e):
+    tb = traceback.format_exc()
+    return (
+        f"""<!DOCTYPE html><html><head><title>500 Error</title>
+        <style>
+          body{{font-family:monospace;background:#1e2124;color:#dcddde;padding:32px;}}
+          pre{{background:#2f3136;border:1px solid rgba(255,255,255,.08);border-radius:8px;
+               padding:20px;overflow-x:auto;white-space:pre-wrap;font-size:13px;line-height:1.6;}}
+          h2{{color:#ed4245;margin-bottom:16px;}}
+          p{{color:#72767d;margin-bottom:12px;font-size:13px;}}
+        </style></head><body>
+        <h2>&#x26A0; 500 Internal Server Error</h2>
+        <p>Real traceback (remove <code>@app.errorhandler(500)</code> in dashboard.py once fixed):</p>
+        <pre>{tb}</pre>
+        </body></html>""",
+        500,
+    )
+
+
+@app.errorhandler(Exception)
+def unhandled_exception(e):
+    tb = traceback.format_exc()
+    return (
+        f"""<!DOCTYPE html><html><head><title>Unhandled Exception</title>
+        <style>
+          body{{font-family:monospace;background:#1e2124;color:#dcddde;padding:32px;}}
+          pre{{background:#2f3136;border:1px solid rgba(255,255,255,.08);border-radius:8px;
+               padding:20px;overflow-x:auto;white-space:pre-wrap;font-size:13px;line-height:1.6;}}
+          h2{{color:#ed4245;margin-bottom:16px;}}
+          p{{color:#72767d;margin-bottom:12px;font-size:13px;}}
+        </style></head><body>
+        <h2>&#x26A0; Unhandled Exception: {type(e).__name__}</h2>
+        <p>Real traceback:</p>
+        <pre>{tb}</pre>
+        </body></html>""",
+        500,
+    )
 
 
 def _discord_headers():
@@ -329,7 +372,6 @@ def user_profile(user_id):
         reverse=True
     )
 
-    # Pass both user_data AND member_data so guild-specific assets take priority
     avatar_url   = _avatar_url(user_data, member_data)
     banner_url   = _banner_url(user_data, member_data)
     accent_color = _accent_hex(user_data)
