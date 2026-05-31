@@ -2,8 +2,6 @@ import os
 import sqlite3
 from contextlib import closing
 
-# /tmp is always writable on Render and similar PaaS platforms
-# Fall back to local path if DATABASE_PATH is explicitly set
 DB_PATH = os.getenv("DATABASE_PATH", "/tmp/bot_data.db")
 
 
@@ -76,6 +74,46 @@ def init_db():
                 bio          TEXT,
                 badges       TEXT,
                 updated_at   TEXT DEFAULT (datetime('now'))
+            );
+            CREATE TABLE IF NOT EXISTS reaction_roles (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                guild_id   TEXT NOT NULL,
+                message_id TEXT NOT NULL,
+                channel_id TEXT NOT NULL,
+                emoji      TEXT NOT NULL,
+                role_id    TEXT NOT NULL,
+                UNIQUE(guild_id, message_id, emoji)
+            );
+            CREATE TABLE IF NOT EXISTS autoroles (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                guild_id   TEXT NOT NULL,
+                role_id    TEXT NOT NULL,
+                UNIQUE(guild_id, role_id)
+            );
+            CREATE TABLE IF NOT EXISTS tags (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                guild_id   TEXT NOT NULL,
+                name       TEXT NOT NULL,
+                content    TEXT NOT NULL,
+                created_at TEXT DEFAULT (datetime('now')),
+                UNIQUE(guild_id, name)
+            );
+            CREATE TABLE IF NOT EXISTS triggers (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                guild_id   TEXT NOT NULL,
+                phrase     TEXT NOT NULL,
+                response   TEXT NOT NULL,
+                UNIQUE(guild_id, phrase)
+            );
+            CREATE TABLE IF NOT EXISTS suggestions (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                guild_id   TEXT NOT NULL,
+                author_id  TEXT NOT NULL,
+                content    TEXT NOT NULL,
+                upvotes    INTEGER DEFAULT 0,
+                downvotes  INTEGER DEFAULT 0,
+                message_id TEXT,
+                created_at TEXT DEFAULT (datetime('now'))
             );
         """)
         for col, default in [
@@ -351,3 +389,161 @@ def get_cached_profile(user_id):
             "SELECT * FROM profile_cache WHERE user_id=?", (user_id,)
         ).fetchone()
         return dict(row) if row else None
+
+
+# ── reaction roles ────────────────────────────────────────────────────────────
+
+def add_reaction_role(guild_id, message_id, channel_id, emoji, role_id):
+    with closing(_conn()) as con:
+        con.execute(
+            "INSERT OR IGNORE INTO reaction_roles (guild_id, message_id, channel_id, emoji, role_id) VALUES (?,?,?,?,?)",
+            (guild_id, message_id, channel_id, emoji, role_id)
+        )
+        con.commit()
+
+
+def remove_reaction_role(rr_id):
+    with closing(_conn()) as con:
+        con.execute("DELETE FROM reaction_roles WHERE id=?", (rr_id,))
+        con.commit()
+
+
+def get_reaction_roles(guild_id):
+    with closing(_conn()) as con:
+        return con.execute(
+            "SELECT * FROM reaction_roles WHERE guild_id=? ORDER BY id DESC",
+            (guild_id,)
+        ).fetchall()
+
+
+def get_reaction_role(guild_id, message_id, emoji):
+    with closing(_conn()) as con:
+        return con.execute(
+            "SELECT * FROM reaction_roles WHERE guild_id=? AND message_id=? AND emoji=?",
+            (guild_id, message_id, emoji)
+        ).fetchone()
+
+
+# ── autoroles ─────────────────────────────────────────────────────────────────
+
+def add_autorole(guild_id, role_id):
+    with closing(_conn()) as con:
+        con.execute(
+            "INSERT OR IGNORE INTO autoroles (guild_id, role_id) VALUES (?,?)",
+            (guild_id, role_id)
+        )
+        con.commit()
+
+
+def remove_autorole(guild_id, role_id):
+    with closing(_conn()) as con:
+        con.execute(
+            "DELETE FROM autoroles WHERE guild_id=? AND role_id=?",
+            (guild_id, role_id)
+        )
+        con.commit()
+
+
+def get_autoroles(guild_id):
+    with closing(_conn()) as con:
+        return con.execute(
+            "SELECT * FROM autoroles WHERE guild_id=?", (guild_id,)
+        ).fetchall()
+
+
+# ── tags ──────────────────────────────────────────────────────────────────────
+
+def add_tag(guild_id, name, content):
+    with closing(_conn()) as con:
+        con.execute(
+            "INSERT OR REPLACE INTO tags (guild_id, name, content) VALUES (?,?,?)",
+            (guild_id, name.lower().strip(), content)
+        )
+        con.commit()
+
+
+def remove_tag(guild_id, name):
+    with closing(_conn()) as con:
+        con.execute(
+            "DELETE FROM tags WHERE guild_id=? AND name=?",
+            (guild_id, name.lower().strip())
+        )
+        con.commit()
+
+
+def get_tags(guild_id):
+    with closing(_conn()) as con:
+        return con.execute(
+            "SELECT * FROM tags WHERE guild_id=? ORDER BY name ASC",
+            (guild_id,)
+        ).fetchall()
+
+
+def get_tag(guild_id, name):
+    with closing(_conn()) as con:
+        return con.execute(
+            "SELECT * FROM tags WHERE guild_id=? AND name=?",
+            (guild_id, name.lower().strip())
+        ).fetchone()
+
+
+# ── triggers ──────────────────────────────────────────────────────────────────
+
+def add_trigger(guild_id, phrase, response):
+    with closing(_conn()) as con:
+        con.execute(
+            "INSERT OR REPLACE INTO triggers (guild_id, phrase, response) VALUES (?,?,?)",
+            (guild_id, phrase.lower().strip(), response)
+        )
+        con.commit()
+
+
+def remove_trigger(trigger_id):
+    with closing(_conn()) as con:
+        con.execute("DELETE FROM triggers WHERE id=?", (trigger_id,))
+        con.commit()
+
+
+def get_triggers(guild_id):
+    with closing(_conn()) as con:
+        return con.execute(
+            "SELECT * FROM triggers WHERE guild_id=? ORDER BY id DESC",
+            (guild_id,)
+        ).fetchall()
+
+
+def get_all_triggers(guild_id):
+    """Used by the bot to check incoming messages."""
+    with closing(_conn()) as con:
+        return con.execute(
+            "SELECT phrase, response FROM triggers WHERE guild_id=?",
+            (guild_id,)
+        ).fetchall()
+
+
+# ── suggestions ───────────────────────────────────────────────────────────────
+
+def add_suggestion(guild_id, author_id, content, message_id=None):
+    with closing(_conn()) as con:
+        con.execute(
+            "INSERT INTO suggestions (guild_id, author_id, content, message_id) VALUES (?,?,?,?)",
+            (guild_id, author_id, content, message_id)
+        )
+        con.commit()
+
+
+def get_suggestions(guild_id, limit=50):
+    with closing(_conn()) as con:
+        return con.execute(
+            "SELECT * FROM suggestions WHERE guild_id=? ORDER BY created_at DESC LIMIT ?",
+            (guild_id, limit)
+        ).fetchall()
+
+
+def update_suggestion_votes(message_id, upvotes, downvotes):
+    with closing(_conn()) as con:
+        con.execute(
+            "UPDATE suggestions SET upvotes=?, downvotes=? WHERE message_id=?",
+            (upvotes, downvotes, message_id)
+        )
+        con.commit()

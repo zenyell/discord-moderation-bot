@@ -10,7 +10,7 @@ load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "modpanel-secret-key-change-me")
-app.config["PROPAGATE_EXCEPTIONS"] = False  # keep False so our handler catches it
+app.config["PROPAGATE_EXCEPTIONS"] = False
 
 DASHBOARD_USER = os.getenv("DASHBOARD_USERNAME", "admin")
 DASHBOARD_PASS = os.getenv("DASHBOARD_PASSWORD", "admin123")
@@ -22,7 +22,8 @@ DISCORD_API = "https://discord.com/api/v10"
 db.init_db()
 
 
-# ── Error handler: shows real traceback so we can diagnose 500s ──────────────
+# ── Error handlers ────────────────────────────────────────────────────────────
+
 @app.errorhandler(500)
 def internal_error(e):
     tb = traceback.format_exc()
@@ -36,7 +37,7 @@ def internal_error(e):
           p{{color:#72767d;margin-bottom:12px;font-size:13px;}}
         </style></head><body>
         <h2>&#x26A0; 500 Internal Server Error</h2>
-        <p>Real traceback (remove <code>@app.errorhandler(500)</code> in dashboard.py once fixed):</p>
+        <p>Real traceback:</p>
         <pre>{tb}</pre>
         </body></html>""",
         500,
@@ -63,6 +64,8 @@ def unhandled_exception(e):
     )
 
 
+# ── Discord API helpers ───────────────────────────────────────────────────────
+
 def _discord_headers():
     return {
         "Authorization": f"Bot {BOT_TOKEN}",
@@ -71,14 +74,6 @@ def _discord_headers():
 
 
 def _fetch_discord_user(user_id: str) -> dict:
-    """
-    GET /users/{id} with a Bot token.
-    NOTE: Discord's Bot-token user endpoint returns only basic fields.
-    'banner', 'bio', and 'accent_color' are included ONLY when the user
-    has set them AND the API decides to return them (not guaranteed for
-    all users via bot token — OAuth2 'identify' scope is the reliable way).
-    We fetch it anyway and use whatever Discord gives us.
-    """
     try:
         req = urllib.request.Request(
             f"{DISCORD_API}/users/{user_id}",
@@ -91,13 +86,6 @@ def _fetch_discord_user(user_id: str) -> dict:
 
 
 def _fetch_guild_member(user_id: str) -> dict:
-    """
-    GET /guilds/{guild}/members/{user}
-    This returns the member object which includes:
-    - avatar (guild-specific avatar hash — overrides global)
-    - banner (guild-specific banner hash — overrides global)
-    - nick, roles, joined_at, etc.
-    """
     try:
         req = urllib.request.Request(
             f"{DISCORD_API}/guilds/{GUILD_ID}/members/{user_id}",
@@ -122,50 +110,30 @@ def _fetch_guild_roles() -> list:
 
 
 def _avatar_url(user_data: dict, member_data: dict) -> str:
-    """
-    Priority: guild-specific avatar > global avatar > default avatar.
-    Guild avatar is inside member_data['avatar'].
-    """
     uid = user_data.get("id", "")
-
-    # Guild-specific avatar takes priority
     guild_av = member_data.get("avatar", "")
     if guild_av:
         ext = "gif" if guild_av.startswith("a_") else "png"
         return f"https://cdn.discordapp.com/guilds/{GUILD_ID}/users/{uid}/avatars/{guild_av}.{ext}?size=256"
-
-    # Global avatar
     av = user_data.get("avatar", "")
     if av:
         ext = "gif" if av.startswith("a_") else "png"
         return f"https://cdn.discordapp.com/avatars/{uid}/{av}.{ext}?size=256"
-
-    # Default avatar
     disc = user_data.get("discriminator", "0")
     idx  = (int(disc) % 5) if disc and disc != "0" else ((int(uid) >> 22) % 6) if uid else 0
     return f"https://cdn.discordapp.com/embed/avatars/{idx}.png"
 
 
 def _banner_url(user_data: dict, member_data: dict) -> str:
-    """
-    Priority: guild-specific banner > global banner.
-    Guild banner is inside member_data['banner'].
-    Global banner is inside user_data['banner'].
-    """
     uid = user_data.get("id", "")
-
-    # Guild-specific banner
     guild_banner = member_data.get("banner", "") or ""
     if guild_banner:
         ext = "gif" if guild_banner.startswith("a_") else "png"
         return f"https://cdn.discordapp.com/guilds/{GUILD_ID}/users/{uid}/banners/{guild_banner}.{ext}?size=1024"
-
-    # Global banner
     banner = user_data.get("banner", "") or ""
     if banner:
         ext = "gif" if banner.startswith("a_") else "png"
         return f"https://cdn.discordapp.com/banners/{uid}/{banner}.{ext}?size=1024"
-
     return ""
 
 
@@ -209,6 +177,8 @@ def login_required(f):
     return decorated
 
 
+# ── Core routes ───────────────────────────────────────────────────────────────
+
 @app.route("/", methods=["GET"])
 @login_required
 def index():
@@ -240,6 +210,23 @@ def logout():
     return redirect(url_for("login"))
 
 
+@app.route("/api/status")
+@login_required
+def api_status():
+    try:
+        req = urllib.request.Request(
+            f"{DISCORD_API}/users/@me",
+            headers=_discord_headers()
+        )
+        with urllib.request.urlopen(req, timeout=4) as resp:
+            data = json.loads(resp.read())
+            return jsonify({"online": True, "name": data.get("username", "Bot")})
+    except Exception:
+        return jsonify({"online": False})
+
+
+# ── Settings ──────────────────────────────────────────────────────────────────
+
 @app.route("/settings", methods=["GET", "POST"])
 @login_required
 def settings():
@@ -262,6 +249,8 @@ def settings():
     }
     return render_template("settings.html", cfg=cfg)
 
+
+# ── Moderation ────────────────────────────────────────────────────────────────
 
 @app.route("/moderation", methods=["GET", "POST"])
 @login_required
@@ -293,6 +282,194 @@ def moderation():
     return render_template("moderation.html", words=words, users=users)
 
 
+# ── Logging ───────────────────────────────────────────────────────────────────
+
+LOG_EVENTS = [
+    {"key": "ban",     "label": "Bans",             "desc": "Member bans"},
+    {"key": "kick",    "label": "Kicks",            "desc": "Member kicks"},
+    {"key": "timeout", "label": "Timeouts",         "desc": "Timeouts issued"},
+    {"key": "warn",    "label": "Warnings",         "desc": "Warnings issued"},
+    {"key": "unban",   "label": "Unbans",           "desc": "Bans lifted"},
+    {"key": "purge",   "label": "Purges",           "desc": "Bulk message deletes"},
+    {"key": "join",    "label": "Member Join",      "desc": "New members joining"},
+    {"key": "leave",   "label": "Member Leave",     "desc": "Members leaving"},
+    {"key": "edit",    "label": "Message Edits",    "desc": "Edited messages"},
+    {"key": "delete",  "label": "Message Deletes",  "desc": "Deleted messages"},
+]
+
+
+@app.route("/logging", methods=["GET", "POST"])
+@login_required
+def logging_page():
+    if request.method == "POST":
+        db.set_setting("log_channel_id", request.form.get("log_channel_id", ""))
+        for e in LOG_EVENTS:
+            val = "1" if request.form.get(f"log_{e['key']}") else "0"
+            db.set_setting(f"log_{e['key']}", val)
+        flash("Logging settings saved.")
+        return redirect(url_for("logging_page"))
+    cfg = {"log_channel_id": db.get_setting("log_channel_id", "")}
+    for e in LOG_EVENTS:
+        cfg[f"log_{e['key']}"] = db.get_setting(f"log_{e['key']}", "1")
+    return render_template("logging.html", cfg=cfg, events=LOG_EVENTS)
+
+
+# ── Reaction Roles ────────────────────────────────────────────────────────────
+
+@app.route("/reaction-roles", methods=["GET", "POST"])
+@login_required
+def reaction_roles():
+    if request.method == "POST":
+        action = request.form.get("action")
+        if action == "add":
+            db.add_reaction_role(
+                GUILD_ID,
+                request.form.get("message_id", "").strip(),
+                request.form.get("channel_id", "").strip(),
+                request.form.get("emoji", "").strip(),
+                request.form.get("role_id", "").strip(),
+            )
+            flash("Reaction role added.")
+        elif action == "remove":
+            db.remove_reaction_role(request.form.get("rr_id"))
+            flash("Reaction role removed.")
+        return redirect(url_for("reaction_roles"))
+    return render_template("reaction_roles.html", rr_list=db.get_reaction_roles(GUILD_ID))
+
+
+# ── Autoroles ─────────────────────────────────────────────────────────────────
+
+@app.route("/autoroles", methods=["GET", "POST"])
+@login_required
+def autoroles():
+    if request.method == "POST":
+        action = request.form.get("action")
+        if action == "add":
+            role_id = request.form.get("role_id", "").strip()
+            if role_id:
+                db.add_autorole(GUILD_ID, role_id)
+                flash(f"Autorole {role_id} added.")
+        elif action == "remove":
+            db.remove_autorole(GUILD_ID, request.form.get("role_id", ""))
+            flash("Autorole removed.")
+        return redirect(url_for("autoroles"))
+    return render_template("autoroles.html", autoroles=db.get_autoroles(GUILD_ID))
+
+
+# ── Tags ──────────────────────────────────────────────────────────────────────
+
+@app.route("/tags", methods=["GET", "POST"])
+@login_required
+def tags():
+    if request.method == "POST":
+        action = request.form.get("action")
+        if action == "add":
+            name    = request.form.get("tag_name", "").strip()
+            content = request.form.get("tag_content", "").strip()
+            if name and content:
+                db.add_tag(GUILD_ID, name, content)
+                flash(f"Tag '{name}' saved.")
+        elif action == "remove":
+            db.remove_tag(GUILD_ID, request.form.get("tag_name", ""))
+            flash("Tag deleted.")
+        return redirect(url_for("tags"))
+    return render_template("tags.html", tags=db.get_tags(GUILD_ID))
+
+
+# ── Triggers ──────────────────────────────────────────────────────────────────
+
+@app.route("/triggers", methods=["GET", "POST"])
+@login_required
+def triggers():
+    if request.method == "POST":
+        action = request.form.get("action")
+        if action == "add":
+            phrase   = request.form.get("trigger_phrase", "").strip()
+            response = request.form.get("trigger_response", "").strip()
+            if phrase and response:
+                db.add_trigger(GUILD_ID, phrase, response)
+                flash(f"Trigger '{phrase}' added.")
+        elif action == "remove":
+            db.remove_trigger(request.form.get("trigger_id"))
+            flash("Trigger deleted.")
+        return redirect(url_for("triggers"))
+    return render_template("triggers.html", triggers=db.get_triggers(GUILD_ID))
+
+
+# ── Greetings ─────────────────────────────────────────────────────────────────
+
+_GREETING_KEYS = [
+    "welcome_enabled", "welcome_channel", "welcome_message",
+    "farewell_enabled", "farewell_channel", "farewell_message",
+]
+
+
+@app.route("/greetings", methods=["GET", "POST"])
+@login_required
+def greetings():
+    if request.method == "POST":
+        for k in _GREETING_KEYS:
+            if k.endswith("_enabled"):
+                db.set_setting(k, "1" if request.form.get(k) else "0")
+            else:
+                db.set_setting(k, request.form.get(k, ""))
+        flash("Greetings saved.")
+        return redirect(url_for("greetings"))
+
+    class Cfg:
+        pass
+    cfg = Cfg()
+    for k in _GREETING_KEYS:
+        setattr(cfg, k, db.get_setting(k, ""))
+    return render_template("greetings.html", cfg=cfg)
+
+
+# ── Starboard ─────────────────────────────────────────────────────────────────
+
+_STARBOARD_KEYS = ["starboard_enabled", "starboard_channel", "starboard_min", "starboard_emoji"]
+
+
+@app.route("/starboard", methods=["GET", "POST"])
+@login_required
+def starboard():
+    if request.method == "POST":
+        for k in _STARBOARD_KEYS:
+            if k == "starboard_enabled":
+                db.set_setting(k, "1" if request.form.get(k) else "0")
+            else:
+                db.set_setting(k, request.form.get(k, ""))
+        flash("Starboard settings saved.")
+        return redirect(url_for("starboard"))
+
+    class Cfg:
+        pass
+    cfg = Cfg()
+    for k in _STARBOARD_KEYS:
+        setattr(cfg, k, db.get_setting(k, ""))
+    return render_template("starboard.html", cfg=cfg)
+
+
+# ── Suggestions ───────────────────────────────────────────────────────────────
+
+@app.route("/suggestions", methods=["GET", "POST"])
+@login_required
+def suggestions():
+    if request.method == "POST":
+        db.set_setting("suggestions_enabled", "1" if request.form.get("suggestions_enabled") else "0")
+        db.set_setting("suggestions_channel", request.form.get("suggestions_channel", ""))
+        flash("Suggestions settings saved.")
+        return redirect(url_for("suggestions"))
+
+    class Cfg:
+        pass
+    cfg = Cfg()
+    cfg.suggestions_enabled = db.get_setting("suggestions_enabled", "0")
+    cfg.suggestions_channel = db.get_setting("suggestions_channel", "")
+    return render_template("suggestions.html", cfg=cfg, suggestions=db.get_suggestions(GUILD_ID))
+
+
+# ── Command settings ──────────────────────────────────────────────────────────
+
 @app.route("/command-settings", methods=["GET", "POST"])
 @login_required
 def command_settings():
@@ -316,6 +493,8 @@ def command_settings():
     cmd_settings = db.get_command_settings(GUILD_ID)
     return render_template("command_settings.html", commands=db.ALL_COMMANDS, cmd_settings=cmd_settings)
 
+
+# ── User lookup ───────────────────────────────────────────────────────────────
 
 @app.route("/user-lookup")
 @login_required
@@ -413,6 +592,8 @@ def user_profile(user_id):
     )
 
 
+# ── API ───────────────────────────────────────────────────────────────────────
+
 @app.route("/api/profile/<user_id>")
 @login_required
 def api_profile(user_id):
@@ -428,12 +609,6 @@ def api_profile(user_id):
 @app.route("/api/debug/<user_id>")
 @login_required
 def api_debug(user_id):
-    """
-    Debug route: returns raw Discord API responses for a user.
-    Visit /api/debug/<user_id> in your browser to see exactly what
-    Discord is sending back — useful for diagnosing missing banner/bio.
-    REMOVE this route before deploying to production.
-    """
     user_data   = _fetch_discord_user(user_id)
     member_data = _fetch_guild_member(user_id)
     return jsonify({
