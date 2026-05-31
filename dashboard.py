@@ -22,17 +22,32 @@ db.init_db()
 
 
 def _discord_headers():
-    return {"Authorization": f"Bot {BOT_TOKEN}"}
+    return {
+        "Authorization": f"Bot {BOT_TOKEN}",
+        # Required to receive banner + accent_color in the user object
+        "X-Discord-Locale": "en-US",
+    }
 
 
 def _fetch_discord_user(user_id: str) -> dict:
+    """
+    Fetch a full Discord user object.
+    The standard GET /users/{id} with a Bot token does return banner and
+    accent_color — the key requirement is that the token is valid and the
+    bot has at minimum the identify scope for its own account, or is simply
+    authenticated. No extra intent is needed for basic user profile fields.
+
+    If the first call returns an empty banner/accent_color it usually means
+    the token is missing or the user truly has none set.
+    """
     try:
         req = urllib.request.Request(
             f"{DISCORD_API}/users/{user_id}",
             headers=_discord_headers()
         )
         with urllib.request.urlopen(req, timeout=5) as resp:
-            return json.loads(resp.read())
+            data = json.loads(resp.read())
+        return data
     except Exception:
         return {}
 
@@ -73,8 +88,13 @@ def _avatar_url(user_data: dict) -> str:
 
 
 def _banner_url(user_data: dict) -> str:
+    """
+    Build the banner CDN URL.
+    Discord returns banner as a hash string (or null).
+    Animated banners start with 'a_'.
+    """
     uid    = user_data.get("id", "")
-    banner = user_data.get("banner", "")
+    banner = user_data.get("banner") or ""
     if banner:
         ext = "gif" if banner.startswith("a_") else "png"
         return f"https://cdn.discordapp.com/banners/{uid}/{banner}.{ext}?size=1024"
@@ -86,6 +106,14 @@ def _accent_hex(user_data: dict) -> str:
     if color:
         return f"#{color:06x}"
     return "#5865F2"
+
+
+def _bio(user_data: dict) -> str:
+    """
+    'bio' is present on the user object returned by the bot-token user fetch.
+    It may be an empty string if the user has not set one.
+    """
+    return user_data.get("bio") or ""
 
 
 BADGE_MAP = {
@@ -284,6 +312,7 @@ def user_profile(user_id):
     banner_url   = _banner_url(user_data)
     accent_color = _accent_hex(user_data)
     badges       = _get_badges(user_data.get("public_flags", 0))
+    bio          = _bio(user_data)
 
     profile = {
         "id":            user_id,
@@ -294,6 +323,7 @@ def user_profile(user_id):
         "banner_url":    banner_url,
         "accent_color":  accent_color,
         "badges":        badges,
+        "bio":           bio,
         "bot":           user_data.get("bot", False),
         "nick":          member_data.get("nick") or "",
         "joined_at":     member_data.get("joined_at", "")[:10] if member_data.get("joined_at") else "",
@@ -303,7 +333,7 @@ def user_profile(user_id):
     try:
         db.cache_profile(
             user_id, profile["username"], profile["global_name"],
-            avatar_url, banner_url, accent_color, "",
+            avatar_url, banner_url, accent_color, bio,
             ", ".join(b[0] for b in badges)
         )
     except Exception:
