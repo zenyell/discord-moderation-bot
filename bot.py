@@ -30,6 +30,9 @@ TEST_GUILD = discord.Object(id=GUILD_ID) if GUILD_ID else None
 
 _spam: dict[int, deque] = defaultdict(lambda: deque())
 
+ARROW = "\u2192"
+DASH  = "\u2014"
+
 
 def _get_guild_id(interaction):
     return str(interaction.guild_id)
@@ -63,7 +66,6 @@ async def on_ready():
 @bot.event
 async def on_member_join(member: discord.Member):
     guild_id = str(member.guild.id)
-    # Block blacklisted users immediately
     if db.is_user_blacklisted(guild_id, str(member.id)):
         await member.ban(reason="User is blacklisted")
         db.log_action(guild_id, "auto-ban", str(member.id), str(bot.user.id), "Blacklisted user rejoined")
@@ -177,7 +179,7 @@ async def warnings(interaction: discord.Interaction, member: discord.Member):
     if not rows:
         await interaction.response.send_message(f"\u2705 **{member}** has no warnings.")
         return
-    lines = [f"`{i+1}.` {r['reason'] or 'No reason'} \u2014 {r['created_at'][:19]}" for i, r in enumerate(rows)]
+    lines = [f"`{i+1}.` {r['reason'] or 'No reason'} {DASH} {r['created_at'][:19]}" for i, r in enumerate(rows)]
     await interaction.response.send_message(f"\u26a0\ufe0f **{member}** has **{len(rows)}** warning(s):\n" + "\n".join(lines))
 
 
@@ -189,7 +191,10 @@ async def modlogs(interaction: discord.Interaction, limit: int = 10):
     if not rows:
         await interaction.response.send_message("No mod logs yet.")
         return
-    lines = [f"`{r['action'].upper()}` \u2192 <@{r['target_id']}> by <@{r['moderator_id']}> \u2014 {r['reason'] or '\u2014'}" for r in rows]
+    lines = [
+        f"`{r['action'].upper()}` {ARROW} <@{r['target_id']}> by <@{r['moderator_id']}> {DASH} {r['reason'] or DASH}"
+        for r in rows
+    ]
     await interaction.response.send_message("\U0001f4cb **Recent Mod Logs:**\n" + "\n".join(lines))
 
 
@@ -244,7 +249,7 @@ async def userinfo(interaction: discord.Interaction, member: discord.Member):
     embed.add_field(name="Mod Actions", value=str(len(logs)), inline=True)
     recent = logs[:3]
     if recent:
-        summary = "\n".join(f"`{r['action']}` — {r['reason'] or '—'}" for r in recent)
+        summary = "\n".join(f"`{r['action']}` {DASH} {r['reason'] or DASH}" for r in recent)
         embed.add_field(name="Recent Actions", value=summary, inline=False)
     await interaction.response.send_message(embed=embed)
 
