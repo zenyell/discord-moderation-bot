@@ -3,11 +3,14 @@ import json
 import time
 import traceback
 import urllib.request
-from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
+from pathlib import Path
 from dotenv import load_dotenv
-import database as db
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 
-load_dotenv()
+# Load .env from the same directory as this file, regardless of cwd
+load_dotenv(dotenv_path=Path(__file__).resolve().parent / ".env", override=True)
+
+import database as db
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "modpanel-secret-key-change-me")
@@ -21,10 +24,12 @@ HEARTBEAT_FILE = os.getenv("HEARTBEAT_PATH", "/tmp/bot_heartbeat")
 
 DISCORD_API = "https://discord.com/api/v10"
 
+print(f"[Dashboard] GUILD_ID={GUILD_ID!r}  BOT_TOKEN present={bool(BOT_TOKEN)}", flush=True)
+
 db.init_db_sync()
 
 
-# ── Error handlers ─────────────────────────────────────────────────────
+# ── Error handlers ──────────────────────────────────────────────────
 
 @app.errorhandler(500)
 def internal_error(e):
@@ -179,7 +184,7 @@ def login_required(f):
     return decorated
 
 
-# ── Core routes ─────────────────────────────────────────────────────
+# ── Core routes ──────────────────────────────────────────────────
 
 @app.route("/", methods=["GET"])
 @login_required
@@ -231,7 +236,7 @@ def api_status():
         return jsonify({"online": False, "reason": str(e)})
 
 
-# ── Settings ────────────────────────────────────────────────────────
+# ── Settings ──────────────────────────────────────────────────
 
 @app.route("/settings", methods=["GET", "POST"])
 @login_required
@@ -256,7 +261,7 @@ def settings():
     return render_template("settings.html", cfg=cfg)
 
 
-# ── Moderation ───────────────────────────────────────────────────────
+# ── Moderation ───────────────────────────────────────────────────
 
 @app.route("/moderation", methods=["GET", "POST"])
 @login_required
@@ -288,19 +293,19 @@ def moderation():
     return render_template("moderation.html", words=words, users=users)
 
 
-# ── Logging ──────────────────────────────────────────────────────────
+# ── Logging ──────────────────────────────────────────────────────
 
 LOG_EVENTS = [
-    {"key": "ban",     "label": "Bans",             "desc": "Member bans"},
-    {"key": "kick",    "label": "Kicks",            "desc": "Member kicks"},
-    {"key": "timeout", "label": "Timeouts",         "desc": "Timeouts issued"},
-    {"key": "warn",    "label": "Warnings",         "desc": "Warnings issued"},
-    {"key": "unban",   "label": "Unbans",           "desc": "Bans lifted"},
-    {"key": "purge",   "label": "Purges",           "desc": "Bulk message deletes"},
-    {"key": "join",    "label": "Member Join",      "desc": "New members joining"},
-    {"key": "leave",   "label": "Member Leave",     "desc": "Members leaving"},
-    {"key": "edit",    "label": "Message Edits",    "desc": "Edited messages"},
-    {"key": "delete",  "label": "Message Deletes",  "desc": "Deleted messages"},
+    {"key": "ban",     "label": "Bans",            "desc": "Member bans"},
+    {"key": "kick",    "label": "Kicks",           "desc": "Member kicks"},
+    {"key": "timeout", "label": "Timeouts",        "desc": "Timeouts issued"},
+    {"key": "warn",    "label": "Warnings",        "desc": "Warnings issued"},
+    {"key": "unban",   "label": "Unbans",          "desc": "Bans lifted"},
+    {"key": "purge",   "label": "Purges",          "desc": "Bulk message deletes"},
+    {"key": "join",    "label": "Member Join",     "desc": "New members joining"},
+    {"key": "leave",   "label": "Member Leave",    "desc": "Members leaving"},
+    {"key": "edit",    "label": "Message Edits",   "desc": "Edited messages"},
+    {"key": "delete",  "label": "Message Deletes", "desc": "Deleted messages"},
 ]
 
 
@@ -320,7 +325,7 @@ def logging_page():
     return render_template("logging.html", cfg=cfg, events=LOG_EVENTS)
 
 
-# ── Reaction Roles ─────────────────────────────────────────────────
+# ── Reaction Roles ───────────────────────────────────────────────
 
 @app.route("/reaction-roles", methods=["GET", "POST"])
 @login_required
@@ -343,7 +348,7 @@ def reaction_roles():
     return render_template("reaction_roles.html", rr_list=db.get_reaction_roles_sync(GUILD_ID))
 
 
-# ── Autoroles ──────────────────────────────────────────────────────
+# ── Autoroles ────────────────────────────────────────────────────
 
 @app.route("/autoroles", methods=["GET", "POST"])
 @login_required
@@ -362,7 +367,7 @@ def autoroles():
     return render_template("autoroles.html", autoroles=db.get_autoroles_sync(GUILD_ID))
 
 
-# ── Tags ──────────────────────────────────────────────────────────
+# ── Tags ──────────────────────────────────────────────────────
 
 @app.route("/tags", methods=["GET", "POST"])
 @login_required
@@ -382,7 +387,7 @@ def tags():
     return render_template("tags.html", tags=db.get_tags_sync(GUILD_ID))
 
 
-# ── Triggers ────────────────────────────────────────────────────────
+# ── Triggers ──────────────────────────────────────────────────────
 
 @app.route("/triggers", methods=["GET", "POST"])
 @login_required
@@ -402,7 +407,7 @@ def triggers():
     return render_template("triggers.html", triggers=db.get_triggers_sync(GUILD_ID))
 
 
-# ── Greetings ───────────────────────────────────────────────────────
+# ── Greetings ─────────────────────────────────────────────────────
 
 _GREETING_KEYS = [
     "welcome_enabled", "welcome_channel", "welcome_message",
@@ -430,7 +435,7 @@ def greetings():
     return render_template("greetings.html", cfg=cfg)
 
 
-# ── Starboard ───────────────────────────────────────────────────────
+# ── Starboard ─────────────────────────────────────────────────────
 
 _STARBOARD_KEYS = ["starboard_enabled", "starboard_channel", "starboard_min", "starboard_emoji"]
 
@@ -455,7 +460,7 @@ def starboard():
     return render_template("starboard.html", cfg=cfg)
 
 
-# ── Suggestions ───────────────────────────────────────────────────────
+# ── Suggestions ─────────────────────────────────────────────────────
 
 @app.route("/suggestions", methods=["GET", "POST"])
 @login_required
@@ -474,7 +479,7 @@ def suggestions():
     return render_template("suggestions.html", cfg=cfg, suggestions=db.get_suggestions_sync(GUILD_ID))
 
 
-# ── Command settings ─────────────────────────────────────────────────
+# ── Command settings ───────────────────────────────────────────────
 
 @app.route("/command-settings", methods=["GET", "POST"])
 @login_required
@@ -500,7 +505,7 @@ def command_settings():
     return render_template("command_settings.html", commands=db.ALL_COMMANDS, cmd_settings=cmd_settings)
 
 
-# ── User lookup ─────────────────────────────────────────────────────
+# ── User lookup ──────────────────────────────────────────────────
 
 @app.route("/user-lookup")
 @login_required
@@ -509,13 +514,15 @@ def user_lookup():
     results = []
     if query:
         try:
-            import sqlite3 as _sql
-            with _sql.connect(os.getenv("DATABASE_PATH", "/tmp/bot_data.db")) as con:
-                con.row_factory = _sql.Row
-                results = con.execute(
-                    "SELECT DISTINCT target_id FROM mod_logs WHERE guild_id=? AND (target_id LIKE ? OR target_id=?) LIMIT 20",
-                    (GUILD_ID, f"%{query}%", query)
-                ).fetchall()
+            rows = db.recent_logs_sync(GUILD_ID, 200)
+            seen = set()
+            for r in rows:
+                tid = r.get("target_id", "")
+                if query in tid and tid not in seen:
+                    results.append({"target_id": tid})
+                    seen.add(tid)
+                    if len(results) >= 20:
+                        break
         except Exception:
             results = []
     return render_template("user_lookup.html", query=query, results=results)
@@ -579,12 +586,6 @@ def user_profile(user_id):
         "roles":         member_roles,
     }
 
-    try:
-        db.get_cached_profile_sync(user_id)  # ensure profile is accessible
-        # cache updated via bot on next userinfo command
-    except Exception:
-        pass
-
     return render_template(
         "user_profile.html",
         user_id=user_id,
@@ -595,7 +596,7 @@ def user_profile(user_id):
     )
 
 
-# ── API ─────────────────────────────────────────────────────────────
+# ── API ─────────────────────────────────────────────────────
 
 @app.route("/api/profile/<user_id>")
 @login_required

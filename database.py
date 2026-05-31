@@ -26,9 +26,14 @@ print(f"[DB] TURSO_URL={TURSO_URL!r}  token_len={len(TURSO_TOKEN)}  token_ok={bo
 if not TURSO_URL:   print("[DB] WARNING: TURSO_URL is not set.",   flush=True)
 if not TURSO_TOKEN: print("[DB] WARNING: TURSO_TOKEN is not set.", flush=True)
 
+ALL_COMMANDS = [
+    "kick", "ban", "unban", "timeout", "purge",
+    "warn", "warnings", "modlogs", "blacklist",
+    "unblacklist", "addword", "removeword", "userinfo",
+]
+
 
 def _sync(coro):
-    """Run async coroutine from sync Flask routes (no running loop)."""
     loop = asyncio.new_event_loop()
     try:
         return loop.run_until_complete(coro)
@@ -112,7 +117,6 @@ async def init_db():
 
 
 def init_db_sync():
-    """Called from Flask/dashboard startup only."""
     _sync(init_db())
 
 
@@ -130,7 +134,6 @@ async def get_warnings(guild_id, user_id):
 async def clear_warnings(guild_id, user_id):
     await _exec("DELETE FROM warnings WHERE guild_id=? AND user_id=?", (guild_id, user_id))
 
-# sync wrappers for Flask
 def add_warning_sync(guild_id, user_id, moderator_id, reason=None):
     _sync(add_warning(guild_id, user_id, moderator_id, reason))
 def get_warnings_sync(guild_id, user_id):
@@ -162,7 +165,6 @@ async def log_stats(guild_id):
     return {"total": total, "kicks": counts.get("kick",0), "bans": counts.get("ban",0),
             "timeouts": counts.get("timeout",0), "warnings": counts.get("warn",0), "purges": counts.get("purge",0)}
 
-# sync wrappers for Flask
 def recent_logs_sync(guild_id, limit=20):      return _sync(recent_logs(guild_id, limit))
 def logs_for_user_sync(guild_id, uid, lim=50): return _sync(logs_for_user(guild_id, uid, lim))
 def log_stats_sync(guild_id):                  return _sync(log_stats(guild_id))
@@ -178,7 +180,6 @@ async def get_setting(key, default=None):
 async def set_setting(key, value):
     await _exec("INSERT OR REPLACE INTO settings (key, value) VALUES (?,?)", (key, value))
 
-# sync wrappers for Flask
 def get_setting_sync(key, default=None): return _sync(get_setting(key, default))
 def set_setting_sync(key, value):        _sync(set_setting(key, value))
 
@@ -200,10 +201,9 @@ async def add_blacklisted_word(guild_id, word, added_by=None):
 async def remove_blacklisted_word(guild_id, word):
     await _exec("DELETE FROM blacklisted_words WHERE guild_id=? AND word=?", (guild_id, word.lower().strip()))
 
-# sync wrappers for Flask
-def get_blacklisted_words_sync(guild_id):              return _sync(get_blacklisted_words(guild_id))
-def add_blacklisted_word_sync(guild_id, word, by=None): _sync(add_blacklisted_word(guild_id, word, by))
-def remove_blacklisted_word_sync(guild_id, word):       _sync(remove_blacklisted_word(guild_id, word))
+def get_blacklisted_words_sync(guild_id):               return _sync(get_blacklisted_words(guild_id))
+def add_blacklisted_word_sync(guild_id, word, by=None):  _sync(add_blacklisted_word(guild_id, word, by))
+def remove_blacklisted_word_sync(guild_id, word):        _sync(remove_blacklisted_word(guild_id, word))
 
 
 # ── blacklisted users ─────────────────────────────────────────────────────
@@ -223,10 +223,10 @@ async def is_user_blacklisted(guild_id, user_id):
     rs = await _exec("SELECT 1 FROM blacklisted_users WHERE guild_id=? AND user_id=?", (guild_id, user_id))
     return bool(_rows(rs))
 
-# sync wrappers for Flask
-def get_blacklisted_users_sync(guild_id):                        return _sync(get_blacklisted_users(guild_id))
-def add_blacklisted_user_sync(guild_id, uid, reason=None, by=None): _sync(add_blacklisted_user(guild_id, uid, reason, by))
-def remove_blacklisted_user_sync(guild_id, uid):                 _sync(remove_blacklisted_user(guild_id, uid))
+def get_blacklisted_users_sync(guild_id):                           return _sync(get_blacklisted_users(guild_id))
+def add_blacklisted_user_sync(guild_id, uid, reason=None, by=None):  _sync(add_blacklisted_user(guild_id, uid, reason, by))
+def remove_blacklisted_user_sync(guild_id, uid):                     _sync(remove_blacklisted_user(guild_id, uid))
+def is_user_blacklisted_sync(guild_id, user_id):                     return _sync(is_user_blacklisted(guild_id, user_id))
 
 
 # ── command settings ──────────────────────────────────────────────────────
@@ -237,9 +237,7 @@ async def get_command_setting(guild_id, command_name):
     rs = await _exec("SELECT * FROM command_settings WHERE guild_id=? AND command_name=?",
                      (guild_id, command_name))
     row = _one(rs)
-    if not row:
-        return dict(_CMD_DEFAULT)
-    return row
+    return row if row else dict(_CMD_DEFAULT)
 
 async def set_command_setting(guild_id, command_name, **kwargs):
     await _exec(
@@ -254,12 +252,16 @@ async def set_command_setting(guild_id, command_name, **kwargs):
 
 async def get_all_command_settings(guild_id):
     rs = await _exec("SELECT * FROM command_settings WHERE guild_id=?", (guild_id,))
-    return _rows(rs)
+    rows = _rows(rs)
+    result = {}
+    for cmd in ALL_COMMANDS:
+        match = next((r for r in rows if r["command_name"] == cmd), None)
+        result[cmd] = match if match else dict(_CMD_DEFAULT)
+    return result
 
-# sync wrappers for Flask
-def get_command_setting_sync(guild_id, cmd):      return _sync(get_command_setting(guild_id, cmd))
-def set_command_setting_sync(guild_id, cmd, **kw): _sync(set_command_setting(guild_id, cmd, **kw))
-def get_all_command_settings_sync(guild_id):       return _sync(get_all_command_settings(guild_id))
+def get_command_setting_sync(guild_id, cmd):       return _sync(get_command_setting(guild_id, cmd))
+def set_command_setting_sync(guild_id, cmd, **kw):  _sync(set_command_setting(guild_id, cmd, **kw))
+def get_command_settings_sync(guild_id):            return _sync(get_all_command_settings(guild_id))
 
 
 # ── profile cache ─────────────────────────────────────────────────────────
@@ -276,7 +278,6 @@ async def get_cached_profile(user_id):
     rs = await _exec("SELECT * FROM profile_cache WHERE user_id=?", (user_id,))
     return _one(rs)
 
-# sync wrappers for Flask
 def get_cached_profile_sync(user_id): return _sync(get_cached_profile(user_id))
 
 
@@ -302,10 +303,9 @@ async def get_reaction_role_by_emoji(guild_id, message_id, emoji):
     )
     return _one(rs)
 
-# sync wrappers for Flask
-def get_reaction_roles_sync(guild_id):                              return _sync(get_reaction_roles(guild_id))
-def add_reaction_role_sync(guild_id, mid, cid, emoji, role_id):    _sync(add_reaction_role(guild_id, mid, cid, emoji, role_id))
-def remove_reaction_role_sync(rr_id):                              _sync(remove_reaction_role(rr_id))
+def get_reaction_roles_sync(guild_id):                           return _sync(get_reaction_roles(guild_id))
+def add_reaction_role_sync(guild_id, mid, cid, emoji, role_id):  _sync(add_reaction_role(guild_id, mid, cid, emoji, role_id))
+def remove_reaction_role_sync(rr_id):                            _sync(remove_reaction_role(rr_id))
 
 
 # ── autoroles ─────────────────────────────────────────────────────────────
@@ -320,8 +320,7 @@ async def add_autorole(guild_id, role_id):
 async def remove_autorole(guild_id, role_id):
     await _exec("DELETE FROM autoroles WHERE guild_id=? AND role_id=?", (guild_id, role_id))
 
-# sync wrappers for Flask
-def get_autoroles_sync(guild_id):              return _sync(get_autoroles(guild_id))
+def get_autoroles_sync(guild_id):             return _sync(get_autoroles(guild_id))
 def add_autorole_sync(guild_id, role_id):     _sync(add_autorole(guild_id, role_id))
 def remove_autorole_sync(guild_id, role_id):  _sync(remove_autorole(guild_id, role_id))
 
@@ -343,8 +342,7 @@ async def get_tag(guild_id, name):
     rs = await _exec("SELECT * FROM tags WHERE guild_id=? AND name=?", (guild_id, name.lower().strip()))
     return _one(rs)
 
-# sync wrappers for Flask
-def get_tags_sync(guild_id):                  return _sync(get_tags(guild_id))
+def get_tags_sync(guild_id):                 return _sync(get_tags(guild_id))
 def add_tag_sync(guild_id, name, content):   _sync(add_tag(guild_id, name, content))
 def remove_tag_sync(guild_id, name):         _sync(remove_tag(guild_id, name))
 
@@ -362,10 +360,10 @@ async def add_trigger(guild_id, phrase, response):
 async def remove_trigger(trigger_id):
     await _exec("DELETE FROM triggers WHERE id=?", (trigger_id,))
 
-# sync wrappers for Flask
-def get_all_triggers_sync(guild_id):                  return _sync(get_all_triggers(guild_id))
-def add_trigger_sync(guild_id, phrase, response):    _sync(add_trigger(guild_id, phrase, response))
-def remove_trigger_sync(trigger_id):                 _sync(remove_trigger(trigger_id))
+def get_all_triggers_sync(guild_id):               return _sync(get_all_triggers(guild_id))
+def get_triggers_sync(guild_id):                   return _sync(get_all_triggers(guild_id))  # alias
+def add_trigger_sync(guild_id, phrase, response):  _sync(add_trigger(guild_id, phrase, response))
+def remove_trigger_sync(trigger_id):               _sync(remove_trigger(trigger_id))
 
 
 # ── suggestions ───────────────────────────────────────────────────────────
@@ -385,6 +383,5 @@ async def vote_suggestion(suggestion_id, upvote: bool):
     col = "upvotes" if upvote else "downvotes"
     await _exec(f"UPDATE suggestions SET {col}={col}+1 WHERE id=?", (suggestion_id,))
 
-# sync wrappers for Flask
-def get_suggestions_sync(guild_id):                          return _sync(get_suggestions(guild_id))
-def add_suggestion_sync(guild_id, author_id, content, mid=None): _sync(add_suggestion(guild_id, author_id, content, mid))
+def get_suggestions_sync(guild_id):                               return _sync(get_suggestions(guild_id))
+def add_suggestion_sync(guild_id, author_id, content, mid=None):  _sync(add_suggestion(guild_id, author_id, content, mid))
