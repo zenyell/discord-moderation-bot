@@ -22,6 +22,15 @@ BAD_WORDS    = [w.strip().lower() for w in os.getenv("BAD_WORDS", "").split(",")
 
 print(f"[Bot] TOKEN present: {bool(TOKEN)}  GUILD_ID: {GUILD_ID}", flush=True)
 
+# Hard-fail early if critical env vars are missing
+if not TOKEN:
+    print("[Bot] FATAL: DISCORD_BOT_TOKEN is not set. Check your .env file.", flush=True)
+    sys.exit(1)
+if not os.getenv("TURSO_URL") or not os.getenv("TURSO_TOKEN"):
+    print("[Bot] WARNING: TURSO_URL or TURSO_TOKEN is missing — database calls will fail.", flush=True)
+if not GUILD_ID:
+    print("[Bot] WARNING: GUILD_ID is not set. Commands will sync globally (up to 1 hour delay).", flush=True)
+
 # Spam defaults — overridden live from DB each message
 DEFAULT_SPAM_LIMIT   = int(os.getenv("SPAM_MESSAGE_LIMIT", 6))
 DEFAULT_SPAM_WINDOW  = int(os.getenv("SPAM_WINDOW_SECONDS", 8))
@@ -94,7 +103,19 @@ async def _check_command(interaction: discord.Interaction, command_name: str) ->
     Admins bypass whitelist but not blacklist.
     """
     guild_id = _get_guild_id(interaction)
-    cs = await db.get_command_setting(guild_id, command_name)
+
+    # Gracefully handle DB failure — allow command through rather than silently failing
+    try:
+        cs = await db.get_command_setting(guild_id, command_name)
+    except Exception as e:
+        print(f"[Bot] DB error in _check_command({command_name}): {e}", flush=True)
+        # Fall back to permission-only check so commands still work without DB
+        if not _is_mod(interaction):
+            await interaction.response.send_message(
+                "\u274c You need **Moderate Members** permission.", ephemeral=True
+            )
+            return False
+        return True
 
     if not cs["enabled"]:
         await interaction.response.send_message(
@@ -133,8 +154,8 @@ async def _check_command(interaction: discord.Interaction, command_name: str) ->
             )
             return False
 
-    # ---------- basic mod permission ----------
-    if not _is_mod(interaction):
+    # ---------- basic mod permission (admins always pass) ----------
+    if not _is_mod(interaction) and not is_admin:
         await interaction.response.send_message(
             "\u274c You need **Moderate Members** permission.", ephemeral=True
         )
@@ -149,50 +170,83 @@ async def _get_bad_words(guild_id):
 
 @bot.event
 async def on_ready():
-    await db.init_db()
+    try:
+        await db.init_db()
+    except Exception as e:
+        print(f"[Bot] WARNING: DB init failed: {e} — bot will still run but DB features may not work.", flush=True)
     try:
         synced = await bot.tree.sync(guild=TEST_GUILD)
-    except Exception:
+    except Exception as e:
+        print(f"[Bot] Guild sync failed ({e}), falling back to global sync.", flush=True)
         synced = await bot.tree.sync()
-    print(f"[Bot] Logged in as {bot.user} | Synced {len(synced)} commands")
+    print(f"[Bot] Logged in as {bot.user} | Synced {len(synced)} commands", flush=True)
     heartbeat.start(bot)
+
+
+@bot.tree.error
+async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
+    """Global slash command error handler — prevents 'application did not respond' errors."""
+    msg = None
+    if isinstance(error, app_commands.MissingPermissions):
+        msg = "\u274c You don't have permission to use this command."
+    elif isinstance(error, app_commands.BotMissingPermissions):
+        msg = f"\u274c I'm missing permissions: `{', '.join(error.missing_permissions)}`"
+    elif isinstance(error, app_commands.CommandOnCooldown):
+        msg = f"\u23f3 Command on cooldown. Try again in `{error.retry_after:.1f}s`."
+    else:
+        print(f"[Bot] Unhandled app command error in /{interaction.command and interaction.command.name}: {error}", flush=True)
+        msg = "\u274c Something went wrong. Please try again."
+
+    try:
+        if interaction.response.is_done():
+            await interaction.followup.send(msg, ephemeral=True)
+        else:
+            await interaction.response.send_message(msg, ephemeral=True)
+    except Exception:
+        pass  # If we can't respond at all, silently ignore
 
 
 @bot.event
 async def on_member_join(member: discord.Member):
     guild_id = str(member.guild.id)
-    if await db.is_user_blacklisted(guild_id, str(member.id)):
-        await member.ban(reason="User is blacklisted")
-        await db.log_action(guild_id, "auto-ban", str(member.id), str(bot.user.id), "Blacklisted user rejoined")
-        return
+    try:
+        if await db.is_user_blacklisted(guild_id, str(member.id)):
+            await member.ban(reason="User is blacklisted")
+            await db.log_action(guild_id, "auto-ban", str(member.id), str(bot.user.id), "Blacklisted user rejoined")
+            return
 
-    # Auto-roles from DB (dashboard-configured) take priority over env var
-    autoroles = await db.get_autoroles(guild_id)
-    for row in autoroles:
-        role = member.guild.get_role(int(row["role_id"]))
-        if role:
-            try:
-                await member.add_roles(role, reason="Auto-role on join")
-            except Exception:
-                pass
-
-    # Fallback to env-var AUTO_ROLE_ID if no DB autoroles configured
-    if not autoroles:
-        role_id = await db.get_setting("auto_role_id") or (str(AUTO_ROLE_ID) if AUTO_ROLE_ID else None)
-        if role_id:
-            role = member.guild.get_role(int(role_id))
+        # Auto-roles from DB (dashboard-configured) take priority over env var
+        autoroles = await db.get_autoroles(guild_id)
+        for row in autoroles:
+            role = member.guild.get_role(int(row["role_id"]))
             if role:
-                await member.add_roles(role, reason="Auto-role on join")
+                try:
+                    await member.add_roles(role, reason="Auto-role on join")
+                except Exception:
+                    pass
 
-    # Log join event if enabled
-    if await db.get_setting("log_join", "1") == "1":
-        await _send_log(member.guild, f"\U0001f7e2 **{member}** joined the server.")
+        # Fallback to env-var AUTO_ROLE_ID if no DB autoroles configured
+        if not autoroles:
+            role_id = await db.get_setting("auto_role_id") or (str(AUTO_ROLE_ID) if AUTO_ROLE_ID else None)
+            if role_id:
+                role = member.guild.get_role(int(role_id))
+                if role:
+                    await member.add_roles(role, reason="Auto-role on join")
+
+        # Log join event if enabled
+        if await db.get_setting("log_join", "1") == "1":
+            await _send_log(member.guild, f"\U0001f7e2 **{member}** joined the server.")
+    except Exception as e:
+        print(f"[Bot] on_member_join error: {e}", flush=True)
 
 
 @bot.event
 async def on_member_remove(member: discord.Member):
-    if await db.get_setting("log_leave", "1") == "1":
-        await _send_log(member.guild, f"\U0001f534 **{member}** left the server.")
+    try:
+        if await db.get_setting("log_leave", "1") == "1":
+            await _send_log(member.guild, f"\U0001f534 **{member}** left the server.")
+    except Exception as e:
+        print(f"[Bot] on_member_remove error: {e}", flush=True)
 
 
 @bot.event
@@ -201,25 +255,31 @@ async def on_message_edit(before: discord.Message, after: discord.Message):
         return
     if before.content == after.content:
         return
-    if await db.get_setting("log_edit", "1") == "1":
-        await _send_log(
-            before.guild,
-            f"\u270f\ufe0f **{before.author}** edited a message in {before.channel.mention}\n"
-            f"**Before:** {before.content[:200]}\n"
-            f"**After:** {after.content[:200]}"
-        )
+    try:
+        if await db.get_setting("log_edit", "1") == "1":
+            await _send_log(
+                before.guild,
+                f"\u270f\ufe0f **{before.author}** edited a message in {before.channel.mention}\n"
+                f"**Before:** {before.content[:200]}\n"
+                f"**After:** {after.content[:200]}"
+            )
+    except Exception as e:
+        print(f"[Bot] on_message_edit error: {e}", flush=True)
 
 
 @bot.event
 async def on_message_delete(message: discord.Message):
     if message.author.bot or not message.guild:
         return
-    if await db.get_setting("log_delete", "1") == "1":
-        await _send_log(
-            message.guild,
-            f"\U0001f5d1\ufe0f **{message.author}** deleted a message in {message.channel.mention}\n"
-            f"**Content:** {message.content[:300]}"
-        )
+    try:
+        if await db.get_setting("log_delete", "1") == "1":
+            await _send_log(
+                message.guild,
+                f"\U0001f5d1\ufe0f **{message.author}** deleted a message in {message.channel.mention}\n"
+                f"**Content:** {message.content[:300]}"
+            )
+    except Exception as e:
+        print(f"[Bot] on_message_delete error: {e}", flush=True)
 
 
 @bot.event
@@ -229,42 +289,45 @@ async def on_message(message: discord.Message):
     guild_id    = str(message.guild.id)
     content_low = message.content.lower()
 
-    # Word filter
-    bad_words = await _get_bad_words(guild_id)
-    if any(w in content_low for w in bad_words):
-        await message.delete()
-        await message.channel.send(
-            f"{message.author.mention} That word is not allowed!", delete_after=5
-        )
-        await db.log_action(guild_id, "filter", str(message.author.id), str(bot.user.id), "Blacklisted word")
-        return
-
-    # Trigger responses (from DB / dashboard)
-    triggers = await db.get_all_triggers(guild_id)
-    for t in triggers:
-        if t["phrase"] in content_low:
-            await message.channel.send(t["response"])
-            break
-
-    # Spam detection — reads limits live from DB
-    spam_limit, spam_window, spam_timeout = await _spam_settings()
-    uid = message.author.id
-    now = time.monotonic()
-    q   = _spam[uid]
-    q.append(now)
-    while q and now - q[0] > spam_window:
-        q.popleft()
-    if len(q) >= spam_limit:
-        q.clear()
-        try:
-            await message.author.timeout(timedelta(minutes=spam_timeout), reason="Spam")
+    try:
+        # Word filter
+        bad_words = await _get_bad_words(guild_id)
+        if any(w in content_low for w in bad_words):
+            await message.delete()
             await message.channel.send(
-                f"{message.author.mention} Spam detected {DASH} timed out for {spam_timeout}m.",
-                delete_after=10
+                f"{message.author.mention} That word is not allowed!", delete_after=5
             )
-            await db.log_action(guild_id, "timeout", str(message.author.id), str(bot.user.id), "Spam")
-        except discord.Forbidden:
-            pass
+            await db.log_action(guild_id, "filter", str(message.author.id), str(bot.user.id), "Blacklisted word")
+            return
+
+        # Trigger responses (from DB / dashboard)
+        triggers = await db.get_all_triggers(guild_id)
+        for t in triggers:
+            if t["phrase"] in content_low:
+                await message.channel.send(t["response"])
+                break
+
+        # Spam detection — reads limits live from DB
+        spam_limit, spam_window, spam_timeout = await _spam_settings()
+        uid = message.author.id
+        now = time.monotonic()
+        q   = _spam[uid]
+        q.append(now)
+        while q and now - q[0] > spam_window:
+            q.popleft()
+        if len(q) >= spam_limit:
+            q.clear()
+            try:
+                await message.author.timeout(timedelta(minutes=spam_timeout), reason="Spam")
+                await message.channel.send(
+                    f"{message.author.mention} Spam detected {DASH} timed out for {spam_timeout}m.",
+                    delete_after=10
+                )
+                await db.log_action(guild_id, "timeout", str(message.author.id), str(bot.user.id), "Spam")
+            except discord.Forbidden:
+                pass
+    except Exception as e:
+        print(f"[Bot] on_message error: {e}", flush=True)
 
     await bot.process_commands(message)
 
@@ -278,22 +341,32 @@ tree = bot.tree
 @app_commands.describe(member="Member to kick", reason="Reason")
 async def kick(interaction: discord.Interaction, member: discord.Member, reason: str = "No reason provided"):
     if not await _check_command(interaction, "kick"): return
-    await member.kick(reason=reason)
-    await db.log_action(_get_guild_id(interaction), "kick", str(member.id), str(interaction.user.id), reason)
-    if await db.get_setting("log_kick", "1") == "1":
-        await _send_log(interaction.guild, f"\U0001f462 **{member}** was kicked by {interaction.user.mention}. Reason: {reason}")
-    await interaction.response.send_message(f"\U0001f462 **{member}** was kicked. Reason: {reason}")
+    try:
+        await member.kick(reason=reason)
+        await db.log_action(_get_guild_id(interaction), "kick", str(member.id), str(interaction.user.id), reason)
+        if await db.get_setting("log_kick", "1") == "1":
+            await _send_log(interaction.guild, f"\U0001f462 **{member}** was kicked by {interaction.user.mention}. Reason: {reason}")
+        await interaction.response.send_message(f"\U0001f462 **{member}** was kicked. Reason: {reason}")
+    except discord.Forbidden:
+        await interaction.response.send_message("\u274c I don't have permission to kick that member.", ephemeral=True)
+    except Exception as e:
+        await interaction.response.send_message(f"\u274c Error: {e}", ephemeral=True)
 
 
 @tree.command(name="ban", description="Ban a member", guild=TEST_GUILD)
 @app_commands.describe(member="Member to ban", reason="Reason")
 async def ban(interaction: discord.Interaction, member: discord.Member, reason: str = "No reason provided"):
     if not await _check_command(interaction, "ban"): return
-    await member.ban(reason=reason)
-    await db.log_action(_get_guild_id(interaction), "ban", str(member.id), str(interaction.user.id), reason)
-    if await db.get_setting("log_ban", "1") == "1":
-        await _send_log(interaction.guild, f"\U0001f528 **{member}** was banned by {interaction.user.mention}. Reason: {reason}")
-    await interaction.response.send_message(f"\U0001f528 **{member}** was banned. Reason: {reason}")
+    try:
+        await member.ban(reason=reason)
+        await db.log_action(_get_guild_id(interaction), "ban", str(member.id), str(interaction.user.id), reason)
+        if await db.get_setting("log_ban", "1") == "1":
+            await _send_log(interaction.guild, f"\U0001f528 **{member}** was banned by {interaction.user.mention}. Reason: {reason}")
+        await interaction.response.send_message(f"\U0001f528 **{member}** was banned. Reason: {reason}")
+    except discord.Forbidden:
+        await interaction.response.send_message("\u274c I don't have permission to ban that member.", ephemeral=True)
+    except Exception as e:
+        await interaction.response.send_message(f"\u274c Error: {e}", ephemeral=True)
 
 
 @tree.command(name="unban", description="Unban a user by ID", guild=TEST_GUILD)
@@ -307,6 +380,10 @@ async def unban(interaction: discord.Interaction, user_id: str, reason: str = "N
         if await db.get_setting("log_unban", "1") == "1":
             await _send_log(interaction.guild, f"\u2705 **{user}** was unbanned by {interaction.user.mention}. Reason: {reason}")
         await interaction.response.send_message(f"\u2705 **{user}** was unbanned.")
+    except discord.NotFound:
+        await interaction.response.send_message("\u274c User not found or not banned.", ephemeral=True)
+    except discord.Forbidden:
+        await interaction.response.send_message("\u274c I don't have permission to unban.", ephemeral=True)
     except Exception as e:
         await interaction.response.send_message(f"\u274c Could not unban: {e}", ephemeral=True)
 
@@ -315,101 +392,132 @@ async def unban(interaction: discord.Interaction, user_id: str, reason: str = "N
 @app_commands.describe(member="Member to timeout", minutes="Duration in minutes", reason="Reason")
 async def timeout_cmd(interaction: discord.Interaction, member: discord.Member, minutes: int = 10, reason: str = "No reason provided"):
     if not await _check_command(interaction, "timeout"): return
-    await member.timeout(timedelta(minutes=minutes), reason=reason)
-    await db.log_action(_get_guild_id(interaction), "timeout", str(member.id), str(interaction.user.id), reason)
-    if await db.get_setting("log_timeout", "1") == "1":
-        await _send_log(interaction.guild, f"\u23f1\ufe0f **{member}** timed out for {minutes}m by {interaction.user.mention}. Reason: {reason}")
-    await interaction.response.send_message(f"\u23f1\ufe0f **{member}** timed out for {minutes}m. Reason: {reason}")
+    try:
+        await member.timeout(timedelta(minutes=minutes), reason=reason)
+        await db.log_action(_get_guild_id(interaction), "timeout", str(member.id), str(interaction.user.id), reason)
+        if await db.get_setting("log_timeout", "1") == "1":
+            await _send_log(interaction.guild, f"\u23f1\ufe0f **{member}** timed out for {minutes}m by {interaction.user.mention}. Reason: {reason}")
+        await interaction.response.send_message(f"\u23f1\ufe0f **{member}** timed out for {minutes}m. Reason: {reason}")
+    except discord.Forbidden:
+        await interaction.response.send_message("\u274c I don't have permission to timeout that member.", ephemeral=True)
+    except Exception as e:
+        await interaction.response.send_message(f"\u274c Error: {e}", ephemeral=True)
 
 
 @tree.command(name="purge", description="Delete messages in bulk", guild=TEST_GUILD)
 @app_commands.describe(amount="Number of messages to delete (1-100)")
 async def purge(interaction: discord.Interaction, amount: int):
     if not await _check_command(interaction, "purge"): return
-    amount = max(1, min(amount, 100))
-    await interaction.response.defer(ephemeral=True)
-    deleted = await interaction.channel.purge(limit=amount)
-    await db.log_action(_get_guild_id(interaction), "purge", str(interaction.channel.id), str(interaction.user.id), f"Deleted {len(deleted)}")
-    if await db.get_setting("log_purge", "1") == "1":
-        await _send_log(interaction.guild, f"\U0001f5d1\ufe0f **{interaction.user}** purged {len(deleted)} messages in {interaction.channel.mention}.")
-    await interaction.followup.send(f"\U0001f5d1\ufe0f Deleted {len(deleted)} messages.", ephemeral=True)
+    try:
+        amount = max(1, min(amount, 100))
+        await interaction.response.defer(ephemeral=True)
+        deleted = await interaction.channel.purge(limit=amount)
+        await db.log_action(_get_guild_id(interaction), "purge", str(interaction.channel.id), str(interaction.user.id), f"Deleted {len(deleted)}")
+        if await db.get_setting("log_purge", "1") == "1":
+            await _send_log(interaction.guild, f"\U0001f5d1\ufe0f **{interaction.user}** purged {len(deleted)} messages in {interaction.channel.mention}.")
+        await interaction.followup.send(f"\U0001f5d1\ufe0f Deleted {len(deleted)} messages.", ephemeral=True)
+    except discord.Forbidden:
+        await interaction.followup.send("\u274c I don't have permission to delete messages here.", ephemeral=True)
+    except Exception as e:
+        await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
 
 
 @tree.command(name="warn", description="Warn a member", guild=TEST_GUILD)
 @app_commands.describe(member="Member to warn", reason="Reason")
 async def warn(interaction: discord.Interaction, member: discord.Member, reason: str = "No reason provided"):
     if not await _check_command(interaction, "warn"): return
-    await db.add_warning(_get_guild_id(interaction), str(member.id), str(interaction.user.id), reason)
-    await db.log_action(_get_guild_id(interaction), "warn", str(member.id), str(interaction.user.id), reason)
-    if await db.get_setting("log_warn", "1") == "1":
-        await _send_log(interaction.guild, f"\u26a0\ufe0f **{member}** was warned by {interaction.user.mention}. Reason: {reason}")
-    await interaction.response.send_message(f"\u26a0\ufe0f **{member}** has been warned. Reason: {reason}")
+    try:
+        await db.add_warning(_get_guild_id(interaction), str(member.id), str(interaction.user.id), reason)
+        await db.log_action(_get_guild_id(interaction), "warn", str(member.id), str(interaction.user.id), reason)
+        if await db.get_setting("log_warn", "1") == "1":
+            await _send_log(interaction.guild, f"\u26a0\ufe0f **{member}** was warned by {interaction.user.mention}. Reason: {reason}")
+        await interaction.response.send_message(f"\u26a0\ufe0f **{member}** has been warned. Reason: {reason}")
+    except Exception as e:
+        await interaction.response.send_message(f"\u274c Error: {e}", ephemeral=True)
 
 
 @tree.command(name="warnings", description="View warnings for a member", guild=TEST_GUILD)
 @app_commands.describe(member="Member to check")
 async def warnings_cmd(interaction: discord.Interaction, member: discord.Member):
     if not await _check_command(interaction, "warnings"): return
-    rows = await db.get_warnings(_get_guild_id(interaction), str(member.id))
-    if not rows:
-        await interaction.response.send_message(f"\u2705 **{member}** has no warnings.")
-        return
-    lines = [
-        f"`{i+1}.` {r['reason'] or 'No reason'} {DASH} {r['created_at'][:19]}"
-        for i, r in enumerate(rows)
-    ]
-    await interaction.response.send_message(
-        f"\u26a0\ufe0f **{member}** has **{len(rows)}** warning(s):\n" + "\n".join(lines)
-    )
+    try:
+        rows = await db.get_warnings(_get_guild_id(interaction), str(member.id))
+        if not rows:
+            await interaction.response.send_message(f"\u2705 **{member}** has no warnings.")
+            return
+        lines = [
+            f"`{i+1}.` {r['reason'] or 'No reason'} {DASH} {r['created_at'][:19]}"
+            for i, r in enumerate(rows)
+        ]
+        await interaction.response.send_message(
+            f"\u26a0\ufe0f **{member}** has **{len(rows)}** warning(s):\n" + "\n".join(lines)
+        )
+    except Exception as e:
+        await interaction.response.send_message(f"\u274c Error fetching warnings: {e}", ephemeral=True)
 
 
 @tree.command(name="modlogs", description="View recent mod actions", guild=TEST_GUILD)
 @app_commands.describe(limit="How many entries (default 10)")
 async def modlogs(interaction: discord.Interaction, limit: int = 10):
     if not await _check_command(interaction, "modlogs"): return
-    rows = await db.recent_logs(_get_guild_id(interaction), limit)
-    if not rows:
-        await interaction.response.send_message("No mod logs yet.")
-        return
-    lines = [
-        f"`{r['action'].upper()}` {ARROW} <@{r['target_id']}> by <@{r['moderator_id']}> {DASH} {r['reason'] or DASH}"
-        for r in rows
-    ]
-    await interaction.response.send_message("\U0001f4cb **Recent Mod Logs:**\n" + "\n".join(lines))
+    try:
+        rows = await db.recent_logs(_get_guild_id(interaction), limit)
+        if not rows:
+            await interaction.response.send_message("No mod logs yet.")
+            return
+        lines = [
+            f"`{r['action'].upper()}` {ARROW} <@{r['target_id']}> by <@{r['moderator_id']}> {DASH} {r['reason'] or DASH}"
+            for r in rows
+        ]
+        await interaction.response.send_message("\U0001f4cb **Recent Mod Logs:**\n" + "\n".join(lines))
+    except Exception as e:
+        await interaction.response.send_message(f"\u274c Error fetching logs: {e}", ephemeral=True)
 
 
 @tree.command(name="blacklist", description="Add a user to the blacklist (auto-ban on join)", guild=TEST_GUILD)
 @app_commands.describe(member="Member to blacklist", reason="Reason")
 async def blacklist_cmd(interaction: discord.Interaction, member: discord.Member, reason: str = "No reason provided"):
     if not await _check_command(interaction, "blacklist"): return
-    await db.add_blacklisted_user(_get_guild_id(interaction), str(member.id), reason, str(interaction.user.id))
-    await db.log_action(_get_guild_id(interaction), "blacklist", str(member.id), str(interaction.user.id), reason)
-    await interaction.response.send_message(f"\U0001f6ab **{member}** has been blacklisted. Reason: {reason}")
+    try:
+        await db.add_blacklisted_user(_get_guild_id(interaction), str(member.id), reason, str(interaction.user.id))
+        await db.log_action(_get_guild_id(interaction), "blacklist", str(member.id), str(interaction.user.id), reason)
+        await interaction.response.send_message(f"\U0001f6ab **{member}** has been blacklisted. Reason: {reason}")
+    except Exception as e:
+        await interaction.response.send_message(f"\u274c Error: {e}", ephemeral=True)
 
 
 @tree.command(name="unblacklist", description="Remove a user from the blacklist", guild=TEST_GUILD)
 @app_commands.describe(user_id="User ID to remove from blacklist")
 async def unblacklist_cmd(interaction: discord.Interaction, user_id: str):
     if not await _check_command(interaction, "unblacklist"): return
-    await db.remove_blacklisted_user(_get_guild_id(interaction), user_id)
-    await db.log_action(_get_guild_id(interaction), "unblacklist", user_id, str(interaction.user.id))
-    await interaction.response.send_message(f"\u2705 User `{user_id}` removed from blacklist.")
+    try:
+        await db.remove_blacklisted_user(_get_guild_id(interaction), user_id)
+        await db.log_action(_get_guild_id(interaction), "unblacklist", user_id, str(interaction.user.id))
+        await interaction.response.send_message(f"\u2705 User `{user_id}` removed from blacklist.")
+    except Exception as e:
+        await interaction.response.send_message(f"\u274c Error: {e}", ephemeral=True)
 
 
 @tree.command(name="addword", description="Add a word to the word blacklist", guild=TEST_GUILD)
 @app_commands.describe(word="Word to block")
 async def addword(interaction: discord.Interaction, word: str):
     if not await _check_command(interaction, "addword"): return
-    await db.add_blacklisted_word(_get_guild_id(interaction), word, str(interaction.user.id))
-    await interaction.response.send_message(f"\u2705 Word `{word}` added to blacklist.", ephemeral=True)
+    try:
+        await db.add_blacklisted_word(_get_guild_id(interaction), word, str(interaction.user.id))
+        await interaction.response.send_message(f"\u2705 Word `{word}` added to blacklist.", ephemeral=True)
+    except Exception as e:
+        await interaction.response.send_message(f"\u274c Error: {e}", ephemeral=True)
 
 
 @tree.command(name="removeword", description="Remove a word from the word blacklist", guild=TEST_GUILD)
 @app_commands.describe(word="Word to unblock")
 async def removeword(interaction: discord.Interaction, word: str):
     if not await _check_command(interaction, "removeword"): return
-    await db.remove_blacklisted_word(_get_guild_id(interaction), word)
-    await interaction.response.send_message(f"\u2705 Word `{word}` removed from blacklist.", ephemeral=True)
+    try:
+        await db.remove_blacklisted_word(_get_guild_id(interaction), word)
+        await interaction.response.send_message(f"\u2705 Word `{word}` removed from blacklist.", ephemeral=True)
+    except Exception as e:
+        await interaction.response.send_message(f"\u274c Error: {e}", ephemeral=True)
 
 
 # ─────────────────────────────── user lookup ──────────────────────────────────
@@ -419,10 +527,13 @@ async def removeword(interaction: discord.Interaction, word: str):
 async def userinfo(interaction: discord.Interaction, member: discord.Member):
     if not await _check_command(interaction, "userinfo"): return
 
-    guild_id    = _get_guild_id(interaction)
-    warns       = await db.get_warnings(guild_id, str(member.id))
-    logs        = await db.logs_for_user(guild_id, str(member.id))
-    blacklisted = await db.is_user_blacklisted(guild_id, str(member.id))
+    try:
+        guild_id    = _get_guild_id(interaction)
+        warns       = await db.get_warnings(guild_id, str(member.id))
+        logs        = await db.logs_for_user(guild_id, str(member.id))
+        blacklisted = await db.is_user_blacklisted(guild_id, str(member.id))
+    except Exception:
+        warns, logs, blacklisted = [], [], False
 
     try:
         full_user = await bot.fetch_user(member.id)
@@ -499,16 +610,19 @@ async def userinfo(interaction: discord.Interaction, member: discord.Member):
 
     embed.set_footer(text=f"Requested by {interaction.user}", icon_url=interaction.user.display_avatar.url)
 
-    await db.cache_profile(
-        str(member.id),
-        str(member.name),
-        getattr(member, 'global_name', None) or str(member.name),
-        member.display_avatar.url,
-        banner_url or "",
-        str(accent_color),
-        "",
-        ", ".join(badges)
-    )
+    try:
+        await db.cache_profile(
+            str(member.id),
+            str(member.name),
+            getattr(member, 'global_name', None) or str(member.name),
+            member.display_avatar.url,
+            banner_url or "",
+            str(accent_color),
+            "",
+            ", ".join(badges)
+        )
+    except Exception:
+        pass  # Cache failure should never block the response
 
     await interaction.response.send_message(embed=embed)
 
