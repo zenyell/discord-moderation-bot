@@ -1,5 +1,6 @@
 import os
 import json
+import time
 import traceback
 import urllib.request
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
@@ -16,6 +17,7 @@ DASHBOARD_USER = os.getenv("DASHBOARD_USERNAME", "admin")
 DASHBOARD_PASS = os.getenv("DASHBOARD_PASSWORD", "admin123")
 GUILD_ID       = os.getenv("GUILD_ID", "0")
 BOT_TOKEN      = os.getenv("DISCORD_BOT_TOKEN", "")
+HEARTBEAT_FILE = os.getenv("HEARTBEAT_PATH", "/tmp/bot_heartbeat")
 
 DISCORD_API = "https://discord.com/api/v10"
 
@@ -213,16 +215,24 @@ def logout():
 @app.route("/api/status")
 @login_required
 def api_status():
+    """
+    Reads the heartbeat file written by the bot every 20 seconds.
+    If the file is missing or older than 60 seconds, the bot is considered offline.
+    """
     try:
-        req = urllib.request.Request(
-            f"{DISCORD_API}/users/@me",
-            headers=_discord_headers()
-        )
-        with urllib.request.urlopen(req, timeout=4) as resp:
-            data = json.loads(resp.read())
-            return jsonify({"online": True, "name": data.get("username", "Bot")})
-    except Exception:
-        return jsonify({"online": False})
+        with open(HEARTBEAT_FILE, "r") as f:
+            parts = f.read().strip().split("|")
+        ts   = float(parts[0])
+        name = parts[1] if len(parts) > 1 else "Bot"
+        age  = time.time() - ts
+        if age < 60:
+            return jsonify({"online": True, "name": name, "age": round(age)})
+        else:
+            return jsonify({"online": False, "reason": f"heartbeat stale ({round(age)}s ago)"})
+    except FileNotFoundError:
+        return jsonify({"online": False, "reason": "heartbeat file not found"})
+    except Exception as e:
+        return jsonify({"online": False, "reason": str(e)})
 
 
 # ── Settings ──────────────────────────────────────────────────────────────────
