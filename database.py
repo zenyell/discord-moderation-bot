@@ -1,14 +1,17 @@
 import os
 import libsql_client
 import asyncio
-from functools import wraps
 
-TURSO_URL   = os.getenv("TURSO_URL",   "")
+_raw_url    = os.getenv("TURSO_URL",   "")
 TURSO_TOKEN = os.getenv("TURSO_TOKEN", "")
+
+# libsql:// forces WebSocket (fails on Render free tier).
+# https:// forces HTTP — works everywhere.
+TURSO_URL = _raw_url.replace("libsql://", "https://", 1) if _raw_url.startswith("libsql://") else _raw_url
 
 
 def _run(coro):
-    """Run an async coroutine synchronously (works from sync bot/dashboard code)."""
+    """Run an async coroutine synchronously from sync bot/dashboard code."""
     try:
         loop = asyncio.get_event_loop()
         if loop.is_running():
@@ -31,13 +34,11 @@ async def _exec(sql, args=()):
 
 
 async def _exec_many(stmts):
-    """Execute a list of (sql, args) tuples in one batch."""
     async with _client() as c:
         return await c.batch([libsql_client.Statement(s, list(a)) for s, a in stmts])
 
 
 def _rows(rs):
-    """Convert libsql ResultSet rows into list-of-dicts."""
     if rs is None:
         return []
     cols = rs.columns
@@ -319,7 +320,7 @@ def get_command_setting(guild_id, command_name):
 def set_command_setting(guild_id, command_name, enabled=None, whitelist_roles=None,
                         blacklist_mods=None, whitelist_users=None, blacklist_users=None):
     existing = get_command_setting(guild_id, command_name)
-    if existing == _POLICY_DEFAULTS:  # doesn't exist yet
+    if existing == _POLICY_DEFAULTS:
         _run(_exec(
             """INSERT INTO command_settings
                (guild_id, command_name, enabled, whitelist_roles, blacklist_mods, whitelist_users, blacklist_users)
