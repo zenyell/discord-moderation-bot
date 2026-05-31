@@ -2,7 +2,9 @@ import os
 import sqlite3
 from contextlib import closing
 
-DB_PATH = os.getenv("DATABASE_PATH", "bot_data.db")
+# /tmp is always writable on Render and similar PaaS platforms
+# Fall back to local path if DATABASE_PATH is explicitly set
+DB_PATH = os.getenv("DATABASE_PATH", "/tmp/bot_data.db")
 
 
 def _conn():
@@ -65,18 +67,17 @@ def init_db():
                 UNIQUE(guild_id, command_name)
             );
             CREATE TABLE IF NOT EXISTS profile_cache (
-                user_id     TEXT PRIMARY KEY,
-                username    TEXT,
-                global_name TEXT,
-                avatar_url  TEXT,
-                banner_url  TEXT,
+                user_id      TEXT PRIMARY KEY,
+                username     TEXT,
+                global_name  TEXT,
+                avatar_url   TEXT,
+                banner_url   TEXT,
                 accent_color TEXT,
-                bio         TEXT,
-                badges      TEXT,
-                updated_at  TEXT DEFAULT (datetime('now'))
+                bio          TEXT,
+                badges       TEXT,
+                updated_at   TEXT DEFAULT (datetime('now'))
             );
         """)
-        # Migrate: add new columns if upgrading from old schema
         for col, default in [
             ("whitelist_users", "''"),
             ("blacklist_users", "''"),
@@ -257,12 +258,13 @@ _POLICY_DEFAULTS = {
 
 
 def _row_to_policy(row):
+    keys = row.keys()
     return {
         "enabled":         row["enabled"],
         "whitelist_roles": row["whitelist_roles"] or "",
         "blacklist_mods":  row["blacklist_mods"]  or "",
-        "whitelist_users": row["whitelist_users"] if "whitelist_users" in row.keys() else "",
-        "blacklist_users": row["blacklist_users"] if "blacklist_users" in row.keys() else "",
+        "whitelist_users": row["whitelist_users"] if "whitelist_users" in keys else "",
+        "blacklist_users": row["blacklist_users"] if "blacklist_users" in keys else "",
     }
 
 
@@ -320,11 +322,11 @@ def set_command_setting(guild_id, command_name, enabled=None, whitelist_roles=No
                    VALUES (?,?,?,?,?,?,?)""",
                 (
                     guild_id, command_name,
-                    enabled           if enabled           is not None else 1,
-                    whitelist_roles   if whitelist_roles   is not None else "",
-                    blacklist_mods    if blacklist_mods    is not None else "",
-                    whitelist_users   if whitelist_users   is not None else "",
-                    blacklist_users   if blacklist_users   is not None else "",
+                    enabled         if enabled         is not None else 1,
+                    whitelist_roles if whitelist_roles is not None else "",
+                    blacklist_mods  if blacklist_mods  is not None else "",
+                    whitelist_users if whitelist_users is not None else "",
+                    blacklist_users if blacklist_users is not None else "",
                 )
             )
         con.commit()

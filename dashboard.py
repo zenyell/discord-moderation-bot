@@ -8,7 +8,7 @@ import database as db
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-secret")
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "modpanel-secret-key-change-me")
 
 DASHBOARD_USER = os.getenv("DASHBOARD_USERNAME", "admin")
 DASHBOARD_PASS = os.getenv("DASHBOARD_PASSWORD", "admin123")
@@ -17,13 +17,15 @@ BOT_TOKEN      = os.getenv("DISCORD_BOT_TOKEN", "")
 
 DISCORD_API = "https://discord.com/api/v10"
 
+# Init DB on startup (safe — /tmp is always writable)
+db.init_db()
+
 
 def _discord_headers():
     return {"Authorization": f"Bot {BOT_TOKEN}"}
 
 
 def _fetch_discord_user(user_id: str) -> dict:
-    """Fetch full user object from Discord API."""
     try:
         req = urllib.request.Request(
             f"{DISCORD_API}/users/{user_id}",
@@ -36,7 +38,6 @@ def _fetch_discord_user(user_id: str) -> dict:
 
 
 def _fetch_guild_member(user_id: str) -> dict:
-    """Fetch guild member object (roles, nick, joined_at)."""
     try:
         req = urllib.request.Request(
             f"{DISCORD_API}/guilds/{GUILD_ID}/members/{user_id}",
@@ -49,7 +50,6 @@ def _fetch_guild_member(user_id: str) -> dict:
 
 
 def _fetch_guild_roles() -> list:
-    """Fetch all guild roles."""
     try:
         req = urllib.request.Request(
             f"{DISCORD_API}/guilds/{GUILD_ID}/roles",
@@ -68,7 +68,7 @@ def _avatar_url(user_data: dict) -> str:
         ext = "gif" if av.startswith("a_") else "png"
         return f"https://cdn.discordapp.com/avatars/{uid}/{av}.{ext}?size=256"
     disc = user_data.get("discriminator", "0")
-    idx  = (int(disc) % 5) if disc != "0" else ((int(uid) >> 22) % 6) if uid else 0
+    idx  = (int(disc) % 5) if disc and disc != "0" else ((int(uid) >> 22) % 6) if uid else 0
     return f"https://cdn.discordapp.com/embed/avatars/{idx}.png"
 
 
@@ -120,8 +120,14 @@ def login_required(f):
 @app.route("/", methods=["GET"])
 @login_required
 def index():
-    stats = db.log_stats(GUILD_ID)
-    logs  = db.recent_logs(GUILD_ID, 15)
+    try:
+        stats = db.log_stats(GUILD_ID)
+    except Exception:
+        stats = {"total": 0, "kicks": 0, "bans": 0, "timeouts": 0, "warnings": 0, "purges": 0}
+    try:
+        logs = db.recent_logs(GUILD_ID, 15)
+    except Exception:
+        logs = []
     return render_template("dashboard.html", stats=stats, logs=logs)
 
 
@@ -225,24 +231,36 @@ def user_lookup():
     query   = request.args.get("q", "").strip()
     results = []
     if query:
-        import sqlite3 as _sql
-        with _sql.connect(os.getenv("DATABASE_PATH", "bot_data.db")) as con:
-            con.row_factory = _sql.Row
-            results = con.execute(
-                "SELECT DISTINCT target_id FROM mod_logs WHERE guild_id=? AND (target_id LIKE ? OR target_id=?) LIMIT 20",
-                (GUILD_ID, f"%{query}%", query)
-            ).fetchall()
+        try:
+            import sqlite3 as _sql
+            with _sql.connect(os.getenv("DATABASE_PATH", "/tmp/bot_data.db")) as con:
+                con.row_factory = _sql.Row
+                results = con.execute(
+                    "SELECT DISTINCT target_id FROM mod_logs WHERE guild_id=? AND (target_id LIKE ? OR target_id=?) LIMIT 20",
+                    (GUILD_ID, f"%{query}%", query)
+                ).fetchall()
+        except Exception:
+            results = []
     return render_template("user_lookup.html", query=query, results=results)
 
 
 @app.route("/user-lookup/<user_id>")
 @login_required
 def user_profile(user_id):
-    warns = db.get_warnings(GUILD_ID, user_id)
-    logs  = db.logs_for_user(GUILD_ID, user_id)
-    bl    = db.is_user_blacklisted(GUILD_ID, user_id)
+    try:
+        warns = db.get_warnings(GUILD_ID, user_id)
+    except Exception:
+        warns = []
+    try:
+        logs = db.logs_for_user(GUILD_ID, user_id)
+    except Exception:
+        logs = []
+    bl = False
+    try:
+        bl = db.is_user_blacklisted(GUILD_ID, user_id)
+    except Exception:
+        pass
 
-    # Fetch live Discord profile data
     user_data   = _fetch_discord_user(user_id)
     member_data = _fetch_guild_member(user_id)
     guild_roles = _fetch_guild_roles()
@@ -282,16 +300,14 @@ def user_profile(user_id):
         "roles":         member_roles,
     }
 
-    db.cache_profile(
-        user_id,
-        profile["username"],
-        profile["global_name"],
-        avatar_url,
-        banner_url,
-        accent_color,
-        "",
-        ", ".join(b[0] for b in badges)
-    )
+    try:
+        db.cache_profile(
+            user_id, profile["username"], profile["global_name"],
+            avatar_url, banner_url, accent_color, "",
+            ", ".join(b[0] for b in badges)
+        )
+    except Exception:
+        pass
 
     return render_template(
         "user_profile.html",
@@ -306,9 +322,12 @@ def user_profile(user_id):
 @app.route("/api/profile/<user_id>")
 @login_required
 def api_profile(user_id):
-    cached = db.get_cached_profile(user_id)
-    if cached:
-        return jsonify(cached)
+    try:
+        cached = db.get_cached_profile(user_id)
+        if cached:
+            return jsonify(cached)
+    except Exception:
+        pass
     return jsonify({"error": "not_found"}), 404
 
 
