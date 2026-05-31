@@ -1,45 +1,41 @@
 import os
-import sys
 import libsql_client
 import asyncio
 
-_raw_url    = os.getenv("TURSO_URL",   "")
-# Strip ALL whitespace/newlines — copy-pasted tokens often have trailing \n
+_raw_url    = os.getenv("TURSO_URL",   "").strip()
 TURSO_TOKEN = os.getenv("TURSO_TOKEN", "").strip()
 
-# libsql:// forces WebSocket (fails on Render free tier).
-# https:// forces HTTP — works everywhere.
+# Normalize URL scheme — libsql:// and wss:// break on Render free tier
 if _raw_url.startswith("libsql://"):
-    TURSO_URL = _raw_url.replace("libsql://", "https://", 1)
+    TURSO_URL = "https://" + _raw_url[len("libsql://"):]
 elif _raw_url.startswith("wss://") or _raw_url.startswith("ws://"):
     TURSO_URL = "https://" + _raw_url.split("://", 1)[1]
-elif not _raw_url.startswith("http") and _raw_url:  # bare hostname
+elif _raw_url and not _raw_url.startswith("http"):
     TURSO_URL = "https://" + _raw_url
 else:
     TURSO_URL = _raw_url
 
 TURSO_URL = TURSO_URL.strip()
 
-print(f"[DB] TURSO_URL raw={_raw_url!r}  resolved={TURSO_URL!r}  token_set={bool(TURSO_TOKEN)}", flush=True)
+print(f"[DB] TURSO_URL={TURSO_URL!r}  token_len={len(TURSO_TOKEN)}  token_ok={bool(TURSO_TOKEN)}", flush=True)
 
 if not TURSO_URL:
-    print("[DB] WARNING: TURSO_URL is not set. Database calls will fail.", flush=True)
+    print("[DB] WARNING: TURSO_URL is not set.", flush=True)
 if not TURSO_TOKEN:
-    print("[DB] WARNING: TURSO_TOKEN is not set. Database calls will fail.", flush=True)
+    print("[DB] WARNING: TURSO_TOKEN is not set.", flush=True)
 
 
 def _run(coro):
-    """Run an async coroutine synchronously from sync bot/dashboard code."""
+    """
+    Run an async coroutine safely from sync code.
+    Works under gunicorn (sync worker, Python 3.14) where there is no
+    running event loop on the main thread.
+    """
+    loop = asyncio.new_event_loop()
     try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor() as pool:
-                future = pool.submit(asyncio.run, coro)
-                return future.result()
         return loop.run_until_complete(coro)
-    except RuntimeError:
-        return asyncio.run(coro)
+    finally:
+        loop.close()
 
 
 def _client():
@@ -68,7 +64,7 @@ def _one(rs):
     return rows[0] if rows else None
 
 
-# ── init ──────────────────────────────────────────────────────────────────────
+# ── init ──────────────────────────────────────────────────────────────────
 
 def init_db():
     tables = [
@@ -178,11 +174,10 @@ def init_db():
         print("[DB] init_db() completed successfully.", flush=True)
     except Exception as e:
         print(f"[DB] init_db() FAILED: {type(e).__name__}: {e}", flush=True)
-        import traceback
-        traceback.print_exc()
+        import traceback; traceback.print_exc()
 
 
-# ── warnings ──────────────────────────────────────────────────────────────────
+# ── warnings ──────────────────────────────────────────────────────────────
 
 def add_warning(guild_id, user_id, moderator_id, reason=None):
     _run(_exec(
@@ -201,7 +196,7 @@ def clear_warnings(guild_id, user_id):
     _run(_exec("DELETE FROM warnings WHERE guild_id=? AND user_id=?", (guild_id, user_id)))
 
 
-# ── mod logs ──────────────────────────────────────────────────────────────────
+# ── mod logs ──────────────────────────────────────────────────────────────
 
 def log_action(guild_id, action, target_id, moderator_id, reason=None):
     _run(_exec(
@@ -238,7 +233,7 @@ def log_stats(guild_id):
     }
 
 
-# ── settings ──────────────────────────────────────────────────────────────────
+# ── settings ──────────────────────────────────────────────────────────────
 
 def get_setting(key, default=None):
     rs = _run(_exec("SELECT value FROM settings WHERE key=?", (key,)))
@@ -249,7 +244,7 @@ def set_setting(key, value):
     _run(_exec("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", (key, value)))
 
 
-# ── blacklisted words ─────────────────────────────────────────────────────────
+# ── blacklisted words ──────────────────────────────────────────────────────
 
 def get_blacklisted_words(guild_id):
     rs = _run(_exec(
@@ -274,7 +269,7 @@ def remove_blacklisted_word(guild_id, word):
     ))
 
 
-# ── blacklisted users ─────────────────────────────────────────────────────────
+# ── blacklisted users ──────────────────────────────────────────────────────
 
 def get_blacklisted_users(guild_id):
     rs = _run(_exec(
@@ -300,7 +295,7 @@ def remove_blacklisted_user(guild_id, user_id):
     ))
 
 
-# ── command settings ──────────────────────────────────────────────────────────
+# ── command settings ──────────────────────────────────────────────────────
 
 ALL_COMMANDS = [
     "kick", "ban", "unban", "timeout", "purge", "warn", "warnings", "modlogs",
@@ -374,7 +369,7 @@ def set_command_setting(guild_id, command_name, enabled=None, whitelist_roles=No
             ))
 
 
-# ── profile cache ─────────────────────────────────────────────────────────────
+# ── profile cache ──────────────────────────────────────────────────────────
 
 def cache_profile(user_id, username, global_name, avatar_url, banner_url, accent_color, bio, badges):
     _run(_exec(
@@ -389,7 +384,7 @@ def get_cached_profile(user_id):
     return _one(rs)
 
 
-# ── reaction roles ────────────────────────────────────────────────────────────
+# ── reaction roles ──────────────────────────────────────────────────────────
 
 def add_reaction_role(guild_id, message_id, channel_id, emoji, role_id):
     _run(_exec(
@@ -414,7 +409,7 @@ def get_reaction_role(guild_id, message_id, emoji):
     return _one(rs)
 
 
-# ── autoroles ─────────────────────────────────────────────────────────────────
+# ── autoroles ──────────────────────────────────────────────────────────────
 
 def add_autorole(guild_id, role_id):
     _run(_exec(
@@ -431,7 +426,7 @@ def get_autoroles(guild_id):
     return _rows(rs)
 
 
-# ── tags ──────────────────────────────────────────────────────────────────────
+# ── tags ────────────────────────────────────────────────────────────────────
 
 def add_tag(guild_id, name, content):
     _run(_exec(
@@ -455,7 +450,7 @@ def get_tag(guild_id, name):
     return _one(rs)
 
 
-# ── triggers ──────────────────────────────────────────────────────────────────
+# ── triggers ────────────────────────────────────────────────────────────────
 
 def add_trigger(guild_id, phrase, response):
     _run(_exec(
@@ -475,7 +470,7 @@ def get_all_triggers(guild_id):
     return _rows(rs)
 
 
-# ── suggestions ───────────────────────────────────────────────────────────────
+# ── suggestions ─────────────────────────────────────────────────────────────
 
 def add_suggestion(guild_id, author_id, content, message_id=None):
     _run(_exec(
