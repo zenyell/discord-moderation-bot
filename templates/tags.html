@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block title %}Tags{% endblock %}
+{% block page_title %}Tags{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Tags</h1>
+  <p>Custom text commands &#x2014; members type <code>!tag &lt;name&gt;</code> and the bot replies with the saved response.</p>
+</div>
+
+<div class="card" style="margin-bottom:20px">
+  <div class="card-header"><span class="card-title">Create Tag</span></div>
+  <div class="card-body">
+    <form method="POST">
+      <input type="hidden" name="action" value="add">
+      <div class="form-group">
+        <label>Tag Name</label>
+        <input type="text" name="tag_name" placeholder="e.g. rules, faq, invite" required>
+      </div>
+      <div class="form-group">
+        <label>Response</label>
+        <textarea name="tag_content" rows="4" placeholder="The message the bot will send…" required></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary">Save Tag</button>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">All Tags</span>
+    <span class="badge badge-neutral">{{ tags | length }}</span>
+  </div>
+  <div class="card-body" style="padding:0">
+    {% if tags %}
+    <table>
+      <thead><tr><th>Name</th><th>Response (preview)</th><th>Created</th><th></th></tr></thead>
+      <tbody>
+      {% for t in tags %}
+      <tr>
+        <td><code style="color:var(--accent)">!{{ t.name }}</code></td>
+        <td style="color:var(--text-muted);max-width:360px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ t.content }}</td>
+        <td style="color:var(--text-faint);font-size:12px">{{ t.created_at[:10] }}</td>
+        <td>
+          <form method="POST">
+            <input type="hidden" name="action" value="remove">
+            <input type="hidden" name="tag_name" value="{{ t.name }}">
+            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div style="padding:32px;text-align:center;color:var(--text-muted);font-size:13px">No tags yet &#x2014; create one above.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

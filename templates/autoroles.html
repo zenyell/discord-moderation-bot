@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}Autoroles{% endblock %}
+{% block page_title %}Autoroles{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Autoroles</h1>
+  <p>Automatically assign roles to members when they join the server.</p>
+</div>
+
+<div class="card" style="margin-bottom:20px">
+  <div class="card-header"><span class="card-title">Add Autorole</span></div>
+  <div class="card-body">
+    <form method="POST">
+      <input type="hidden" name="action" value="add">
+      <div class="add-row">
+        <input type="text" name="role_id" placeholder="Role ID to auto-assign on join" required>
+        <button type="submit" class="btn btn-primary">Add Role</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Active Autoroles</span>
+    <span class="badge badge-neutral">{{ autoroles | length }} roles</span>
+  </div>
+  <div class="card-body">
+    {% if autoroles %}
+    <div class="tag-list">
+      {% for ar in autoroles %}
+      <form method="POST" style="display:inline">
+        <input type="hidden" name="action" value="remove">
+        <input type="hidden" name="role_id" value="{{ ar.role_id }}">
+        <span class="tag">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="opacity:.6"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          {{ ar.role_id }}
+          <button class="tag-remove" type="submit">&times;</button>
+        </span>
+      </form>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p style="color:var(--text-muted);font-size:13px">No autoroles configured.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

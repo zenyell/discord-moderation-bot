@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}Suggestions{% endblock %}
+{% block page_title %}Suggestions{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Suggestions</h1>
+  <p>Members can submit suggestions; the bot posts them with upvote/downvote reactions.</p>
+</div>
+
+<form method="POST" style="margin-bottom:24px">
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-header">
+      <span class="card-title">Suggestions Channel</span>
+      <label class="toggle-switch" style="margin-left:auto">
+        <input type="checkbox" name="suggestions_enabled" {% if cfg.suggestions_enabled == '1' %}checked{% endif %}>
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="card-body">
+      <div class="form-group" style="margin-bottom:0">
+        <label>Channel ID</label>
+        <input type="text" name="suggestions_channel" value="{{ cfg.suggestions_channel }}" placeholder="Where suggestions are posted">
+      </div>
+    </div>
+  </div>
+  <button type="submit" class="btn btn-primary">Save</button>
+</form>
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Recent Suggestions</span>
+    <span class="badge badge-neutral">{{ suggestions | length }}</span>
+  </div>
+  <div class="card-body" style="padding:0">
+    {% if suggestions %}
+    <table>
+      <thead><tr><th>Author</th><th>Suggestion</th><th>&#x1F44D;</th><th>&#x1F44E;</th><th>Date</th></tr></thead>
+      <tbody>
+      {% for s in suggestions %}
+      <tr>
+        <td style="color:var(--text-muted);font-size:12px">{{ s.author_id }}</td>
+        <td style="max-width:360px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ s.content }}</td>
+        <td style="color:var(--success)">{{ s.upvotes }}</td>
+        <td style="color:var(--danger)">{{ s.downvotes }}</td>
+        <td style="color:var(--text-faint);font-size:12px">{{ s.created_at[:10] }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div style="padding:32px;text-align:center;color:var(--text-muted);font-size:13px">No suggestions submitted yet.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

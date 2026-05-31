@@ -27,15 +27,96 @@
   <nav class="sidebar-nav">
 
     <div class="nav-section">
-      <div class="nav-section-header {% if request.path in ['/', '/settings', '/command-settings'] %}open{% endif %}" onclick="toggleSection(this)">
+      <div class="nav-section-header {% if request.path == '/' %}open{% endif %}" onclick="toggleSection(this)">
+        <span>Overview</span>
+        <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="nav-section-body {% if request.path == '/' %}open{% endif %}">
+        <a href="/" class="nav-item {% if request.path == '/' %}active{% endif %}">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+          Dashboard
+        </a>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-header {% if request.path in ['/moderation', '/logging'] %}open{% endif %}" onclick="toggleSection(this)">
+        <span>Moderation</span>
+        <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="nav-section-body {% if request.path in ['/moderation', '/logging'] %}open{% endif %}">
+        <a href="/moderation" class="nav-item {% if request.path == '/moderation' %}active{% endif %}">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Automod &amp; Blacklists
+        </a>
+        <a href="/logging" class="nav-item {% if request.path == '/logging' %}active{% endif %}">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          Logging
+        </a>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-header {% if request.path in ['/reaction-roles', '/autoroles'] %}open{% endif %}" onclick="toggleSection(this)">
+        <span>Roles</span>
+        <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="nav-section-body {% if request.path in ['/reaction-roles', '/autoroles'] %}open{% endif %}">
+        <a href="/reaction-roles" class="nav-item {% if request.path == '/reaction-roles' %}active{% endif %}">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+          Reaction Roles
+        </a>
+        <a href="/autoroles" class="nav-item {% if request.path == '/autoroles' %}active{% endif %}">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Autoroles
+        </a>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-header {% if request.path in ['/tags', '/triggers'] %}open{% endif %}" onclick="toggleSection(this)">
+        <span>Custom Commands</span>
+        <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="nav-section-body {% if request.path in ['/tags', '/triggers'] %}open{% endif %}">
+        <a href="/tags" class="nav-item {% if request.path == '/tags' %}active{% endif %}">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          Tags
+        </a>
+        <a href="/triggers" class="nav-item {% if request.path == '/triggers' %}active{% endif %}">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          Triggers
+        </a>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-header {% if request.path in ['/greetings', '/starboard', '/suggestions'] %}open{% endif %}" onclick="toggleSection(this)">
+        <span>Utility</span>
+        <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="nav-section-body {% if request.path in ['/greetings', '/starboard', '/suggestions'] %}open{% endif %}">
+        <a href="/greetings" class="nav-item {% if request.path == '/greetings' %}active{% endif %}">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Greetings
+        </a>
+        <a href="/starboard" class="nav-item {% if request.path == '/starboard' %}active{% endif %}">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          Starboard
+        </a>
+        <a href="/suggestions" class="nav-item {% if request.path == '/suggestions' %}active{% endif %}">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Suggestions
+        </a>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-header {% if request.path in ['/settings', '/command-settings'] %}open{% endif %}" onclick="toggleSection(this)">
         <span>Settings</span>
         <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
       </div>
-      <div class="nav-section-body {% if request.path in ['/', '/settings', '/command-settings'] %}open{% endif %}">
-        <a href="/" class="nav-item {% if request.path == '/' %}active{% endif %}">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
-          Overview
-        </a>
+      <div class="nav-section-body {% if request.path in ['/settings', '/command-settings'] %}open{% endif %}">
         <a href="/settings" class="nav-item {% if request.path == '/settings' %}active{% endif %}">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           Bot Settings
@@ -43,19 +124,6 @@
         <a href="/command-settings" class="nav-item {% if request.path == '/command-settings' %}active{% endif %}">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
           Commands
-        </a>
-      </div>
-    </div>
-
-    <div class="nav-section">
-      <div class="nav-section-header {% if request.path == '/moderation' %}open{% endif %}" onclick="toggleSection(this)">
-        <span>Moderation</span>
-        <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-      </div>
-      <div class="nav-section-body {% if request.path == '/moderation' %}open{% endif %}">
-        <a href="/moderation" class="nav-item {% if request.path == '/moderation' %}active{% endif %}">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          Automod &amp; Blacklists
         </a>
       </div>
     </div>

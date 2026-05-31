@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Logging{% endblock %}
+{% block page_title %}Logging{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Logging</h1>
+  <p>Configure which moderation events get logged and which channel they post to.</p>
+</div>
+
+<form method="POST">
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-header"><span class="card-title">Log Channel</span></div>
+    <div class="card-body">
+      <div class="form-group" style="margin-bottom:0">
+        <label>Channel ID</label>
+        <input type="text" name="log_channel_id" value="{{ cfg.log_channel_id }}" placeholder="Discord channel ID for mod logs">
+        <div class="form-hint">The bot will post moderation actions to this channel.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-header"><span class="card-title">Events to Log</span></div>
+    <div class="card-body">
+      <div class="toggle-grid">
+        {% for event in events %}
+        <label class="toggle-row">
+          <div class="toggle-info">
+            <span class="toggle-label">{{ event.label }}</span>
+            <span class="toggle-desc">{{ event.desc }}</span>
+          </div>
+          <div class="toggle-switch">
+            <input type="checkbox" name="log_{{ event.key }}" {% if cfg.get('log_' + event.key, '1') == '1' %}checked{% endif %}>
+            <span class="slider"></span>
+          </div>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <button type="submit" class="btn btn-primary">Save Logging Settings</button>
+</form>
+{% endblock %}

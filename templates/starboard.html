@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}Starboard{% endblock %}
+{% block page_title %}Starboard{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Starboard</h1>
+  <p>Messages that receive enough &#x2B50; reactions get pinned to a special starboard channel.</p>
+</div>
+
+<form method="POST">
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-header">
+      <span class="card-title">Starboard Settings</span>
+      <label class="toggle-switch" style="margin-left:auto">
+        <input type="checkbox" name="starboard_enabled" {% if cfg.starboard_enabled == '1' %}checked{% endif %}>
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="card-body">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px">
+        <div class="form-group" style="margin-bottom:0">
+          <label>Starboard Channel ID</label>
+          <input type="text" name="starboard_channel" value="{{ cfg.starboard_channel }}" placeholder="Channel ID">
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Minimum Stars</label>
+          <input type="number" name="starboard_min" value="{{ cfg.starboard_min or 3 }}" min="1" max="99">
+          <div class="form-hint">Stars needed to post.</div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Star Emoji</label>
+          <input type="text" name="starboard_emoji" value="{{ cfg.starboard_emoji or '&#x2B50;' }}" placeholder="&#x2B50;">
+        </div>
+      </div>
+    </div>
+  </div>
+  <button type="submit" class="btn btn-primary">Save Starboard</button>
+</form>
+{% endblock %}
