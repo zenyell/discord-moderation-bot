@@ -1,67 +1,314 @@
 {% extends 'base.html' %}
-{% block title %}User Profile{% endblock %}
+{% block title %}User Profile — {{ profile.global_name }}{% endblock %}
 {% block content %}
-<div class="page-header">
-  <a href="/user-lookup" class="back-link">&larr; Back to Lookup</a>
-  <h1>User Profile</h1>
-  <p class="subtitle mono">{{ user_id }}</p>
-</div>
 
-<div class="profile-hero">
-  <div class="profile-avatar-wrap">
-    <img src="https://cdn.discordapp.com/avatars/{{ user_id }}/avatar.png?size=256"
-         onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'"
-         alt="Avatar" class="profile-avatar" width="96" height="96">
-  </div>
-  <div class="profile-meta">
-    <div class="profile-id mono">{{ user_id }}</div>
-    <div class="profile-badges">
-      {% if blacklisted %}
-        <span class="badge badge-ban">&#x1F6AB; Blacklisted</span>
-      {% else %}
-        <span class="badge badge-ok">&#x2705; Clean</span>
-      {% endif %}
-      <span class="badge badge-neutral">{{ warns|length }} Warning{{ 's' if warns|length != 1 }}</span>
-      <span class="badge badge-neutral">{{ logs|length }} Mod Action{{ 's' if logs|length != 1 }}</span>
+<style>
+.profile-card {
+  background: #2b2d31;
+  border-radius: 12px;
+  overflow: hidden;
+  max-width: 680px;
+  margin: 0 auto 2rem;
+  box-shadow: 0 4px 24px rgba(0,0,0,.5);
+}
+.profile-banner {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  display: block;
+}
+.profile-banner-placeholder {
+  width: 100%;
+  height: 160px;
+  display: block;
+}
+.profile-body {
+  padding: 0 1.25rem 1.25rem;
+  position: relative;
+}
+.profile-avatar-wrap {
+  position: relative;
+  display: inline-block;
+  margin-top: -48px;
+  margin-bottom: 0.5rem;
+}
+.profile-avatar {
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  border: 5px solid #2b2d31;
+  object-fit: cover;
+  display: block;
+}
+.profile-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.2rem;
+}
+.profile-display-name {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #f2f3f5;
+}
+.profile-username {
+  color: #b5bac1;
+  font-size: 0.9rem;
+}
+.profile-bot-badge {
+  background: #5865f2;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+.profile-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 0.5rem 0 0.75rem;
+}
+.profile-badges img {
+  width: 22px;
+  height: 22px;
+  border-radius: 3px;
+}
+.profile-badges img:hover + .badge-tip {
+  display: block;
+}
+.profile-divider {
+  border: none;
+  border-top: 1px solid #3d4045;
+  margin: 0.85rem 0;
+}
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.info-item label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: #b5bac1;
+  display: block;
+  margin-bottom: 2px;
+}
+.info-item span {
+  font-size: 0.9rem;
+  color: #f2f3f5;
+  word-break: break-all;
+}
+.roles-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 0.4rem;
+}
+.role-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 10px 2px 6px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.1);
+  color: #f2f3f5;
+}
+.role-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.section-title {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: #b5bac1;
+  margin-bottom: 0.5rem;
+  margin-top: 1rem;
+}
+.mod-stat-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+.mod-stat {
+  background: #1e1f22;
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  text-align: center;
+  min-width: 90px;
+}
+.mod-stat .num {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #f2f3f5;
+}
+.mod-stat .lbl {
+  font-size: 0.7rem;
+  color: #b5bac1;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.log-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.log-table th { color: #b5bac1; font-size: 0.7rem; text-transform: uppercase; letter-spacing:.06em; padding: 4px 8px; text-align: left; border-bottom: 1px solid #3d4045; }
+.log-table td { padding: 6px 8px; border-bottom: 1px solid #2f3136; color: #f2f3f5; vertical-align: top; }
+.log-table tr:last-child td { border-bottom: none; }
+.action-badge {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.action-ban    { background: #ed4245; color: #fff; }
+.action-kick   { background: #faa61a; color: #000; }
+.action-timeout { background: #5865f2; color: #fff; }
+.action-warn   { background: #ffd166; color: #000; }
+.action-unban  { background: #3ba55c; color: #fff; }
+.action-filter, .action-blacklist, .action-auto-ban { background: #ed4245; color: #fff; }
+.action-default { background: #4f545c; color: #fff; }
+.bl-tag { background: #ed4245; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.78rem; font-weight: 600; }
+.back-btn { display: inline-block; margin-bottom: 1rem; color: #b5bac1; font-size: 0.85rem; text-decoration: none; }
+.back-btn:hover { color: #f2f3f5; }
+</style>
+
+<a href="{{ url_for('user_lookup') }}" class="back-btn">&#8592; Back to User Lookup</a>
+
+<div class="profile-card">
+  {# ── Banner ── #}
+  {% if profile.banner_url %}
+    <img src="{{ profile.banner_url }}" alt="Profile banner" class="profile-banner">
+  {% else %}
+    <div class="profile-banner-placeholder" style="background: {{ profile.accent_color }}"></div>
+  {% endif %}
+
+  <div class="profile-body">
+    {# ── Avatar ── #}
+    <div class="profile-avatar-wrap">
+      <img src="{{ profile.avatar_url }}" alt="{{ profile.global_name }}" class="profile-avatar">
     </div>
-  </div>
-</div>
 
-{% if warns %}
-<div class="card mt-6">
-  <div class="card-header"><h2>Warnings ({{ warns|length }})</h2></div>
-  <table class="mod-table">
-    <thead><tr><th>#</th><th>Reason</th><th>Moderator ID</th><th>Date</th></tr></thead>
-    <tbody>
-      {% for w in warns %}
-      <tr>
-        <td class="muted">{{ loop.index }}</td>
-        <td>{{ w.reason or '—' }}</td>
-        <td class="mono">{{ w.moderator_id }}</td>
-        <td class="muted">{{ w.created_at[:16] }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-{% endif %}
+    {# ── Name row ── #}
+    <div class="profile-name-row">
+      <span class="profile-display-name">{{ profile.global_name }}</span>
+      {% if profile.nick %}
+        <span class="profile-username" title="Server nickname">&#128204; {{ profile.nick }}</span>
+      {% endif %}
+      {% if profile.bot %}<span class="profile-bot-badge">Bot</span>{% endif %}
+      {% if blacklisted %}<span class="bl-tag">&#128683; Blacklisted</span>{% endif %}
+    </div>
+    <div class="profile-username">@{{ profile.username }}{% if profile.discriminator != '0' %}#{{ profile.discriminator }}{% endif %}</div>
 
-<div class="card mt-6">
-  <div class="card-header"><h2>Mod Action History ({{ logs|length }})</h2></div>
-  <table class="mod-table">
-    <thead><tr><th>Action</th><th>Moderator ID</th><th>Reason</th><th>Date</th></tr></thead>
-    <tbody>
-      {% for row in logs %}
-      <tr>
-        <td><span class="badge badge-{{ row.action }}">{{ row.action.upper() }}</span></td>
-        <td class="mono">{{ row.moderator_id }}</td>
-        <td>{{ row.reason or '—' }}</td>
-        <td class="muted">{{ row.created_at[:16] }}</td>
-      </tr>
-      {% else %}
-      <tr><td colspan="4" class="empty-row">No mod actions recorded.</td></tr>
+    {# ── Badges ── #}
+    {% if profile.badges %}
+    <div class="profile-badges">
+      {% for name, icon_url in profile.badges %}
+        <img src="{{ icon_url }}" alt="{{ name }}" title="{{ name }}">
       {% endfor %}
-    </tbody>
-  </table>
-</div>
+    </div>
+    {% endif %}
+
+    <hr class="profile-divider">
+
+    {# ── Info grid ── #}
+    <div class="info-grid">
+      <div class="info-item">
+        <label>User ID</label>
+        <span>{{ profile.id }}</span>
+      </div>
+      <div class="info-item">
+        <label>Joined Server</label>
+        <span>{{ profile.joined_at or 'Unknown' }}</span>
+      </div>
+      <div class="info-item">
+        <label>Accent Colour</label>
+        <span style="display:flex;align-items:center;gap:6px">
+          <span style="width:14px;height:14px;border-radius:3px;background:{{ profile.accent_color }};display:inline-block;"></span>
+          {{ profile.accent_color }}
+        </span>
+      </div>
+    </div>
+
+    {# ── Roles ── #}
+    {% if profile.roles %}
+    <div class="section-title">Roles [{{ profile.roles | length }}]</div>
+    <div class="roles-wrap">
+      {% for role in profile.roles %}
+        <span class="role-pill">
+          <span class="role-dot" style="background:{{ role.color if role.color != '#000000' else '#99aab5' }}"></span>
+          {{ role.name }}
+        </span>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <hr class="profile-divider">
+
+    {# ── Mod stats ── #}
+    <div class="section-title">Moderation</div>
+    <div class="mod-stat-row">
+      <div class="mod-stat"><div class="num">{{ warns | length }}</div><div class="lbl">Warnings</div></div>
+      <div class="mod-stat"><div class="num">{{ logs | length }}</div><div class="lbl">Mod Actions</div></div>
+    </div>
+
+    {# ── Full mod log ── #}
+    {% if logs %}
+    <div class="section-title">Full Mod History</div>
+    <table class="log-table">
+      <thead>
+        <tr><th>Action</th><th>Reason</th><th>Moderator</th><th>Date</th></tr>
+      </thead>
+      <tbody>
+        {% for l in logs %}
+        <tr>
+          <td>
+            <span class="action-badge action-{{ l['action'] | lower | replace(' ', '-') }}">
+              {{ l['action'] | upper }}
+            </span>
+          </td>
+          <td>{{ l['reason'] or '—' }}</td>
+          <td><code>{{ l['moderator_id'] }}</code></td>
+          <td style="white-space:nowrap">{{ l['created_at'][:16] }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="color:#b5bac1;font-size:.85rem;">No moderation history.</p>
+    {% endif %}
+
+    {# ── Warnings detail ── #}
+    {% if warns %}
+    <div class="section-title" style="margin-top:1.25rem;">Warnings Detail</div>
+    <table class="log-table">
+      <thead><tr><th>#</th><th>Reason</th><th>By</th><th>Date</th></tr></thead>
+      <tbody>
+        {% for w in warns %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>{{ w['reason'] or '—' }}</td>
+          <td><code>{{ w['moderator_id'] }}</code></td>
+          <td>{{ w['created_at'][:16] }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+
+  </div>{# /profile-body #}
+</div>{# /profile-card #}
+
 {% endblock %}

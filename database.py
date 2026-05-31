@@ -54,15 +54,38 @@ def init_db():
                 UNIQUE(guild_id, user_id)
             );
             CREATE TABLE IF NOT EXISTS command_settings (
-                id            INTEGER PRIMARY KEY AUTOINCREMENT,
-                guild_id      TEXT NOT NULL,
-                command_name  TEXT NOT NULL,
-                enabled       INTEGER DEFAULT 1,
-                whitelist_roles TEXT DEFAULT '',
-                blacklist_mods  TEXT DEFAULT '',
+                id               INTEGER PRIMARY KEY AUTOINCREMENT,
+                guild_id         TEXT NOT NULL,
+                command_name     TEXT NOT NULL,
+                enabled          INTEGER DEFAULT 1,
+                whitelist_roles  TEXT DEFAULT '',
+                blacklist_mods   TEXT DEFAULT '',
+                whitelist_users  TEXT DEFAULT '',
+                blacklist_users  TEXT DEFAULT '',
                 UNIQUE(guild_id, command_name)
             );
+            CREATE TABLE IF NOT EXISTS profile_cache (
+                user_id     TEXT PRIMARY KEY,
+                username    TEXT,
+                global_name TEXT,
+                avatar_url  TEXT,
+                banner_url  TEXT,
+                accent_color TEXT,
+                bio         TEXT,
+                badges      TEXT,
+                updated_at  TEXT DEFAULT (datetime('now'))
+            );
         """)
+        # Migrate: add new columns if upgrading from old schema
+        for col, default in [
+            ("whitelist_users", "''"),
+            ("blacklist_users", "''"),
+        ]:
+            try:
+                con.execute(f"ALTER TABLE command_settings ADD COLUMN {col} TEXT DEFAULT {default}")
+                con.commit()
+            except Exception:
+                pass
         con.commit()
 
 
@@ -121,12 +144,12 @@ def logs_for_user(guild_id, user_id, limit=50):
 def log_stats(guild_id):
     with closing(_conn()) as con:
         cur = con.cursor()
-        total   = cur.execute("SELECT COUNT(*) FROM mod_logs WHERE guild_id=?", (guild_id,)).fetchone()[0]
-        kicks   = cur.execute("SELECT COUNT(*) FROM mod_logs WHERE guild_id=? AND action='kick'", (guild_id,)).fetchone()[0]
-        bans    = cur.execute("SELECT COUNT(*) FROM mod_logs WHERE guild_id=? AND action='ban'", (guild_id,)).fetchone()[0]
-        timeouts= cur.execute("SELECT COUNT(*) FROM mod_logs WHERE guild_id=? AND action='timeout'", (guild_id,)).fetchone()[0]
-        warns   = cur.execute("SELECT COUNT(*) FROM mod_logs WHERE guild_id=? AND action='warn'", (guild_id,)).fetchone()[0]
-        purges  = cur.execute("SELECT COUNT(*) FROM mod_logs WHERE guild_id=? AND action='purge'", (guild_id,)).fetchone()[0]
+        total    = cur.execute("SELECT COUNT(*) FROM mod_logs WHERE guild_id=?", (guild_id,)).fetchone()[0]
+        kicks    = cur.execute("SELECT COUNT(*) FROM mod_logs WHERE guild_id=? AND action='kick'", (guild_id,)).fetchone()[0]
+        bans     = cur.execute("SELECT COUNT(*) FROM mod_logs WHERE guild_id=? AND action='ban'", (guild_id,)).fetchone()[0]
+        timeouts = cur.execute("SELECT COUNT(*) FROM mod_logs WHERE guild_id=? AND action='timeout'", (guild_id,)).fetchone()[0]
+        warns    = cur.execute("SELECT COUNT(*) FROM mod_logs WHERE guild_id=? AND action='warn'", (guild_id,)).fetchone()[0]
+        purges   = cur.execute("SELECT COUNT(*) FROM mod_logs WHERE guild_id=? AND action='purge'", (guild_id,)).fetchone()[0]
         return {"total": total, "kicks": kicks, "bans": bans, "timeouts": timeouts, "warnings": warns, "purges": purges}
 
 
@@ -219,8 +242,28 @@ def remove_blacklisted_user(guild_id, user_id):
 
 # ── command settings ──────────────────────────────────────────────────────────
 
-ALL_COMMANDS = ["kick", "ban", "unban", "timeout", "purge", "warn", "warnings", "modlogs",
-                "blacklist", "unblacklist", "addword", "removeword", "userinfo"]
+ALL_COMMANDS = [
+    "kick", "ban", "unban", "timeout", "purge", "warn", "warnings", "modlogs",
+    "blacklist", "unblacklist", "addword", "removeword", "userinfo"
+]
+
+_POLICY_DEFAULTS = {
+    "enabled": 1,
+    "whitelist_roles": "",
+    "blacklist_mods": "",
+    "whitelist_users": "",
+    "blacklist_users": "",
+}
+
+
+def _row_to_policy(row):
+    return {
+        "enabled":         row["enabled"],
+        "whitelist_roles": row["whitelist_roles"] or "",
+        "blacklist_mods":  row["blacklist_mods"]  or "",
+        "whitelist_users": row["whitelist_users"] if "whitelist_users" in row.keys() else "",
+        "blacklist_users": row["blacklist_users"] if "blacklist_users" in row.keys() else "",
+    }
 
 
 def get_command_settings(guild_id):
@@ -228,13 +271,9 @@ def get_command_settings(guild_id):
         rows = con.execute(
             "SELECT * FROM command_settings WHERE guild_id=?", (guild_id,)
         ).fetchall()
-        result = {cmd: {"enabled": 1, "whitelist_roles": "", "blacklist_mods": ""} for cmd in ALL_COMMANDS}
+        result = {cmd: dict(_POLICY_DEFAULTS) for cmd in ALL_COMMANDS}
         for r in rows:
-            result[r["command_name"]] = {
-                "enabled": r["enabled"],
-                "whitelist_roles": r["whitelist_roles"] or "",
-                "blacklist_mods": r["blacklist_mods"] or ""
-            }
+            result[r["command_name"]] = _row_to_policy(r)
         return result
 
 
@@ -245,39 +284,68 @@ def get_command_setting(guild_id, command_name):
             (guild_id, command_name)
         ).fetchone()
         if not row:
-            return {"enabled": 1, "whitelist_roles": "", "blacklist_mods": ""}
-        return {
-            "enabled": row["enabled"],
-            "whitelist_roles": row["whitelist_roles"] or "",
-            "blacklist_mods": row["blacklist_mods"] or ""
-        }
+            return dict(_POLICY_DEFAULTS)
+        return _row_to_policy(row)
 
 
-def set_command_setting(guild_id, command_name, enabled=None, whitelist_roles=None, blacklist_mods=None):
+def set_command_setting(guild_id, command_name, enabled=None, whitelist_roles=None,
+                        blacklist_mods=None, whitelist_users=None, blacklist_users=None):
     with closing(_conn()) as con:
         existing = con.execute(
             "SELECT * FROM command_settings WHERE guild_id=? AND command_name=?",
             (guild_id, command_name)
         ).fetchone()
         if existing:
-            updates = []
-            vals = []
-            if enabled is not None:
-                updates.append("enabled=?")
-                vals.append(enabled)
-            if whitelist_roles is not None:
-                updates.append("whitelist_roles=?")
-                vals.append(whitelist_roles)
-            if blacklist_mods is not None:
-                updates.append("blacklist_mods=?")
-                vals.append(blacklist_mods)
+            updates, vals = [], []
+            for field, value in [
+                ("enabled",         enabled),
+                ("whitelist_roles", whitelist_roles),
+                ("blacklist_mods",  blacklist_mods),
+                ("whitelist_users", whitelist_users),
+                ("blacklist_users", blacklist_users),
+            ]:
+                if value is not None:
+                    updates.append(f"{field}=?")
+                    vals.append(value)
             if updates:
                 vals += [guild_id, command_name]
-                con.execute(f"UPDATE command_settings SET {', '.join(updates)} WHERE guild_id=? AND command_name=?", vals)
+                con.execute(
+                    f"UPDATE command_settings SET {', '.join(updates)} WHERE guild_id=? AND command_name=?",
+                    vals
+                )
         else:
             con.execute(
-                "INSERT INTO command_settings (guild_id, command_name, enabled, whitelist_roles, blacklist_mods) VALUES (?,?,?,?,?)",
-                (guild_id, command_name, enabled if enabled is not None else 1,
-                 whitelist_roles or "", blacklist_mods or "")
+                """INSERT INTO command_settings
+                   (guild_id, command_name, enabled, whitelist_roles, blacklist_mods, whitelist_users, blacklist_users)
+                   VALUES (?,?,?,?,?,?,?)""",
+                (
+                    guild_id, command_name,
+                    enabled           if enabled           is not None else 1,
+                    whitelist_roles   if whitelist_roles   is not None else "",
+                    blacklist_mods    if blacklist_mods    is not None else "",
+                    whitelist_users   if whitelist_users   is not None else "",
+                    blacklist_users   if blacklist_users   is not None else "",
+                )
             )
         con.commit()
+
+
+# ── profile cache ─────────────────────────────────────────────────────────────
+
+def cache_profile(user_id, username, global_name, avatar_url, banner_url, accent_color, bio, badges):
+    with closing(_conn()) as con:
+        con.execute(
+            """INSERT OR REPLACE INTO profile_cache
+               (user_id, username, global_name, avatar_url, banner_url, accent_color, bio, badges, updated_at)
+               VALUES (?,?,?,?,?,?,?,?,datetime('now'))""",
+            (user_id, username, global_name, avatar_url, banner_url, accent_color, bio, badges)
+        )
+        con.commit()
+
+
+def get_cached_profile(user_id):
+    with closing(_conn()) as con:
+        row = con.execute(
+            "SELECT * FROM profile_cache WHERE user_id=?", (user_id,)
+        ).fetchone()
+        return dict(row) if row else None

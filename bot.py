@@ -21,7 +21,7 @@ SPAM_TIMEOUT = int(os.getenv("SPAM_TIMEOUT_MINUTES", 5))
 db.init_db()
 
 intents = discord.Intents.default()
-intents.members        = True
+intents.members         = True
 intents.message_content = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
@@ -31,6 +31,21 @@ _spam: dict[int, deque] = defaultdict(lambda: deque())
 
 ARROW = "\u2192"
 DASH  = "\u2014"
+
+# Badges mapping: Discord flag -> display label
+BADGE_FLAGS = {
+    discord.PublicUserFlags.staff:                    "<:discord_staff:> Discord Staff",
+    discord.PublicUserFlags.partner:                  "<:partner:> Partner",
+    discord.PublicUserFlags.hypesquad:                "\U0001f3e0 HypeSquad Events",
+    discord.PublicUserFlags.bug_hunter:               "\U0001f41b Bug Hunter",
+    discord.PublicUserFlags.hypesquad_bravery:        "\U0001f7e3 Bravery",
+    discord.PublicUserFlags.hypesquad_brilliance:     "\U0001f534 Brilliance",
+    discord.PublicUserFlags.hypesquad_balance:        "\U0001f7e2 Balance",
+    discord.PublicUserFlags.early_supporter:          "\U0001f47e Early Supporter",
+    discord.PublicUserFlags.bug_hunter_level_2:       "\U0001f41b Bug Hunter Lv2",
+    discord.PublicUserFlags.verified_bot_developer:   "\U0001f6e0\ufe0f Verified Dev",
+    discord.PublicUserFlags.active_developer:         "\u2699\ufe0f Active Dev",
+}
 
 
 def _get_guild_id(interaction):
@@ -42,40 +57,51 @@ def _is_mod(interaction: discord.Interaction) -> bool:
 
 
 async def _check_command(interaction: discord.Interaction, command_name: str) -> bool:
-    """Check if command is enabled and user is allowed to use it."""
+    """Enforce the per-command policy stored in the database.
+    Priority: disabled > user blacklist > mod blacklist > whitelist (users then roles) > mod perm.
+    Admins bypass whitelist but not blacklist.
+    """
     guild_id = _get_guild_id(interaction)
     cs = db.get_command_setting(guild_id, command_name)
 
-    # Check if command is disabled
     if not cs["enabled"]:
         await interaction.response.send_message(
-            f"\u274c The `/{command_name}` command is currently disabled.", ephemeral=True
+            f"\u274c The `/{command_name}` command is currently **disabled**.", ephemeral=True
         )
         return False
 
-    user_id = str(interaction.user.id)
+    user_id    = str(interaction.user.id)
     user_roles = [str(r.id) for r in interaction.user.roles]
+    is_admin   = interaction.user.guild_permissions.administrator
 
-    # Check if mod is blacklisted from this command
-    blacklist_mods = [x.strip() for x in cs["blacklist_mods"].split(",") if x.strip()]
-    if user_id in blacklist_mods:
+    # ---------- blacklists (even admins are blocked) ----------
+    bl_users = [x.strip() for x in cs["blacklist_users"].split(",") if x.strip()]
+    if user_id in bl_users:
         await interaction.response.send_message(
-            f"\u274c You are not allowed to use `/{command_name}`.", ephemeral=True
+            f"\u274c You have been **blacklisted** from using `/{command_name}`.", ephemeral=True
         )
         return False
 
-    # Check whitelist roles (if set, user must have at least one)
-    whitelist_roles = [x.strip() for x in cs["whitelist_roles"].split(",") if x.strip()]
-    if whitelist_roles:
-        if not any(r in user_roles for r in whitelist_roles):
-            # Server admins bypass whitelist
-            if not interaction.user.guild_permissions.administrator:
-                await interaction.response.send_message(
-                    f"\u274c You need a whitelisted role to use `/{command_name}`.", ephemeral=True
-                )
-                return False
+    bl_mods = [x.strip() for x in cs["blacklist_mods"].split(",") if x.strip()]
+    if user_id in bl_mods:
+        await interaction.response.send_message(
+            f"\u274c You are **not allowed** to use `/{command_name}`.", ephemeral=True
+        )
+        return False
 
-    # Basic mod permission check
+    # ---------- whitelist (admins bypass) ----------
+    wl_users = [x.strip() for x in cs["whitelist_users"].split(",") if x.strip()]
+    wl_roles = [x.strip() for x in cs["whitelist_roles"].split(",") if x.strip()]
+
+    if wl_users or wl_roles:
+        allowed = (user_id in wl_users) or any(r in user_roles for r in wl_roles) or is_admin
+        if not allowed:
+            await interaction.response.send_message(
+                f"\u274c You need a **whitelisted role or user ID** to use `/{command_name}`.", ephemeral=True
+            )
+            return False
+
+    # ---------- basic mod permission ----------
     if not _is_mod(interaction):
         await interaction.response.send_message(
             "\u274c You need **Moderate Members** permission.", ephemeral=True
@@ -116,10 +142,10 @@ async def on_member_join(member: discord.Member):
 async def on_message(message: discord.Message):
     if message.author.bot or not message.guild:
         return
-    guild_id = str(message.guild.id)
-    content_lower = message.content.lower()
-    bad_words = _get_bad_words(guild_id)
-    if any(w in content_lower for w in bad_words):
+    guild_id    = str(message.guild.id)
+    content_low = message.content.lower()
+    bad_words   = _get_bad_words(guild_id)
+    if any(w in content_low for w in bad_words):
         await message.delete()
         await message.channel.send(
             f"{message.author.mention} That word is not allowed!", delete_after=5
@@ -148,6 +174,8 @@ async def on_message(message: discord.Message):
 
 tree = bot.tree
 
+
+# ─────────────────────────────── moderation commands ─────────────────────────
 
 @tree.command(name="kick", description="Kick a member", guild=TEST_GUILD)
 @app_commands.describe(member="Member to kick", reason="Reason")
@@ -217,7 +245,10 @@ async def warnings_cmd(interaction: discord.Interaction, member: discord.Member)
     if not rows:
         await interaction.response.send_message(f"\u2705 **{member}** has no warnings.")
         return
-    lines = [f"`{i+1}.` {r['reason'] or 'No reason'} {DASH} {r['created_at'][:19]}" for i, r in enumerate(rows)]
+    lines = [
+        f"`{i+1}.` {r['reason'] or 'No reason'} {DASH} {r['created_at'][:19]}"
+        for i, r in enumerate(rows)
+    ]
     await interaction.response.send_message(
         f"\u26a0\ufe0f **{member}** has **{len(rows)}** warning(s):\n" + "\n".join(lines)
     )
@@ -272,63 +303,127 @@ async def removeword(interaction: discord.Interaction, word: str):
     await interaction.response.send_message(f"\u2705 Word `{word}` removed from blacklist.", ephemeral=True)
 
 
-@tree.command(name="userinfo", description="Look up a user's full profile and mod history", guild=TEST_GUILD)
+# ─────────────────────────────── user lookup ──────────────────────────────────
+
+@tree.command(name="userinfo", description="Full Discord profile + mod history for a member", guild=TEST_GUILD)
 @app_commands.describe(member="Member to look up")
 async def userinfo(interaction: discord.Interaction, member: discord.Member):
     if not await _check_command(interaction, "userinfo"): return
-    guild_id = _get_guild_id(interaction)
+
+    guild_id    = _get_guild_id(interaction)
     warns       = db.get_warnings(guild_id, str(member.id))
     logs        = db.logs_for_user(guild_id, str(member.id))
     blacklisted = db.is_user_blacklisted(guild_id, str(member.id))
 
-    # Fetch full Discord user to get banner
+    # ── fetch full user object for banner / accent / flags / bio ──────────────
     try:
         full_user = await bot.fetch_user(member.id)
-        banner_url = full_user.banner.url if full_user.banner else None
-        accent_color = full_user.accent_color or discord.Color.blurple()
+        banner_url   = full_user.banner.url if full_user.banner else None
+        accent_color = full_user.accent_color or member.color or discord.Color.blurple()
+        # Public badges
+        badges = [label for flag, label in BADGE_FLAGS.items() if full_user.public_flags & flag]
     except Exception:
-        banner_url = None
-        accent_color = discord.Color.blurple()
+        full_user    = None
+        banner_url   = None
+        accent_color = member.color or discord.Color.blurple()
+        badges       = []
 
+    # ── build embed ───────────────────────────────────────────────────────────
     embed = discord.Embed(
-        title=f"{member.display_name} ({member})",
+        title=f"{member.display_name}",
+        description=(
+            f"**@{member.name}**"
+            + (f"  •  `{member.global_name}`" if getattr(member, 'global_name', None) and member.global_name != member.name else "")
+        ),
         color=accent_color
     )
+
+    # Avatar (thumbnail) + banner (image)
     embed.set_thumbnail(url=member.display_avatar.url)
     if banner_url:
         embed.set_image(url=banner_url)
 
-    # Profile info
-    joined_discord = member.created_at.strftime("%d %b %Y") if member.created_at else "?"
-    joined_server  = member.joined_at.strftime("%d %b %Y") if member.joined_at else "?"
-    embed.add_field(name="User ID", value=f"`{member.id}`", inline=True)
-    embed.add_field(name="Nickname", value=member.nick or "None", inline=True)
-    embed.add_field(name="Bot", value="Yes" if member.bot else "No", inline=True)
-    embed.add_field(name="Account Created", value=joined_discord, inline=True)
-    embed.add_field(name="Joined Server", value=joined_server, inline=True)
-    embed.add_field(name="Blacklisted", value="\U0001f6ab Yes" if blacklisted else "\u2705 No", inline=True)
+    # ── Identity row ──────────────────────────────────────────────────────────
+    embed.add_field(name="User ID",       value=f"`{member.id}`",            inline=True)
+    embed.add_field(name="Mention",       value=member.mention,              inline=True)
+    embed.add_field(name="Bot Account",   value="Yes" if member.bot else "No", inline=True)
 
-    # Roles (skip @everyone)
-    roles = [r.mention for r in reversed(member.roles) if r.name != "@everyone"]
-    roles_str = " ".join(roles) if roles else "None"
-    if len(roles_str) > 1020:
-        roles_str = roles_str[:1020] + "..."
-    embed.add_field(name=f"Roles ({len(roles)})", value=roles_str, inline=False)
+    # ── Nickname / Global name ────────────────────────────────────────────────
+    embed.add_field(name="Nickname",     value=member.nick or "None",       inline=True)
+    embed.add_field(name="Global Name",  value=getattr(member, 'global_name', None) or "None", inline=True)
+    embed.add_field(name="\u200b",        value="\u200b",                    inline=True)
 
-    # Mod stats
-    embed.add_field(name="Warnings", value=str(len(warns)), inline=True)
-    embed.add_field(name="Mod Actions", value=str(len(logs)), inline=True)
+    # ── Dates ──────────────────────────────────────────────────────────────────
+    created  = discord.utils.format_dt(member.created_at, style="D")
+    joined   = discord.utils.format_dt(member.joined_at, style="D") if member.joined_at else "Unknown"
+    embed.add_field(name="Account Created", value=created, inline=True)
+    embed.add_field(name="Joined Server",   value=joined,  inline=True)
 
-    # Recent mod history
-    recent = logs[:5]
+    # ── Timeout status ────────────────────────────────────────────────────────
+    if member.timed_out_until:
+        embed.add_field(
+            name="Timed Out Until",
+            value=discord.utils.format_dt(member.timed_out_until, style="R"),
+            inline=True
+        )
+    else:
+        embed.add_field(name="Timed Out", value="No", inline=True)
+
+    # ── Badges ────────────────────────────────────────────────────────────────
+    if badges:
+        embed.add_field(name="Badges", value="  ".join(badges), inline=False)
+
+    # ── Roles ─────────────────────────────────────────────────────────────────
+    role_list = [r.mention for r in reversed(member.roles) if r.name != "@everyone"]
+    if role_list:
+        roles_str = "  ".join(role_list)
+        if len(roles_str) > 1020:
+            roles_str = roles_str[:1020] + "…"
+        embed.add_field(name=f"Roles [{len(role_list)}]", value=roles_str, inline=False)
+    else:
+        embed.add_field(name="Roles", value="None", inline=False)
+
+    # ── Moderation summary ────────────────────────────────────────────────────
+    embed.add_field(name="Warnings",    value=str(len(warns)), inline=True)
+    embed.add_field(name="Mod Actions", value=str(len(logs)),  inline=True)
+    embed.add_field(
+        name="Blacklisted",
+        value="\U0001f6ab Yes" if blacklisted else "\u2705 No",
+        inline=True
+    )
+
+    # ── Recent mod history (up to 6 entries) ──────────────────────────────────
+    recent = logs[:6]
     if recent:
-        summary = "\n".join(
-            f"`{r['action'].upper()}` {DASH} {r['reason'] or DASH} ({r['created_at'][:10]})"
+        action_icons = {
+            "ban": "\U0001f528", "kick": "\U0001f462", "timeout": "\u23f1",
+            "warn": "\u26a0\ufe0f", "unban": "\u2705", "purge": "\U0001f5d1",
+            "filter": "\U0001f6ab", "blacklist": "\U0001f6ab", "auto-ban": "\U0001f528",
+        }
+        history = "\n".join(
+            f"{action_icons.get(r['action'], '\u2022')} `{r['action'].upper()}` "
+            f"{DASH} {r['reason'] or 'No reason'} — <t:{int(__import__('datetime').datetime.fromisoformat(r['created_at']).timestamp())}:R>"
             for r in recent
         )
-        embed.add_field(name="Recent Mod History", value=summary, inline=False)
+        embed.add_field(name="Recent Mod History", value=history, inline=False)
 
-    embed.set_footer(text=f"Requested by {interaction.user}")
+    embed.set_footer(
+        text=f"Requested by {interaction.user}",
+        icon_url=interaction.user.display_avatar.url
+    )
+
+    # Cache profile data for dashboard
+    db.cache_profile(
+        str(member.id),
+        str(member.name),
+        getattr(member, 'global_name', None) or str(member.name),
+        member.display_avatar.url,
+        banner_url or "",
+        str(accent_color),
+        "",
+        ", ".join(badges)
+    )
+
     await interaction.response.send_message(embed=embed)
 
 
