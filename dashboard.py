@@ -1,6 +1,6 @@
 import os
-import aiohttp
-import asyncio
+import json
+import urllib.request
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from dotenv import load_dotenv
 import database as db
@@ -23,39 +23,34 @@ def _discord_headers():
 
 
 def _fetch_discord_user(user_id: str) -> dict:
-    """Synchronous Discord API call for Flask routes."""
+    """Fetch full user object from Discord API."""
     try:
-        import urllib.request, json
         req = urllib.request.Request(
             f"{DISCORD_API}/users/{user_id}",
             headers=_discord_headers()
         )
         with urllib.request.urlopen(req, timeout=5) as resp:
-            data = json.loads(resp.read())
-        return data
+            return json.loads(resp.read())
     except Exception:
         return {}
 
 
 def _fetch_guild_member(user_id: str) -> dict:
-    """Fetch guild member object (includes roles, nick, joined_at)."""
+    """Fetch guild member object (roles, nick, joined_at)."""
     try:
-        import urllib.request, json
         req = urllib.request.Request(
             f"{DISCORD_API}/guilds/{GUILD_ID}/members/{user_id}",
             headers=_discord_headers()
         )
         with urllib.request.urlopen(req, timeout=5) as resp:
-            data = json.loads(resp.read())
-        return data
+            return json.loads(resp.read())
     except Exception:
         return {}
 
 
 def _fetch_guild_roles() -> list:
-    """Fetch all guild roles for name resolution."""
+    """Fetch all guild roles."""
     try:
-        import urllib.request, json
         req = urllib.request.Request(
             f"{DISCORD_API}/guilds/{GUILD_ID}/roles",
             headers=_discord_headers()
@@ -67,13 +62,13 @@ def _fetch_guild_roles() -> list:
 
 
 def _avatar_url(user_data: dict) -> str:
-    uid   = user_data.get("id", "")
-    av    = user_data.get("avatar", "")
+    uid = user_data.get("id", "")
+    av  = user_data.get("avatar", "")
     if av:
         ext = "gif" if av.startswith("a_") else "png"
         return f"https://cdn.discordapp.com/avatars/{uid}/{av}.{ext}?size=256"
-    disc  = user_data.get("discriminator", "0")
-    idx   = (int(disc) % 5) if disc != "0" else ((int(uid) >> 22) % 6)
+    disc = user_data.get("discriminator", "0")
+    idx  = (int(disc) % 5) if disc != "0" else ((int(uid) >> 22) % 6) if uid else 0
     return f"https://cdn.discordapp.com/embed/avatars/{idx}.png"
 
 
@@ -94,17 +89,17 @@ def _accent_hex(user_data: dict) -> str:
 
 
 BADGE_MAP = {
-    1:       ("Discord Staff",          "https://cdn.discordapp.com/badge-icons/5e74e9b61934fc1f67c65515d1f7e60d.png"),
-    2:       ("Partnered Server Owner",  "https://cdn.discordapp.com/badge-icons/3f9748e53446a137a052f3454e2de41e.png"),
-    4:       ("HypeSquad Events",        "https://cdn.discordapp.com/badge-icons/bf01d1073931f921909045f3a39fd264.png"),
-    8:       ("Bug Hunter Level 1",      "https://cdn.discordapp.com/badge-icons/2717692c7dca7289b35297368a940dd0.png"),
-    64:      ("HypeSquad Bravery",       "https://cdn.discordapp.com/badge-icons/8a88d63823d8a71cd5e390baa45efa02.png"),
-    128:     ("HypeSquad Brilliance",    "https://cdn.discordapp.com/badge-icons/011940fd013082d99d0e62f73b7f08d6.png"),
-    256:     ("HypeSquad Balance",       "https://cdn.discordapp.com/badge-icons/3aa41de486fa12454c3761e8e223442e.png"),
-    512:     ("Early Supporter",         "https://cdn.discordapp.com/badge-icons/7060786766c9c840eb3019e725d2b358.png"),
-    16384:   ("Bug Hunter Level 2",      "https://cdn.discordapp.com/badge-icons/848f79194d4be5ff5f81505cbd0ce1e6.png"),
-    131072:  ("Verified Bot Developer",  "https://cdn.discordapp.com/badge-icons/6df5892e0f35b051f8b61eace34f4967.png"),
-    4194304: ("Active Developer",        "https://cdn.discordapp.com/badge-icons/6bdc42827a38498929a4920da12695d9.png"),
+    1:       ("Discord Staff",         "https://cdn.discordapp.com/badge-icons/5e74e9b61934fc1f67c65515d1f7e60d.png"),
+    2:       ("Partnered Server Owner", "https://cdn.discordapp.com/badge-icons/3f9748e53446a137a052f3454e2de41e.png"),
+    4:       ("HypeSquad Events",       "https://cdn.discordapp.com/badge-icons/bf01d1073931f921909045f3a39fd264.png"),
+    8:       ("Bug Hunter Level 1",     "https://cdn.discordapp.com/badge-icons/2717692c7dca7289b35297368a940dd0.png"),
+    64:      ("HypeSquad Bravery",      "https://cdn.discordapp.com/badge-icons/8a88d63823d8a71cd5e390baa45efa02.png"),
+    128:     ("HypeSquad Brilliance",   "https://cdn.discordapp.com/badge-icons/011940fd013082d99d0e62f73b7f08d6.png"),
+    256:     ("HypeSquad Balance",      "https://cdn.discordapp.com/badge-icons/3aa41de486fa12454c3761e8e223442e.png"),
+    512:     ("Early Supporter",        "https://cdn.discordapp.com/badge-icons/7060786766c9c840eb3019e725d2b358.png"),
+    16384:   ("Bug Hunter Level 2",     "https://cdn.discordapp.com/badge-icons/848f79194d4be5ff5f81505cbd0ce1e6.png"),
+    131072:  ("Verified Bot Developer", "https://cdn.discordapp.com/badge-icons/6df5892e0f35b051f8b61eace34f4967.png"),
+    4194304: ("Active Developer",       "https://cdn.discordapp.com/badge-icons/6bdc42827a38498929a4920da12695d9.png"),
 }
 
 
@@ -163,7 +158,7 @@ def settings():
         "bad_words":    db.get_setting("bad_words", os.getenv("BAD_WORDS", "")),
         "spam_limit":   db.get_setting("spam_limit",  os.getenv("SPAM_MESSAGE_LIMIT", "6")),
         "spam_window":  db.get_setting("spam_window", os.getenv("SPAM_WINDOW_SECONDS", "8")),
-        "spam_timeout": db.get_setting("spam_timeout",os.getenv("SPAM_TIMEOUT_MINUTES", "5")),
+        "spam_timeout": db.get_setting("spam_timeout", os.getenv("SPAM_TIMEOUT_MINUTES", "5")),
         "client_id":    os.getenv("DISCORD_CLIENT_ID", ""),
         "redirect_uri": os.getenv("DISCORD_REDIRECT_URI", ""),
     }
@@ -247,15 +242,12 @@ def user_profile(user_id):
     logs  = db.logs_for_user(GUILD_ID, user_id)
     bl    = db.is_user_blacklisted(GUILD_ID, user_id)
 
-    # ── Fetch live Discord profile ─────────────────────────────────────────────
+    # Fetch live Discord profile data
     user_data   = _fetch_discord_user(user_id)
     member_data = _fetch_guild_member(user_id)
     guild_roles = _fetch_guild_roles()
 
-    # Build role lookup map {id: role_object}
     role_map = {r["id"]: r for r in guild_roles}
-
-    # Member roles with name + color
     member_role_ids = member_data.get("roles", [])
     member_roles = [
         {
@@ -265,7 +257,6 @@ def user_profile(user_id):
         }
         for rid in member_role_ids
     ]
-    # Sort roles by position (highest first)
     member_roles.sort(
         key=lambda r: role_map.get(r["id"], {}).get("position", 0),
         reverse=True
@@ -277,21 +268,20 @@ def user_profile(user_id):
     badges       = _get_badges(user_data.get("public_flags", 0))
 
     profile = {
-        "id":          user_id,
-        "username":    user_data.get("username", user_id),
-        "global_name": user_data.get("global_name") or user_data.get("username", user_id),
+        "id":            user_id,
+        "username":      user_data.get("username", user_id),
+        "global_name":   user_data.get("global_name") or user_data.get("username", user_id),
         "discriminator": user_data.get("discriminator", "0"),
-        "avatar_url":  avatar_url,
-        "banner_url":  banner_url,
-        "accent_color": accent_color,
-        "badges":      badges,
-        "bot":         user_data.get("bot", False),
-        "nick":        member_data.get("nick") or "",
-        "joined_at":   member_data.get("joined_at", "")[:10] if member_data.get("joined_at") else "",
-        "roles":       member_roles,
+        "avatar_url":    avatar_url,
+        "banner_url":    banner_url,
+        "accent_color":  accent_color,
+        "badges":        badges,
+        "bot":           user_data.get("bot", False),
+        "nick":          member_data.get("nick") or "",
+        "joined_at":     member_data.get("joined_at", "")[:10] if member_data.get("joined_at") else "",
+        "roles":         member_roles,
     }
 
-    # Update profile cache
     db.cache_profile(
         user_id,
         profile["username"],
@@ -316,7 +306,6 @@ def user_profile(user_id):
 @app.route("/api/profile/<user_id>")
 @login_required
 def api_profile(user_id):
-    """JSON endpoint so bot or other tools can pull cached profile data."""
     cached = db.get_cached_profile(user_id)
     if cached:
         return jsonify(cached)
