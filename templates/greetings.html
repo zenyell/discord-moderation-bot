@@ -11,7 +11,7 @@
   <div class="card" style="margin-bottom:20px">
     <div class="card-header">
       <span class="card-title">Welcome Message</span>
-      <label class="toggle-switch" style="margin-left:auto">
+      <label class="switch" style="margin-left:auto;cursor:pointer">
         <input type="checkbox" name="welcome_enabled" {% if cfg.welcome_enabled == '1' %}checked{% endif %}>
         <span class="slider"></span>
       </label>
@@ -24,7 +24,7 @@
       <div class="form-group" style="margin-bottom:0">
         <label>Message</label>
         <textarea name="welcome_message" rows="3" placeholder="Welcome {user} to {server}! You are member #{count}.">{{ cfg.welcome_message }}</textarea>
-        <div class="form-hint">Variables: <code>{user}</code> = mention, <code>{username}</code>, <code>{server}</code>, <code>{count}</code></div>
+        <div class="form-hint">Variables: <code style="background:var(--surface-2);padding:1px 5px;border-radius:4px">{user}</code> mention &nbsp;·&nbsp; <code style="background:var(--surface-2);padding:1px 5px;border-radius:4px">{username}</code> &nbsp;·&nbsp; <code style="background:var(--surface-2);padding:1px 5px;border-radius:4px">{server}</code> &nbsp;·&nbsp; <code style="background:var(--surface-2);padding:1px 5px;border-radius:4px">{count}</code></div>
       </div>
     </div>
   </div>
@@ -32,7 +32,7 @@
   <div class="card" style="margin-bottom:20px">
     <div class="card-header">
       <span class="card-title">Farewell Message</span>
-      <label class="toggle-switch" style="margin-left:auto">
+      <label class="switch" style="margin-left:auto;cursor:pointer">
         <input type="checkbox" name="farewell_enabled" {% if cfg.farewell_enabled == '1' %}checked{% endif %}>
         <span class="slider"></span>
       </label>
@@ -45,11 +45,14 @@
       <div class="form-group" style="margin-bottom:0">
         <label>Message</label>
         <textarea name="farewell_message" rows="3" placeholder="Goodbye {username}. We hope to see you again!">{{ cfg.farewell_message }}</textarea>
-        <div class="form-hint">Variables: <code>{username}</code>, <code>{server}</code></div>
+        <div class="form-hint">Variables: <code style="background:var(--surface-2);padding:1px 5px;border-radius:4px">{username}</code> &nbsp;·&nbsp; <code style="background:var(--surface-2);padding:1px 5px;border-radius:4px">{server}</code></div>
       </div>
     </div>
   </div>
 
-  <button type="submit" class="btn btn-primary">Save Greetings</button>
+  <button type="submit" class="btn btn-primary">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+    Save Greetings
+  </button>
 </form>
 {% endblock %}

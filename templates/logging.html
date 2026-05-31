@@ -4,7 +4,7 @@
 {% block content %}
 <div class="page-header">
   <h1>Logging</h1>
-  <p>Configure which moderation events get logged and which channel they post to.</p>
+  <p>Configure which events get logged and which channel they post to.</p>
 </div>
 
 <form method="POST">
@@ -13,24 +13,24 @@
     <div class="card-body">
       <div class="form-group" style="margin-bottom:0">
         <label>Channel ID</label>
-        <input type="text" name="log_channel_id" value="{{ cfg.log_channel_id }}" placeholder="Discord channel ID for mod logs">
-        <div class="form-hint">The bot will post moderation actions to this channel.</div>
+        <input type="text" name="log_channel_id" value="{{ cfg['log_channel_id'] }}" placeholder="Discord channel ID for mod logs">
+        <div class="form-hint">The bot posts all enabled events to this channel.</div>
       </div>
     </div>
   </div>
 
   <div class="card" style="margin-bottom:20px">
     <div class="card-header"><span class="card-title">Events to Log</span></div>
-    <div class="card-body">
+    <div class="card-body" style="padding:0 18px">
       <div class="toggle-grid">
         {% for event in events %}
-        <label class="toggle-row">
+        <label class="toggle-row" style="cursor:pointer">
           <div class="toggle-info">
-            <span class="toggle-label">{{ event.label }}</span>
+            <span class="toggle-name">{{ event.label }}</span>
             <span class="toggle-desc">{{ event.desc }}</span>
           </div>
-          <div class="toggle-switch">
-            <input type="checkbox" name="log_{{ event.key }}" {% if cfg.get('log_' + event.key, '1') == '1' %}checked{% endif %}>
+          <div class="switch">
+            <input type="checkbox" name="log_{{ event.key }}" {% if cfg['log_' + event.key] == '1' %}checked{% endif %}>
             <span class="slider"></span>
           </div>
         </label>
@@ -39,6 +39,9 @@
     </div>
   </div>
 
-  <button type="submit" class="btn btn-primary">Save Logging Settings</button>
+  <button type="submit" class="btn btn-primary">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+    Save Logging Settings
+  </button>
 </form>
 {% endblock %}
