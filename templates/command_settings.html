@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}Commands{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Command Settings</h1>
+  <p class="subtitle">Enable or disable commands, restrict to whitelisted roles, or block specific moderators.</p>
+</div>
+
+<form method="POST">
+  <div class="cmd-grid">
+    {% for cmd in commands %}
+    {% set cs = cmd_settings[cmd] %}
+    <div class="cmd-card {% if not cs.enabled %}cmd-disabled{% endif %}" id="card-{{ cmd }}">
+      <div class="cmd-card-header">
+        <div class="cmd-name">/{{ cmd }}</div>
+        <label class="toggle" title="Enable/disable command">
+          <input type="checkbox" name="{{ cmd }}_enabled" {% if cs.enabled %}checked{% endif %}
+            onchange="document.getElementById('card-{{ cmd }}').classList.toggle('cmd-disabled', !this.checked)">
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        </label>
+      </div>
+      <div class="cmd-fields">
+        <label class="field-label" title="Comma-separated role IDs. If set, only these roles can use this command.">
+          Whitelist Roles
+          <span class="field-hint">(role IDs, comma-separated)</span>
+        </label>
+        <input type="text" name="{{ cmd }}_whitelist_roles"
+               value="{{ cs.whitelist_roles }}"
+               placeholder="e.g. 123456789,987654321"
+               class="field-input">
+        <label class="field-label mt-2" title="Comma-separated user IDs. These moderators cannot use this command.">
+          Blacklisted Mods
+          <span class="field-hint">(user IDs, comma-separated)</span>
+        </label>
+        <input type="text" name="{{ cmd }}_blacklist_mods"
+               value="{{ cs.blacklist_mods }}"
+               placeholder="e.g. 111222333,444555666"
+               class="field-input">
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  <div class="form-actions">
+    <button type="submit" class="btn-primary">Save All Command Settings</button>
+  </div>
+</form>
+{% endblock %}

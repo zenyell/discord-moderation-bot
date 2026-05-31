@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block title %}User Profile{% endblock %}
+{% block content %}
+<div class="page-header">
+  <a href="/user-lookup" class="back-link">&larr; Back to Lookup</a>
+  <h1>User Profile</h1>
+  <p class="subtitle mono">{{ user_id }}</p>
+</div>
+
+<div class="profile-hero">
+  <div class="profile-avatar-wrap">
+    <img src="https://cdn.discordapp.com/avatars/{{ user_id }}/avatar.png?size=256"
+         onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'"
+         alt="Avatar" class="profile-avatar" width="96" height="96">
+  </div>
+  <div class="profile-meta">
+    <div class="profile-id mono">{{ user_id }}</div>
+    <div class="profile-badges">
+      {% if blacklisted %}
+        <span class="badge badge-ban">&#x1F6AB; Blacklisted</span>
+      {% else %}
+        <span class="badge badge-ok">&#x2705; Clean</span>
+      {% endif %}
+      <span class="badge badge-neutral">{{ warns|length }} Warning{{ 's' if warns|length != 1 }}</span>
+      <span class="badge badge-neutral">{{ logs|length }} Mod Action{{ 's' if logs|length != 1 }}</span>
+    </div>
+  </div>
+</div>
+
+{% if warns %}
+<div class="card mt-6">
+  <div class="card-header"><h2>Warnings ({{ warns|length }})</h2></div>
+  <table class="mod-table">
+    <thead><tr><th>#</th><th>Reason</th><th>Moderator ID</th><th>Date</th></tr></thead>
+    <tbody>
+      {% for w in warns %}
+      <tr>
+        <td class="muted">{{ loop.index }}</td>
+        <td>{{ w.reason or '—' }}</td>
+        <td class="mono">{{ w.moderator_id }}</td>
+        <td class="muted">{{ w.created_at[:16] }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<div class="card mt-6">
+  <div class="card-header"><h2>Mod Action History ({{ logs|length }})</h2></div>
+  <table class="mod-table">
+    <thead><tr><th>Action</th><th>Moderator ID</th><th>Reason</th><th>Date</th></tr></thead>
+    <tbody>
+      {% for row in logs %}
+      <tr>
+        <td><span class="badge badge-{{ row.action }}">{{ row.action.upper() }}</span></td>
+        <td class="mono">{{ row.moderator_id }}</td>
+        <td>{{ row.reason or '—' }}</td>
+        <td class="muted">{{ row.created_at[:16] }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="empty-row">No mod actions recorded.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
