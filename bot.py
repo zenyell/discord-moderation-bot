@@ -1,20 +1,26 @@
 import os
+import sys
+from pathlib import Path
+
+# Load .env from the same directory as this file, regardless of cwd
+from dotenv import load_dotenv
+load_dotenv(dotenv_path=Path(__file__).resolve().parent / ".env", override=True)
+
 import discord
 from discord import app_commands
 from discord.ext import commands
-from dotenv import load_dotenv
 from datetime import timedelta
 from collections import defaultdict, deque
 import time
 import database as db
 import heartbeat
 
-load_dotenv()
-
 TOKEN        = os.getenv("DISCORD_BOT_TOKEN")
 GUILD_ID     = int(os.getenv("GUILD_ID", 0)) if os.getenv("GUILD_ID") else None
 AUTO_ROLE_ID = int(os.getenv("AUTO_ROLE_ID", 0)) if os.getenv("AUTO_ROLE_ID") else None
 BAD_WORDS    = [w.strip().lower() for w in os.getenv("BAD_WORDS", "").split(",") if w.strip()]
+
+print(f"[Bot] TOKEN present: {bool(TOKEN)}  GUILD_ID: {GUILD_ID}", flush=True)
 
 # Spam defaults — overridden live from DB each message
 DEFAULT_SPAM_LIMIT   = int(os.getenv("SPAM_MESSAGE_LIMIT", 6))
