@@ -1,20 +1,24 @@
-"""
-Heartbeat writer — import and call start() in your bot's on_ready event.
-Writes /tmp/bot_heartbeat every 20 seconds so the dashboard can read it.
-"""
-import asyncio, time, os
+import threading
+import time
+import database as db
 
-HEARTBEAT_FILE = os.getenv("HEARTBEAT_PATH", "/tmp/bot_heartbeat")
+_started = False
 
-async def _write_loop(bot):
-    while True:
-        try:
-            with open(HEARTBEAT_FILE, "w") as f:
-                f.write(f"{time.time()}|{bot.user.name}")
-        except Exception:
-            pass
-        await asyncio.sleep(20)
 
 def start(bot):
-    """Call this inside on_ready: heartbeat.start(bot)"""
-    bot.loop.create_task(_write_loop(bot))
+    global _started
+    if _started:
+        return
+    _started = True
+
+    def _loop():
+        while True:
+            try:
+                db.set_setting("bot_online", "1")
+                db.set_setting("bot_name", str(bot.user) if bot.user else "")
+            except Exception:
+                pass
+            time.sleep(20)
+
+    t = threading.Thread(target=_loop, daemon=True)
+    t.start()
