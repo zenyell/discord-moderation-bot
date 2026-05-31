@@ -13,9 +13,11 @@
 
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-brand">
-    <svg class="brand-logo" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-    </svg>
+    <div class="brand-logo">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+    </div>
     <div>
       <div class="brand-name">ModPanel</div>
       <div class="brand-sub">Discord Mod Bot</div>
@@ -83,7 +85,7 @@
 
 <div class="main-wrap">
   <header class="topbar">
-    <div class="topbar-title">{% block title %}Dashboard{% endblock %}</div>
+    <div class="topbar-title">{% block page_title %}Dashboard{% endblock %}</div>
     <div class="topbar-right">
       <div class="bot-status" id="botStatus">
         <span class="status-dot" id="statusDot"></span>
