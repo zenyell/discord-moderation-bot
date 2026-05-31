@@ -17,28 +17,24 @@ BOT_TOKEN      = os.getenv("DISCORD_BOT_TOKEN", "")
 
 DISCORD_API = "https://discord.com/api/v10"
 
-# Init DB on startup (safe — /tmp is always writable)
 db.init_db()
 
 
 def _discord_headers():
     return {
         "Authorization": f"Bot {BOT_TOKEN}",
-        # Required to receive banner + accent_color in the user object
-        "X-Discord-Locale": "en-US",
+        "Content-Type": "application/json",
     }
 
 
 def _fetch_discord_user(user_id: str) -> dict:
     """
-    Fetch a full Discord user object.
-    The standard GET /users/{id} with a Bot token does return banner and
-    accent_color — the key requirement is that the token is valid and the
-    bot has at minimum the identify scope for its own account, or is simply
-    authenticated. No extra intent is needed for basic user profile fields.
-
-    If the first call returns an empty banner/accent_color it usually means
-    the token is missing or the user truly has none set.
+    GET /users/{id} with a Bot token.
+    NOTE: Discord's Bot-token user endpoint returns only basic fields.
+    'banner', 'bio', and 'accent_color' are included ONLY when the user
+    has set them AND the API decides to return them (not guaranteed for
+    all users via bot token — OAuth2 'identify' scope is the reliable way).
+    We fetch it anyway and use whatever Discord gives us.
     """
     try:
         req = urllib.request.Request(
@@ -46,13 +42,19 @@ def _fetch_discord_user(user_id: str) -> dict:
             headers=_discord_headers()
         )
         with urllib.request.urlopen(req, timeout=5) as resp:
-            data = json.loads(resp.read())
-        return data
+            return json.loads(resp.read())
     except Exception:
         return {}
 
 
 def _fetch_guild_member(user_id: str) -> dict:
+    """
+    GET /guilds/{guild}/members/{user}
+    This returns the member object which includes:
+    - avatar (guild-specific avatar hash — overrides global)
+    - banner (guild-specific banner hash — overrides global)
+    - nick, roles, joined_at, etc.
+    """
     try:
         req = urllib.request.Request(
             f"{DISCORD_API}/guilds/{GUILD_ID}/members/{user_id}",
@@ -76,28 +78,51 @@ def _fetch_guild_roles() -> list:
         return []
 
 
-def _avatar_url(user_data: dict) -> str:
+def _avatar_url(user_data: dict, member_data: dict) -> str:
+    """
+    Priority: guild-specific avatar > global avatar > default avatar.
+    Guild avatar is inside member_data['avatar'].
+    """
     uid = user_data.get("id", "")
-    av  = user_data.get("avatar", "")
+
+    # Guild-specific avatar takes priority
+    guild_av = member_data.get("avatar", "")
+    if guild_av:
+        ext = "gif" if guild_av.startswith("a_") else "png"
+        return f"https://cdn.discordapp.com/guilds/{GUILD_ID}/users/{uid}/avatars/{guild_av}.{ext}?size=256"
+
+    # Global avatar
+    av = user_data.get("avatar", "")
     if av:
         ext = "gif" if av.startswith("a_") else "png"
         return f"https://cdn.discordapp.com/avatars/{uid}/{av}.{ext}?size=256"
+
+    # Default avatar
     disc = user_data.get("discriminator", "0")
     idx  = (int(disc) % 5) if disc and disc != "0" else ((int(uid) >> 22) % 6) if uid else 0
     return f"https://cdn.discordapp.com/embed/avatars/{idx}.png"
 
 
-def _banner_url(user_data: dict) -> str:
+def _banner_url(user_data: dict, member_data: dict) -> str:
     """
-    Build the banner CDN URL.
-    Discord returns banner as a hash string (or null).
-    Animated banners start with 'a_'.
+    Priority: guild-specific banner > global banner.
+    Guild banner is inside member_data['banner'].
+    Global banner is inside user_data['banner'].
     """
-    uid    = user_data.get("id", "")
-    banner = user_data.get("banner") or ""
+    uid = user_data.get("id", "")
+
+    # Guild-specific banner
+    guild_banner = member_data.get("banner", "") or ""
+    if guild_banner:
+        ext = "gif" if guild_banner.startswith("a_") else "png"
+        return f"https://cdn.discordapp.com/guilds/{GUILD_ID}/users/{uid}/banners/{guild_banner}.{ext}?size=1024"
+
+    # Global banner
+    banner = user_data.get("banner", "") or ""
     if banner:
         ext = "gif" if banner.startswith("a_") else "png"
         return f"https://cdn.discordapp.com/banners/{uid}/{banner}.{ext}?size=1024"
+
     return ""
 
 
@@ -109,10 +134,6 @@ def _accent_hex(user_data: dict) -> str:
 
 
 def _bio(user_data: dict) -> str:
-    """
-    'bio' is present on the user object returned by the bot-token user fetch.
-    It may be an empty string if the user has not set one.
-    """
     return user_data.get("bio") or ""
 
 
@@ -308,8 +329,9 @@ def user_profile(user_id):
         reverse=True
     )
 
-    avatar_url   = _avatar_url(user_data)
-    banner_url   = _banner_url(user_data)
+    # Pass both user_data AND member_data so guild-specific assets take priority
+    avatar_url   = _avatar_url(user_data, member_data)
+    banner_url   = _banner_url(user_data, member_data)
     accent_color = _accent_hex(user_data)
     badges       = _get_badges(user_data.get("public_flags", 0))
     bio          = _bio(user_data)
@@ -359,6 +381,29 @@ def api_profile(user_id):
     except Exception:
         pass
     return jsonify({"error": "not_found"}), 404
+
+
+@app.route("/api/debug/<user_id>")
+@login_required
+def api_debug(user_id):
+    """
+    Debug route: returns raw Discord API responses for a user.
+    Visit /api/debug/<user_id> in your browser to see exactly what
+    Discord is sending back — useful for diagnosing missing banner/bio.
+    REMOVE this route before deploying to production.
+    """
+    user_data   = _fetch_discord_user(user_id)
+    member_data = _fetch_guild_member(user_id)
+    return jsonify({
+        "user":   user_data,
+        "member": member_data,
+        "resolved": {
+            "avatar_url":   _avatar_url(user_data, member_data),
+            "banner_url":   _banner_url(user_data, member_data),
+            "accent_color": _accent_hex(user_data),
+            "bio":          _bio(user_data),
+        }
+    })
 
 
 if __name__ == "__main__":
