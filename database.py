@@ -4,7 +4,8 @@ import libsql_client
 import asyncio
 
 _raw_url    = os.getenv("TURSO_URL",   "")
-TURSO_TOKEN = os.getenv("TURSO_TOKEN", "")
+# Strip ALL whitespace/newlines — copy-pasted tokens often have trailing \n
+TURSO_TOKEN = os.getenv("TURSO_TOKEN", "").strip()
 
 # libsql:// forces WebSocket (fails on Render free tier).
 # https:// forces HTTP — works everywhere.
@@ -17,10 +18,14 @@ elif not _raw_url.startswith("http") and _raw_url:  # bare hostname
 else:
     TURSO_URL = _raw_url
 
+TURSO_URL = TURSO_URL.strip()
+
 print(f"[DB] TURSO_URL raw={_raw_url!r}  resolved={TURSO_URL!r}  token_set={bool(TURSO_TOKEN)}", flush=True)
 
 if not TURSO_URL:
     print("[DB] WARNING: TURSO_URL is not set. Database calls will fail.", flush=True)
+if not TURSO_TOKEN:
+    print("[DB] WARNING: TURSO_TOKEN is not set. Database calls will fail.", flush=True)
 
 
 def _run(coro):
@@ -175,7 +180,6 @@ def init_db():
         print(f"[DB] init_db() FAILED: {type(e).__name__}: {e}", flush=True)
         import traceback
         traceback.print_exc()
-        # Do NOT sys.exit() — let the app start anyway so the error is visible
 
 
 # ── warnings ──────────────────────────────────────────────────────────────────
