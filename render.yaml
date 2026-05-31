@@ -1,9 +1,52 @@
 services:
+  # ── Discord Bot (Background Worker) ─────────────────────────────────────────
+  # Render will restart this automatically if it crashes.
+  - type: worker
+    name: discord-moderation-bot
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python bot.py
+    envVars:
+      - key: DISCORD_BOT_TOKEN
+        sync: false
+      - key: GUILD_ID
+        sync: false
+      - key: AUTO_ROLE_ID
+        sync: false
+      - key: BAD_WORDS
+        sync: false
+      - key: SPAM_MESSAGE_LIMIT
+        sync: false
+      - key: SPAM_WINDOW_SECONDS
+        sync: false
+      - key: SPAM_TIMEOUT_MINUTES
+        sync: false
+      - key: TURSO_URL
+        sync: false
+      - key: TURSO_TOKEN
+        sync: false
+
+  # ── Dashboard (Web Service) ──────────────────────────────────────────────────
+  # Serves the Flask dashboard. Runs independently of the bot.
   - type: web
     name: discord-moderation-bot-dashboard
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn dashboard:app --workers 1 --bind 0.0.0.0:$PORT
+    startCommand: gunicorn dashboard:app --workers 1 --bind 0.0.0.0:$PORT --timeout 120
     envVars:
       - key: FLASK_SECRET_KEY
         generateValue: true
+      - key: TURSO_URL
+        sync: false
+      - key: TURSO_TOKEN
+        sync: false
+      - key: DASHBOARD_USERNAME
+        sync: false
+      - key: DASHBOARD_PASSWORD
+        sync: false
+      - key: DISCORD_CLIENT_ID
+        sync: false
+      - key: DISCORD_CLIENT_SECRET
+        sync: false
+      - key: DISCORD_REDIRECT_URI
+        sync: false

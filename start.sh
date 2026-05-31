@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Starts the Discord bot in the background, then starts the dashboard web server.
-# Both processes share the same /tmp directory, so they use the same SQLite DB.
+# start.sh is no longer used for production.
+# The bot and dashboard are now separate Render services defined in render.yaml.
+# This script is kept only for local development convenience.
 
 set -e
 
@@ -9,5 +10,5 @@ python bot.py &
 BOT_PID=$!
 echo "[start.sh] Bot PID: $BOT_PID"
 
-echo "[start.sh] Starting dashboard (gunicorn)..."
+echo "[start.sh] Starting dashboard..."
 exec gunicorn dashboard:app --workers 1 --bind 0.0.0.0:${PORT:-5000} --timeout 120
