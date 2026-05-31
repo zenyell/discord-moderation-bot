@@ -47,8 +47,7 @@
 
   <div class="main-wrap">
     <header class="topbar">
-      <div class="topbar-title">{% block title %}{% endblock %}</div>
-    </header>
+                <div class="topbar-title">{{ self.title() }}</div>    </header>
     <main class="main-content">
       {% with messages = get_flashed_messages() %}
         {% if messages %}
