@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: discord-moderation-bot-dashboard
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn dashboard:app --workers 1 --bind 0.0.0.0:$PORT
+    envVars:
+      - key: FLASK_SECRET_KEY
+        generateValue: true

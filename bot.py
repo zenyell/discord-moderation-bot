@@ -320,7 +320,6 @@ async def userinfo(interaction: discord.Interaction, member: discord.Member):
         full_user = await bot.fetch_user(member.id)
         banner_url   = full_user.banner.url if full_user.banner else None
         accent_color = full_user.accent_color or member.color or discord.Color.blurple()
-        # Public badges
         badges = [label for flag, label in BADGE_FLAGS.items() if full_user.public_flags & flag]
     except Exception:
         full_user    = None
@@ -328,71 +327,52 @@ async def userinfo(interaction: discord.Interaction, member: discord.Member):
         accent_color = member.color or discord.Color.blurple()
         badges       = []
 
-    # ── build embed ───────────────────────────────────────────────────────────
     embed = discord.Embed(
         title=f"{member.display_name}",
         description=(
             f"**@{member.name}**"
-            + (f"  •  `{member.global_name}`" if getattr(member, 'global_name', None) and member.global_name != member.name else "")
+            + (f"  \u2022  `{member.global_name}`" if getattr(member, 'global_name', None) and member.global_name != member.name else "")
         ),
         color=accent_color
     )
 
-    # Avatar (thumbnail) + banner (image)
     embed.set_thumbnail(url=member.display_avatar.url)
     if banner_url:
         embed.set_image(url=banner_url)
 
-    # ── Identity row ──────────────────────────────────────────────────────────
-    embed.add_field(name="User ID",       value=f"`{member.id}`",            inline=True)
-    embed.add_field(name="Mention",       value=member.mention,              inline=True)
-    embed.add_field(name="Bot Account",   value="Yes" if member.bot else "No", inline=True)
+    embed.add_field(name="User ID",     value=f"`{member.id}`",              inline=True)
+    embed.add_field(name="Mention",     value=member.mention,                inline=True)
+    embed.add_field(name="Bot Account", value="Yes" if member.bot else "No", inline=True)
+    embed.add_field(name="Nickname",    value=member.nick or "None",         inline=True)
+    embed.add_field(name="Global Name", value=getattr(member, 'global_name', None) or "None", inline=True)
+    embed.add_field(name="\u200b",      value="\u200b",                      inline=True)
 
-    # ── Nickname / Global name ────────────────────────────────────────────────
-    embed.add_field(name="Nickname",     value=member.nick or "None",       inline=True)
-    embed.add_field(name="Global Name",  value=getattr(member, 'global_name', None) or "None", inline=True)
-    embed.add_field(name="\u200b",        value="\u200b",                    inline=True)
-
-    # ── Dates ──────────────────────────────────────────────────────────────────
-    created  = discord.utils.format_dt(member.created_at, style="D")
-    joined   = discord.utils.format_dt(member.joined_at, style="D") if member.joined_at else "Unknown"
+    created = discord.utils.format_dt(member.created_at, style="D")
+    joined  = discord.utils.format_dt(member.joined_at, style="D") if member.joined_at else "Unknown"
     embed.add_field(name="Account Created", value=created, inline=True)
     embed.add_field(name="Joined Server",   value=joined,  inline=True)
 
-    # ── Timeout status ────────────────────────────────────────────────────────
     if member.timed_out_until:
-        embed.add_field(
-            name="Timed Out Until",
-            value=discord.utils.format_dt(member.timed_out_until, style="R"),
-            inline=True
-        )
+        embed.add_field(name="Timed Out Until", value=discord.utils.format_dt(member.timed_out_until, style="R"), inline=True)
     else:
         embed.add_field(name="Timed Out", value="No", inline=True)
 
-    # ── Badges ────────────────────────────────────────────────────────────────
     if badges:
         embed.add_field(name="Badges", value="  ".join(badges), inline=False)
 
-    # ── Roles ─────────────────────────────────────────────────────────────────
     role_list = [r.mention for r in reversed(member.roles) if r.name != "@everyone"]
     if role_list:
         roles_str = "  ".join(role_list)
         if len(roles_str) > 1020:
-            roles_str = roles_str[:1020] + "…"
+            roles_str = roles_str[:1020] + "\u2026"
         embed.add_field(name=f"Roles [{len(role_list)}]", value=roles_str, inline=False)
     else:
         embed.add_field(name="Roles", value="None", inline=False)
 
-    # ── Moderation summary ────────────────────────────────────────────────────
     embed.add_field(name="Warnings",    value=str(len(warns)), inline=True)
     embed.add_field(name="Mod Actions", value=str(len(logs)),  inline=True)
-    embed.add_field(
-        name="Blacklisted",
-        value="\U0001f6ab Yes" if blacklisted else "\u2705 No",
-        inline=True
-    )
+    embed.add_field(name="Blacklisted", value="\U0001f6ab Yes" if blacklisted else "\u2705 No", inline=True)
 
-    # ── Recent mod history (up to 6 entries) ──────────────────────────────────
     recent = logs[:6]
     if recent:
         action_icons = {
@@ -400,19 +380,17 @@ async def userinfo(interaction: discord.Interaction, member: discord.Member):
             "warn": "\u26a0\ufe0f", "unban": "\u2705", "purge": "\U0001f5d1",
             "filter": "\U0001f6ab", "blacklist": "\U0001f6ab", "auto-ban": "\U0001f528",
         }
+        import datetime as _dt
         history = "\n".join(
-            f"{action_icons.get(r['action'], '\u2022')} `{r['action'].upper()}` "
-            f"{DASH} {r['reason'] or 'No reason'} — <t:{int(__import__('datetime').datetime.fromisoformat(r['created_at']).timestamp())}:R>"
+            f"{action_icons.get(r['action'], chr(8226))} `{r['action'].upper()}` "
+            f"\u2014 {r['reason'] or 'No reason'} \u2014 "
+            f"<t:{int(_dt.datetime.fromisoformat(r['created_at']).timestamp())}:R>"
             for r in recent
         )
         embed.add_field(name="Recent Mod History", value=history, inline=False)
 
-    embed.set_footer(
-        text=f"Requested by {interaction.user}",
-        icon_url=interaction.user.display_avatar.url
-    )
+    embed.set_footer(text=f"Requested by {interaction.user}", icon_url=interaction.user.display_avatar.url)
 
-    # Cache profile data for dashboard
     db.cache_profile(
         str(member.id),
         str(member.name),
@@ -427,4 +405,7 @@ async def userinfo(interaction: discord.Interaction, member: discord.Member):
     await interaction.response.send_message(embed=embed)
 
 
-bot.run(TOKEN)
+# ─────────────────────────────── run ──────────────────────────────────────────
+
+if __name__ == "__main__":
+    bot.run(TOKEN)
