@@ -7,6 +7,7 @@ from datetime import timedelta
 from collections import defaultdict, deque
 import time
 import database as db
+import heartbeat
 
 load_dotenv()
 
@@ -122,6 +123,7 @@ async def on_ready():
     except Exception:
         synced = await bot.tree.sync()
     print(f"[Bot] Logged in as {bot.user} | Synced {len(synced)} commands")
+    heartbeat.start(bot)
 
 
 @bot.event
