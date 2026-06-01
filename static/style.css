@@ -17,10 +17,8 @@
   --glass-bg-active:    rgba(255,255,255,0.148);
   --glass-border:       rgba(255,255,255,0.130);
   --glass-border-hover: rgba(255,255,255,0.240);
-  /* Top specular highlight — the iOS "shine" line */
   --glass-shine-top:    rgba(255,255,255,0.220);
   --glass-shine-bottom: rgba(255,255,255,0.000);
-  /* Inner bottom shadow for depth */
   --glass-inner-shadow: rgba(0,0,0,0.18);
 
   /* ── Sidebar ── */
@@ -45,12 +43,10 @@
   --ios-yellow:   #ffd60a;
   --ios-indigo:   #5e5ce6;
 
-  /* Primary accent: system purple */
   --accent:       var(--ios-purple);
   --accent-glow:  rgba(191,90,242,0.38);
   --accent-dim:   rgba(191,90,242,0.14);
 
-  /* Semantic */
   --danger:       var(--ios-red);
   --danger-dim:   rgba(255,69,58,0.14);
   --danger-glow:  rgba(255,69,58,0.30);
@@ -68,7 +64,7 @@
   --radius-pill: 9999px;
   --radius-card: 22px;
 
-  /* ── Motion — iOS spring feel ── */
+  /* ── Motion ── */
   --spring:      280ms cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-out:    220ms cubic-bezier(0.16, 1, 0.3, 1);
   --ease-snap:   160ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
@@ -103,7 +99,6 @@ body {
   overflow-x: hidden;
 }
 
-/* Dynamic wallpaper orbs — behind everything */
 body::before {
   content: '';
   position: fixed; inset: 0; z-index: 0; pointer-events: none;
@@ -115,7 +110,6 @@ body::before {
     linear-gradient(160deg, #07071a 0%, #08071f 40%, #060614 70%, #06060f 100%);
 }
 
-/* Animated noise grain overlay for iOS realism */
 body::after {
   content: '';
   position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: 0.022;
@@ -146,7 +140,6 @@ body::after {
   border-color: var(--glass-border-hover);
 }
 
-/* Specular "liquid" top edge — key iOS detail */
 .glass-specular::before {
   content: '';
   position: absolute; top: 0; left: 8%; right: 8%; height: 1px;
@@ -317,12 +310,13 @@ body::after {
 }
 .topbar-btn:hover { background: rgba(255,255,255,0.13); color: var(--text); border-color: var(--glass-border-hover); }
 
-/* ── Main content ── */
+/* ── Main content — centered ── */
 .main-content {
   flex: 1;
   padding: 32px 28px 56px;
   max-width: 1100px;
   width: 100%;
+  margin-inline: auto;   /* FIX: centers the content area */
 }
 
 /* ════════════════════════════════
@@ -384,14 +378,12 @@ body::after {
   transition: transform var(--spring), box-shadow var(--ease-out), border-color var(--ease-snap);
   cursor: default;
 }
-/* Specular top line */
 .stat-card::before {
   content: '';
   position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
   background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.45) 50%, transparent 100%);
   pointer-events: none; z-index: 2;
 }
-/* Color orb glow in corner */
 .stat-card::after {
   content: '';
   position: absolute; top: -20px; right: -20px;
@@ -624,35 +616,92 @@ input:focus, textarea:focus, select:focus {
 select option { background: #1a1a2e; color: var(--text); }
 textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
 
-.toggle-wrap { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; }
-.toggle-label { font-size: 13.5px; color: var(--text); font-weight: 500; }
+/* ── Toggle row layout ── */
+.toggle-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  gap: 16px;
+}
+.toggle-text { flex: 1; min-width: 0; }
+.toggle-label { font-size: 13.5px; color: var(--text); font-weight: 600; }
 .toggle-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
-/* iOS toggle switch */
+/* ── iOS toggle switch — FIXED ── */
 .toggle {
-  position: relative; width: 50px; height: 28px;
-  -webkit-appearance: none; appearance: none; cursor: pointer;
-  background: rgba(255,255,255,0.12);
-  border-radius: 14px; border: 1px solid rgba(255,255,255,0.10);
-  transition: background var(--ease-snap), box-shadow var(--ease-snap);
+  /* Reset all browser default styles */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+
+  /* Size & shape */
+  position: relative;
+  display: inline-block;    /* FIX: was missing, caused collapse */
   flex-shrink: 0;
-  box-shadow: inset 0 1px 3px rgba(0,0,0,0.30);
+  width: 51px;
+  height: 31px;
+  border-radius: 31px;
+
+  /* Glass off-state */
+  background: rgba(120, 120, 128, 0.32);
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.25), inset 0 2px 4px rgba(0,0,0,0.30);
+
+  cursor: pointer;
+  transition: background var(--ease-snap), box-shadow var(--ease-snap), border-color var(--ease-snap);
+  vertical-align: middle;
 }
+
+/* The sliding knob */
 .toggle::before {
-  content: ''; position: absolute;
-  top: 2px; left: 2px;
-  width: 22px; height: 22px; border-radius: 50%;
-  background: rgba(255,255,255,0.80);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.35);
-  transition: transform var(--spring), background var(--ease-snap);
+  content: '';
+  position: absolute;
+  /* FIX: correct centering — (31px height - 25px knob - 2px border×2) / 2 = 2px top */
+  top: 2px;
+  left: 2px;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow:
+    0 2px 6px rgba(0,0,0,0.40),
+    0 1px 2px rgba(0,0,0,0.25),
+    inset 0 1px 0 rgba(255,255,255,0.90);
+  transition: transform var(--spring), width var(--ease-snap), background var(--ease-snap);
 }
+
+/* Checked / ON state */
 .toggle:checked {
-  background: var(--ios-purple); border-color: rgba(191,90,242,0.40);
-  box-shadow: 0 0 12px rgba(191,90,242,0.28), inset 0 1px 0 rgba(255,255,255,0.15);
+  background: var(--ios-purple);
+  border-color: rgba(191,90,242,0.55);
+  box-shadow:
+    0 0 14px rgba(191,90,242,0.35),
+    inset 0 1px 0 rgba(255,255,255,0.18);
 }
 .toggle:checked::before {
-  transform: translateX(22px); background: #fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.30);
+  /* FIX: correct travel = width(51) - knob(25) - left-offset(2) - right-gap(2) = 22px */
+  transform: translateX(22px);
+  background: #ffffff;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.35),
+    0 1px 2px rgba(0,0,0,0.20),
+    inset 0 1px 0 rgba(255,255,255,0.90);
+}
+
+/* Stretch knob slightly while being dragged (iOS feel) */
+.toggle:active::before {
+  width: 29px;
+}
+.toggle:checked:active::before {
+  transform: translateX(18px);
+  width: 29px;
+}
+
+/* Focus ring */
+.toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 /* ════════════════════════════════
@@ -736,7 +785,7 @@ code {
 hr { border: none; border-top: 1px solid rgba(255,255,255,0.07); margin: 16px 0; }
 .hint { font-size: 11.5px; color: var(--text-muted); margin-top: 5px; line-height: 1.45; }
 
-/* Preserve existing class names used across all pages */
+/* Preserve existing class names */
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px,1fr)); gap: 14px; margin-bottom: 24px; }
 .card-header { padding: 14px 20px; border-bottom: 1px solid rgba(255,255,255,0.07); display: flex; align-items: center; justify-content: space-between; gap: 12px; background: rgba(255,255,255,0.022); position: relative; z-index: 1; }
 .form-section { margin-bottom: 28px; }
