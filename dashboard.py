@@ -1,6 +1,7 @@
 import os
 import json
 import time
+import secrets
 import traceback
 import urllib.request
 import urllib.parse
@@ -16,13 +17,26 @@ app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "modpanel-secret-key-change-me")
 app.config["PROPAGATE_EXCEPTIONS"] = False
 
-DASHBOARD_USER = os.getenv("DASHBOARD_USERNAME", "admin")
-DASHBOARD_PASS = os.getenv("DASHBOARD_PASSWORD", "admin123")
 GUILD_ID       = os.getenv("GUILD_ID", "0")
 BOT_TOKEN      = os.getenv("DISCORD_BOT_TOKEN", "")
 HEARTBEAT_FILE = os.getenv("HEARTBEAT_PATH", "/tmp/bot_heartbeat")
 
-DISCORD_API = "https://discord.com/api/v10"
+# Discord OAuth2
+DISCORD_CLIENT_ID     = os.getenv("DISCORD_CLIENT_ID", "")
+DISCORD_CLIENT_SECRET = os.getenv("DISCORD_CLIENT_SECRET", "")
+DISCORD_REDIRECT_URI  = os.getenv("DISCORD_REDIRECT_URI", "http://localhost:5000/callback")
+
+# Comma-separated list of Discord user IDs allowed to access the dashboard.
+# Leave empty to allow any Discord user (not recommended for production).
+ALLOWED_USER_IDS = [
+    uid.strip()
+    for uid in os.getenv("ALLOWED_DISCORD_IDS", "").split(",")
+    if uid.strip()
+]
+
+DISCORD_API      = "https://discord.com/api/v10"
+DISCORD_OAUTH    = "https://discord.com/api/oauth2"
+DISCORD_SCOPES   = "identify"
 
 print(f"[Dashboard] GUILD_ID={GUILD_ID!r}  BOT_TOKEN present={bool(BOT_TOKEN)}", flush=True)
 
@@ -46,7 +60,6 @@ LOG_TOGGLE_KEYS = [
     "log_voice",
 ]
 
-# Helper: prefix a settings key with the guild so it's scoped per-server
 def _gkey(key):
     return f"{GUILD_ID}:{key}"
 
@@ -57,8 +70,8 @@ def _gkey(key):
 def inject_user():
     if session.get("logged_in"):
         current_user = {
-            "username": session.get("username", DASHBOARD_USER),
-            "avatar":   session.get("avatar", ""),
+            "username":  session.get("username", ""),
+            "avatar":    session.get("avatar", ""),
             "logged_in": True,
         }
     else:
@@ -108,9 +121,9 @@ def unhandled_exception(e):
     )
 
 
-# ── Discord API helpers ────────────────────────────────────────────────────
+# ── Discord Bot API helpers ────────────────────────────────────────────────
 
-def _discord_headers():
+def _bot_headers():
     return {
         "Authorization": f"Bot {BOT_TOKEN}",
         "Content-Type": "application/json",
@@ -123,7 +136,7 @@ def _fetch_discord_user(user_id: str) -> tuple[dict, str]:
     try:
         req = urllib.request.Request(
             f"{DISCORD_API}/users/{user_id}",
-            headers=_discord_headers()
+            headers=_bot_headers()
         )
         with urllib.request.urlopen(req, timeout=5) as resp:
             return json.loads(resp.read()), ""
@@ -142,7 +155,7 @@ def _fetch_guild_member(user_id: str) -> dict:
     try:
         req = urllib.request.Request(
             f"{DISCORD_API}/guilds/{GUILD_ID}/members/{user_id}",
-            headers=_discord_headers()
+            headers=_bot_headers()
         )
         with urllib.request.urlopen(req, timeout=5) as resp:
             return json.loads(resp.read())
@@ -154,7 +167,7 @@ def _fetch_guild_roles() -> list:
     try:
         req = urllib.request.Request(
             f"{DISCORD_API}/guilds/{GUILD_ID}/roles",
-            headers=_discord_headers()
+            headers=_bot_headers()
         )
         with urllib.request.urlopen(req, timeout=5) as resp:
             return json.loads(resp.read())
@@ -163,17 +176,15 @@ def _fetch_guild_roles() -> list:
 
 
 def _fetch_guild_member_count() -> int:
-    """Fetch the approximate or exact member count from the Discord Guild API."""
     if not BOT_TOKEN or not GUILD_ID or GUILD_ID == "0":
         return 0
     try:
         req = urllib.request.Request(
             f"{DISCORD_API}/guilds/{GUILD_ID}?with_counts=true",
-            headers=_discord_headers()
+            headers=_bot_headers()
         )
         with urllib.request.urlopen(req, timeout=5) as resp:
             data = json.loads(resp.read())
-            # approximate_member_count is returned when with_counts=true
             return data.get("approximate_member_count") or data.get("member_count") or 0
     except Exception:
         return 0
@@ -186,7 +197,7 @@ def _search_guild_members(query: str) -> list:
         encoded = urllib.parse.quote(query)
         req = urllib.request.Request(
             f"{DISCORD_API}/guilds/{GUILD_ID}/members/search?query={encoded}&limit=10",
-            headers=_discord_headers()
+            headers=_bot_headers()
         )
         with urllib.request.urlopen(req, timeout=5) as resp:
             return json.loads(resp.read())
@@ -262,11 +273,53 @@ def login_required(f):
     return decorated
 
 
+# ── OAuth2 helpers ─────────────────────────────────────────────────────────
+
+def _exchange_code(code: str) -> dict:
+    """Exchange an authorization code for an access token."""
+    data = urllib.parse.urlencode({
+        "client_id":     DISCORD_CLIENT_ID,
+        "client_secret": DISCORD_CLIENT_SECRET,
+        "grant_type":    "authorization_code",
+        "code":          code,
+        "redirect_uri":  DISCORD_REDIRECT_URI,
+    }).encode()
+    req = urllib.request.Request(
+        f"{DISCORD_OAUTH}/token",
+        data=data,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        return json.loads(resp.read())
+
+
+def _fetch_oauth_user(access_token: str) -> dict:
+    """Fetch the authenticated user's profile via their OAuth token."""
+    req = urllib.request.Request(
+        f"{DISCORD_API}/users/@me",
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        return json.loads(resp.read())
+
+
+def _build_oauth_url(state: str) -> str:
+    params = urllib.parse.urlencode({
+        "client_id":     DISCORD_CLIENT_ID,
+        "redirect_uri":  DISCORD_REDIRECT_URI,
+        "response_type": "code",
+        "scope":         DISCORD_SCOPES,
+        "state":         state,
+        "prompt":        "none",
+    })
+    return f"https://discord.com/oauth2/authorize?{params}"
+
+
 # ── Core routes ────────────────────────────────────────────────────────────
 
 @app.route("/", methods=["GET"])
 def landing():
-    """Public landing page — no login required."""
     if session.get("logged_in"):
         return redirect(url_for("index"))
     return render_template("landing.html")
@@ -283,21 +336,97 @@ def index():
         logs = db.recent_logs_sync(GUILD_ID, 15)
     except Exception:
         logs = []
-    # Fetch real member count from Discord API
     total_members = _fetch_guild_member_count()
     return render_template("dashboard.html", stats=stats, logs=logs, total_members=total_members)
 
 
-@app.route("/login", methods=["GET", "POST"])
+@app.route("/login")
 def login():
-    if request.method == "POST":
-        if request.form.get("username") == DASHBOARD_USER and \
-           request.form.get("password") == DASHBOARD_PASS:
-            session["logged_in"] = True
-            session["username"]   = DASHBOARD_USER
-            return redirect(url_for("index"))
-        flash("Invalid credentials.")
-    return render_template("login.html")
+    """Redirect straight to Discord OAuth — no form."""
+    if session.get("logged_in"):
+        return redirect(url_for("index"))
+
+    if not DISCORD_CLIENT_ID or not DISCORD_CLIENT_SECRET:
+        return render_template(
+            "login.html",
+            error="Discord OAuth is not configured. Set DISCORD_CLIENT_ID, "
+                  "DISCORD_CLIENT_SECRET, and DISCORD_REDIRECT_URI in your .env file.",
+            oauth_url=None,
+        )
+
+    state = secrets.token_urlsafe(32)
+    session["oauth_state"] = state
+    return render_template("login.html", error=None, oauth_url=_build_oauth_url(state))
+
+
+@app.route("/discord_login")
+def discord_login():
+    """Convenience alias — clicking the button can hit either /login or /discord_login."""
+    return redirect(url_for("login"))
+
+
+@app.route("/callback")
+def callback():
+    """Discord redirects here after the user authorises."""
+    error = request.args.get("error")
+    if error:
+        flash(f"Discord denied access: {error}")
+        return redirect(url_for("login"))
+
+    code  = request.args.get("code", "")
+    state = request.args.get("state", "")
+
+    if not code:
+        flash("No authorisation code received from Discord.")
+        return redirect(url_for("login"))
+
+    if state != session.pop("oauth_state", None):
+        flash("Invalid OAuth state — possible CSRF. Please try again.")
+        return redirect(url_for("login"))
+
+    # Exchange code for token
+    try:
+        token_data = _exchange_code(code)
+    except urllib.error.HTTPError as e:
+        body = ""
+        try: body = e.read().decode()
+        except Exception: pass
+        flash(f"Failed to exchange code: HTTP {e.code} — {body}")
+        return redirect(url_for("login"))
+    except Exception as e:
+        flash(f"Failed to exchange code: {e}")
+        return redirect(url_for("login"))
+
+    access_token = token_data.get("access_token", "")
+    if not access_token:
+        flash("Discord did not return an access token.")
+        return redirect(url_for("login"))
+
+    # Fetch user info
+    try:
+        user = _fetch_oauth_user(access_token)
+    except Exception as e:
+        flash(f"Failed to fetch Discord user: {e}")
+        return redirect(url_for("login"))
+
+    user_id  = user.get("id", "")
+    username = user.get("global_name") or user.get("username", "Unknown")
+    avatar   = ""
+    av_hash  = user.get("avatar", "")
+    if av_hash and user_id:
+        ext    = "gif" if av_hash.startswith("a_") else "png"
+        avatar = f"https://cdn.discordapp.com/avatars/{user_id}/{av_hash}.{ext}?size=256"
+
+    # Access control: if ALLOWED_DISCORD_IDS is set, enforce it
+    if ALLOWED_USER_IDS and user_id not in ALLOWED_USER_IDS:
+        flash(f"Your Discord account ({username}) is not authorised to access this dashboard.")
+        return redirect(url_for("login"))
+
+    session["logged_in"] = True
+    session["username"]  = username
+    session["avatar"]    = avatar
+    session["discord_id"] = user_id
+    return redirect(url_for("index"))
 
 
 @app.route("/logout")
@@ -344,8 +473,8 @@ def settings():
         "spam_limit":   db.get_setting_sync(_gkey("spam_limit"),  os.getenv("SPAM_MESSAGE_LIMIT", "6")),
         "spam_window":  db.get_setting_sync(_gkey("spam_window"), os.getenv("SPAM_WINDOW_SECONDS", "8")),
         "spam_timeout": db.get_setting_sync(_gkey("spam_timeout"), os.getenv("SPAM_TIMEOUT_MINUTES", "5")),
-        "client_id":    os.getenv("DISCORD_CLIENT_ID", ""),
-        "redirect_uri": os.getenv("DISCORD_REDIRECT_URI", ""),
+        "client_id":    DISCORD_CLIENT_ID,
+        "redirect_uri": DISCORD_REDIRECT_URI,
     }
     return render_template("settings.html", cfg=cfg)
 
@@ -388,20 +517,16 @@ def moderation():
 @login_required
 def logging_page():
     if request.method == "POST":
-        # Save channel ID scoped to this guild
         db.set_setting_sync(_gkey("log_channel_id"), request.form.get("log_channel_id", ""))
-        # Save every toggle — unchecked boxes send nothing so we default to "0"
         for key in LOG_TOGGLE_KEYS:
             val = "1" if request.form.get(key) else "0"
             db.set_setting_sync(_gkey(key), val)
         flash("Log settings saved.")
         return redirect(url_for("logging_page"))
 
-    # Load — use None as sentinel so we can tell "never saved" from "saved as 0"
     cfg = {"log_channel_id": db.get_setting_sync(_gkey("log_channel_id"), "")}
     for key in LOG_TOGGLE_KEYS:
-        raw = db.get_setting_sync(_gkey(key), None)  # None = not yet saved
-        # Default to True only if never saved before
+        raw = db.get_setting_sync(_gkey(key), None)
         cfg[key] = (raw == "1") if raw is not None else True
     return render_template("logging.html", cfg=cfg)
 
