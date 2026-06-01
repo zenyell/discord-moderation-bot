@@ -64,7 +64,7 @@ def _one(rs):
     return rows[0] if rows else None
 
 
-# ── init ─────────────────────────────────────────────────────────────────
+# ── init ───────────────────────────────────────────────────────────────────
 
 async def init_db():
     tables = [
@@ -120,7 +120,7 @@ def init_db_sync():
     _sync(init_db())
 
 
-# ── warnings ───────────────────────────────────────────────────────────
+# ── warnings ───────────────────────────────────────────────────────────────
 
 async def add_warning(guild_id, user_id, moderator_id, reason=None):
     await _exec("INSERT INTO warnings (guild_id, user_id, moderator_id, reason) VALUES (?,?,?,?)",
@@ -142,7 +142,7 @@ def clear_warnings_sync(guild_id, user_id):
     _sync(clear_warnings(guild_id, user_id))
 
 
-# ── mod logs ────────────────────────────────────────────────────────────
+# ── mod logs ──────────────────────────────────────────────────────────────
 
 async def log_action(guild_id, action, target_id, moderator_id, reason=None):
     await _exec("INSERT INTO mod_logs (guild_id, action, target_id, moderator_id, reason) VALUES (?,?,?,?,?)",
@@ -170,7 +170,7 @@ def logs_for_user_sync(guild_id, uid, lim=50): return _sync(logs_for_user(guild_
 def log_stats_sync(guild_id):                  return _sync(log_stats(guild_id))
 
 
-# ── settings ─────────────────────────────────────────────────────────────
+# ── settings ───────────────────────────────────────────────────────────────
 
 async def get_setting(key, default=None):
     rs = await _exec("SELECT value FROM settings WHERE key=?", (key,))
@@ -184,7 +184,7 @@ def get_setting_sync(key, default=None): return _sync(get_setting(key, default))
 def set_setting_sync(key, value):        _sync(set_setting(key, value))
 
 
-# ── blacklisted words ─────────────────────────────────────────────────────
+# ── blacklisted words ─────────────────────────────────────────────────────────
 
 async def get_blacklisted_words(guild_id):
     rs = await _exec("SELECT * FROM blacklisted_words WHERE guild_id=? ORDER BY created_at DESC", (guild_id,))
@@ -206,7 +206,7 @@ def add_blacklisted_word_sync(guild_id, word, by=None):  _sync(add_blacklisted_w
 def remove_blacklisted_word_sync(guild_id, word):        _sync(remove_blacklisted_word(guild_id, word))
 
 
-# ── blacklisted users ─────────────────────────────────────────────────────
+# ── blacklisted users ──────────────────────────────────────────────────────────
 
 async def get_blacklisted_users(guild_id):
     rs = await _exec("SELECT * FROM blacklisted_users WHERE guild_id=? ORDER BY created_at DESC", (guild_id,))
@@ -229,7 +229,7 @@ def remove_blacklisted_user_sync(guild_id, uid):                     _sync(remov
 def is_user_blacklisted_sync(guild_id, user_id):                     return _sync(is_user_blacklisted(guild_id, user_id))
 
 
-# ── command settings ──────────────────────────────────────────────────────
+# ── command settings ──────────────────────────────────────────────────────────
 
 _CMD_DEFAULT = {"enabled": 1, "whitelist_roles": "", "blacklist_mods": "", "whitelist_users": "", "blacklist_users": ""}
 
@@ -264,7 +264,7 @@ def set_command_setting_sync(guild_id, cmd, **kw):  _sync(set_command_setting(gu
 def get_command_settings_sync(guild_id):            return _sync(get_all_command_settings(guild_id))
 
 
-# ── profile cache ─────────────────────────────────────────────────────────
+# ── profile cache ─────────────────────────────────────────────────────────────
 
 async def cache_profile(user_id, username, global_name, avatar_url, banner_url, accent_color, bio, badges):
     await _exec(
@@ -278,10 +278,22 @@ async def get_cached_profile(user_id):
     rs = await _exec("SELECT * FROM profile_cache WHERE user_id=?", (user_id,))
     return _one(rs)
 
-def get_cached_profile_sync(user_id): return _sync(get_cached_profile(user_id))
+async def search_profile_cache(query: str, limit: int = 20):
+    """Search profile_cache by username or global_name (case-insensitive partial match)."""
+    pattern = f"%{query.lower()}%"
+    rs = await _exec(
+        """SELECT * FROM profile_cache
+           WHERE lower(username) LIKE ? OR lower(global_name) LIKE ?
+           ORDER BY updated_at DESC LIMIT ?""",
+        (pattern, pattern, limit)
+    )
+    return _rows(rs)
+
+def get_cached_profile_sync(user_id):          return _sync(get_cached_profile(user_id))
+def search_profile_cache_sync(query, limit=20): return _sync(search_profile_cache(query, limit))
 
 
-# ── reaction roles ────────────────────────────────────────────────────────
+# ── reaction roles ────────────────────────────────────────────────────────────
 
 async def get_reaction_roles(guild_id):
     rs = await _exec("SELECT * FROM reaction_roles WHERE guild_id=?", (guild_id,))
@@ -308,7 +320,7 @@ def add_reaction_role_sync(guild_id, mid, cid, emoji, role_id):  _sync(add_react
 def remove_reaction_role_sync(rr_id):                            _sync(remove_reaction_role(rr_id))
 
 
-# ── autoroles ─────────────────────────────────────────────────────────────
+# ── autoroles ───────────────────────────────────────────────────────────────
 
 async def get_autoroles(guild_id):
     rs = await _exec("SELECT * FROM autoroles WHERE guild_id=?", (guild_id,))
@@ -325,7 +337,7 @@ def add_autorole_sync(guild_id, role_id):     _sync(add_autorole(guild_id, role_
 def remove_autorole_sync(guild_id, role_id):  _sync(remove_autorole(guild_id, role_id))
 
 
-# ── tags ──────────────────────────────────────────────────────────────────
+# ── tags ────────────────────────────────────────────────────────────────────
 
 async def get_tags(guild_id):
     rs = await _exec("SELECT * FROM tags WHERE guild_id=? ORDER BY name", (guild_id,))
@@ -347,7 +359,7 @@ def add_tag_sync(guild_id, name, content):   _sync(add_tag(guild_id, name, conte
 def remove_tag_sync(guild_id, name):         _sync(remove_tag(guild_id, name))
 
 
-# ── triggers ──────────────────────────────────────────────────────────────
+# ── triggers ──────────────────────────────────────────────────────────────────
 
 async def get_all_triggers(guild_id):
     rs = await _exec("SELECT * FROM triggers WHERE guild_id=?", (guild_id,))
@@ -366,7 +378,7 @@ def add_trigger_sync(guild_id, phrase, response):  _sync(add_trigger(guild_id, p
 def remove_trigger_sync(trigger_id):               _sync(remove_trigger(trigger_id))
 
 
-# ── suggestions ───────────────────────────────────────────────────────────
+# ── suggestions ───────────────────────────────────────────────────────────────
 
 async def get_suggestions(guild_id, limit=50):
     rs = await _exec("SELECT * FROM suggestions WHERE guild_id=? ORDER BY created_at DESC LIMIT ?",

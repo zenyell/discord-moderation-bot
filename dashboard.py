@@ -3,6 +3,7 @@ import json
 import time
 import traceback
 import urllib.request
+import urllib.parse
 from pathlib import Path
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
@@ -29,11 +30,10 @@ print(f"[Dashboard] GUILD_ID={GUILD_ID!r}  BOT_TOKEN present={bool(BOT_TOKEN)}",
 db.init_db_sync()
 
 
-# ── Context processor ── injects current_user into every template ────────────
+# ── Context processor ──
 
 @app.context_processor
 def inject_user():
-    """Make current_user available in every template automatically."""
     if session.get("logged_in"):
         current_user = {
             "username": session.get("username", DASHBOARD_USER),
@@ -45,7 +45,7 @@ def inject_user():
     return {"current_user": current_user}
 
 
-# ── Error handlers ──────────────────────────────────────────────────
+# ── Error handlers ──
 
 @app.errorhandler(500)
 def internal_error(e):
@@ -87,7 +87,7 @@ def unhandled_exception(e):
     )
 
 
-# ── Discord API helpers ───────────────────────────────────────────────
+# ── Discord API helpers ──
 
 def _discord_headers():
     return {
@@ -133,7 +133,7 @@ def _fetch_guild_roles() -> list:
 
 
 def _search_guild_members(query: str) -> list:
-    """Search guild members by username prefix via Discord API."""
+    """Search guild members by username prefix via Discord API (requires GUILD_MEMBERS intent)."""
     try:
         encoded = urllib.parse.quote(query)
         req = urllib.request.Request(
@@ -214,7 +214,7 @@ def login_required(f):
     return decorated
 
 
-# ── Core routes ──────────────────────────────────────────────────
+# ── Core routes ──
 
 @app.route("/", methods=["GET"])
 @login_required
@@ -267,7 +267,7 @@ def api_status():
         return jsonify({"online": False, "reason": str(e)})
 
 
-# ── Settings ──────────────────────────────────────────────────
+# ── Settings ──
 
 @app.route("/settings", methods=["GET", "POST"])
 @login_required
@@ -292,7 +292,7 @@ def settings():
     return render_template("settings.html", cfg=cfg)
 
 
-# ── Moderation ───────────────────────────────────────────────────
+# ── Moderation ──
 
 @app.route("/moderation", methods=["GET", "POST"])
 @login_required
@@ -324,7 +324,7 @@ def moderation():
     return render_template("moderation.html", words=words, users=users)
 
 
-# ── Logging ──────────────────────────────────────────────────────
+# ── Logging ──
 
 LOG_EVENTS = [
     {"key": "ban",     "label": "Bans",            "desc": "Member bans"},
@@ -356,7 +356,7 @@ def logging_page():
     return render_template("logging.html", cfg=cfg, events=LOG_EVENTS)
 
 
-# ── Reaction Roles ───────────────────────────────────────────────
+# ── Reaction Roles ──
 
 @app.route("/reaction-roles", methods=["GET", "POST"])
 @login_required
@@ -379,7 +379,7 @@ def reaction_roles():
     return render_template("reaction_roles.html", rr_list=db.get_reaction_roles_sync(GUILD_ID))
 
 
-# ── Autoroles ────────────────────────────────────────────────────
+# ── Autoroles ──
 
 @app.route("/autoroles", methods=["GET", "POST"])
 @login_required
@@ -398,7 +398,7 @@ def autoroles():
     return render_template("autoroles.html", autoroles=db.get_autoroles_sync(GUILD_ID))
 
 
-# ── Tags ──────────────────────────────────────────────────────
+# ── Tags ──
 
 @app.route("/tags", methods=["GET", "POST"])
 @login_required
@@ -418,7 +418,7 @@ def tags():
     return render_template("tags.html", tags=db.get_tags_sync(GUILD_ID))
 
 
-# ── Triggers ──────────────────────────────────────────────────────
+# ── Triggers ──
 
 @app.route("/triggers", methods=["GET", "POST"])
 @login_required
@@ -438,7 +438,7 @@ def triggers():
     return render_template("triggers.html", triggers=db.get_triggers_sync(GUILD_ID))
 
 
-# ── Greetings ─────────────────────────────────────────────────────
+# ── Greetings ──
 
 _GREETING_KEYS = [
     "welcome_enabled", "welcome_channel", "welcome_message",
@@ -466,7 +466,7 @@ def greetings():
     return render_template("greetings.html", cfg=cfg)
 
 
-# ── Starboard ─────────────────────────────────────────────────────
+# ── Starboard ──
 
 _STARBOARD_KEYS = ["starboard_enabled", "starboard_channel", "starboard_min", "starboard_emoji"]
 
@@ -491,7 +491,7 @@ def starboard():
     return render_template("starboard.html", cfg=cfg)
 
 
-# ── Suggestions ─────────────────────────────────────────────────────
+# ── Suggestions ──
 
 @app.route("/suggestions", methods=["GET", "POST"])
 @login_required
@@ -510,7 +510,7 @@ def suggestions():
     return render_template("suggestions.html", cfg=cfg, suggestions=db.get_suggestions_sync(GUILD_ID))
 
 
-# ── Command settings ───────────────────────────────────────────────
+# ── Command settings ──
 
 @app.route("/command-settings", methods=["GET", "POST"])
 @login_required
@@ -536,13 +536,13 @@ def command_settings():
     return render_template("command_settings.html", commands=db.ALL_COMMANDS, cmd_settings=cmd_settings)
 
 
-# ── User lookup ──────────────────────────────────────────────────
+# ── User lookup ──
 
-import urllib.parse
-
-def _build_lookup_result(user_id: str) -> dict:
-    """Fetch Discord user + member data and return a display-ready dict."""
+def _build_lookup_result(user_id: str) -> dict | None:
+    """Fetch Discord user + member data and return a display-ready dict. Returns None if user not found."""
     user_data   = _fetch_discord_user(user_id)
+    if not user_data.get("id"):
+        return None
     member_data = _fetch_guild_member(user_id)
     av = _avatar_url(user_data, member_data)
     username      = user_data.get("username", user_id)
@@ -566,42 +566,70 @@ def user_lookup():
     if query:
         seen = set()
 
-        # 1. If pure numeric — try direct Discord API lookup first
+        # 1. If pure numeric — direct Discord user lookup by ID
         if query.isdigit():
-            user_data = _fetch_discord_user(query)
-            if user_data.get("id"):
-                results.append(_build_lookup_result(query))
+            r = _build_lookup_result(query)
+            if r:
+                results.append(r)
                 seen.add(query)
 
-        # 2. Search guild members by username via Discord API
-        members = _search_guild_members(query)
-        for m in members:
-            u = m.get("user", {})
-            uid = u.get("id", "")
-            if uid and uid not in seen:
-                member_data = m  # already have member object
-                av = _avatar_url(u, m)
-                username      = u.get("username", uid)
-                global_name   = u.get("global_name") or username
-                discriminator = u.get("discriminator", "0")
-                results.append({
-                    "target_id":     uid,
-                    "username":      username,
-                    "display_name":  global_name,
-                    "discriminator": discriminator,
-                    "avatar_url":    av,
-                })
-                seen.add(uid)
+        # 2. Search profile_cache by username / global_name (always runs for text queries)
+        if not query.isdigit() or not results:
+            try:
+                cached = db.search_profile_cache_sync(query)
+                for row in cached:
+                    uid = row.get("user_id", "")
+                    if uid and uid not in seen:
+                        # Use cached avatar_url, but freshen it if empty
+                        av = row.get("avatar_url") or ""
+                        if not av:
+                            user_data   = _fetch_discord_user(uid)
+                            member_data = _fetch_guild_member(uid)
+                            av = _avatar_url(user_data, member_data)
+                        results.append({
+                            "target_id":     uid,
+                            "username":      row.get("username") or uid,
+                            "display_name":  row.get("global_name") or row.get("username") or uid,
+                            "discriminator": "0",
+                            "avatar_url":    av,
+                        })
+                        seen.add(uid)
+            except Exception:
+                pass
 
-        # 3. Fall back to scanning mod logs for partial ID match
-        if not results or query.isdigit():
+        # 3. Try Discord guild member search API (username prefix, requires GUILD_MEMBERS intent)
+        try:
+            members = _search_guild_members(query)
+            for m in members:
+                u = m.get("user", {})
+                uid = u.get("id", "")
+                if uid and uid not in seen:
+                    av = _avatar_url(u, m)
+                    username      = u.get("username", uid)
+                    global_name   = u.get("global_name") or username
+                    discriminator = u.get("discriminator", "0")
+                    results.append({
+                        "target_id":     uid,
+                        "username":      username,
+                        "display_name":  global_name,
+                        "discriminator": discriminator,
+                        "avatar_url":    av,
+                    })
+                    seen.add(uid)
+        except Exception:
+            pass
+
+        # 4. Fallback: scan recent mod logs for partial ID match (text queries skip this)
+        if query.isdigit() and not results:
             try:
                 rows = db.recent_logs_sync(GUILD_ID, 500)
                 for r in rows:
                     tid = r.get("target_id", "")
                     if query in tid and tid not in seen:
-                        results.append(_build_lookup_result(tid))
-                        seen.add(tid)
+                        result = _build_lookup_result(tid)
+                        if result:
+                            results.append(result)
+                            seen.add(tid)
                         if len(results) >= 20:
                             break
             except Exception:
@@ -678,7 +706,7 @@ def user_profile(user_id):
     )
 
 
-# ── API ─────────────────────────────────────────────────────
+# ── API ──
 
 @app.route("/api/profile/<user_id>")
 @login_required
