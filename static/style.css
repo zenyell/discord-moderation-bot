@@ -239,6 +239,169 @@
   --wallpaper-hue-to:   14deg;
 }
 
+/* ── ROSE (soft pink blush) ── */
+[data-theme="rose"] {
+  --orb-1: rgba(255, 80, 130, 0.48);
+  --orb-2: rgba(255, 150, 180, 0.36);
+  --orb-3: rgba(220,  60, 120, 0.30);
+  --orb-4: rgba(255, 100, 160, 0.22);
+  --orb-5: rgba(180,  40, 100, 0.18);
+  --body-bg: #1a040e;
+  --body-grad: linear-gradient(150deg, #22061a 0%, #1c0514 40%, #1a040e 100%);
+
+  --glass-bg:            rgba(255,100,150,0.11);
+  --glass-bg-hover:      rgba(255,100,150,0.18);
+  --glass-bg-active:     rgba(255,100,150,0.24);
+  --glass-border:        rgba(255,120,160,0.26);
+  --glass-border-hover:  rgba(255,150,185,0.44);
+  --glass-shine-top:     rgba(255,200,220,0.48);
+  --glass-shine-bottom:  rgba(255,255,255,0.00);
+  --glass-inner-shadow:  rgba(0,0,0,0.28);
+
+  --sidebar-bg: rgba(40,4,20,0.62);
+  --text:         rgba(255,235,242,0.97);
+  --text-muted:   rgba(255,185,210,0.62);
+  --text-faint:   rgba(255,150,185,0.36);
+  --text-inverse: rgba(60,0,20,0.90);
+  --accent:      #ff375f;
+  --accent-glow: rgba(255,55,95,0.48);
+  --accent-dim:  rgba(255,55,95,0.16);
+  --select-bg:   #1a040e;
+  --wallpaper-hue-from: 0deg;
+  --wallpaper-hue-to:   10deg;
+}
+
+/* ── DESERT (sand dunes) ── */
+[data-theme="desert"] {
+  --orb-1: rgba(210, 160,  60, 0.46);
+  --orb-2: rgba(240, 190,  90, 0.34);
+  --orb-3: rgba(180, 120,  30, 0.30);
+  --orb-4: rgba(220, 170,  80, 0.22);
+  --orb-5: rgba(160,  90,  20, 0.18);
+  --body-bg: #120d04;
+  --body-grad: linear-gradient(150deg, #1c1208 0%, #160e05 40%, #120d04 100%);
+
+  --glass-bg:            rgba(210,160,60,0.11);
+  --glass-bg-hover:      rgba(210,160,60,0.18);
+  --glass-bg-active:     rgba(210,160,60,0.24);
+  --glass-border:        rgba(220,175,80,0.26);
+  --glass-border-hover:  rgba(240,195,100,0.44);
+  --glass-shine-top:     rgba(255,235,180,0.48);
+  --glass-shine-bottom:  rgba(255,255,255,0.00);
+  --glass-inner-shadow:  rgba(0,0,0,0.28);
+
+  --sidebar-bg: rgba(30,18,4,0.62);
+  --text:         rgba(255,245,220,0.97);
+  --text-muted:   rgba(220,190,130,0.62);
+  --text-faint:   rgba(190,155,90,0.36);
+  --text-inverse: rgba(50,30,0,0.90);
+  --accent:      #e8a830;
+  --accent-glow: rgba(232,168,48,0.48);
+  --accent-dim:  rgba(232,168,48,0.16);
+  --select-bg:   #120d04;
+  --wallpaper-hue-from: 0deg;
+  --wallpaper-hue-to:   8deg;
+}
+
+/* ── FOREST (deep green) ── */
+[data-theme="forest"] {
+  --orb-1: rgba(30, 160,  80, 0.50);
+  --orb-2: rgba(20, 120,  50, 0.36);
+  --orb-3: rgba(80, 200, 100, 0.30);
+  --orb-4: rgba(10,  90,  40, 0.24);
+  --orb-5: rgba(40, 140,  60, 0.20);
+  --body-bg: #020f06;
+  --body-grad: linear-gradient(150deg, #041808 0%, #031206 40%, #020f06 100%);
+
+  --glass-bg:            rgba(30,160,80,0.10);
+  --glass-bg-hover:      rgba(30,160,80,0.16);
+  --glass-bg-active:     rgba(30,160,80,0.22);
+  --glass-border:        rgba(40,180,90,0.24);
+  --glass-border-hover:  rgba(60,210,110,0.40);
+  --glass-shine-top:     rgba(160,255,190,0.40);
+  --glass-shine-bottom:  rgba(255,255,255,0.00);
+  --glass-inner-shadow:  rgba(0,0,0,0.30);
+
+  --sidebar-bg: rgba(2,18,6,0.65);
+  --text:         rgba(210,255,225,0.97);
+  --text-muted:   rgba(120,210,150,0.62);
+  --text-faint:   rgba(80,170,110,0.36);
+  --text-inverse: rgba(0,30,10,0.90);
+  --accent:      #30d158;
+  --accent-glow: rgba(48,209,88,0.48);
+  --accent-dim:  rgba(48,209,88,0.16);
+  --select-bg:   #020f06;
+  --wallpaper-hue-from: 0deg;
+  --wallpaper-hue-to:   16deg;
+}
+
+/* ── CANDY (bubblegum pastel) ── */
+[data-theme="candy"] {
+  --orb-1: rgba(255, 100, 230, 0.36);
+  --orb-2: rgba(120, 180, 255, 0.30);
+  --orb-3: rgba(255, 220, 100, 0.26);
+  --orb-4: rgba(100, 255, 200, 0.22);
+  --orb-5: rgba(200, 120, 255, 0.20);
+  --body-bg: #f7f0ff;
+  --body-grad: linear-gradient(150deg, #fce8ff 0%, #e8f0ff 40%, #f0fff8 70%, #f7f0ff 100%);
+
+  --glass-bg:            rgba(255,255,255,0.58);
+  --glass-bg-hover:      rgba(255,255,255,0.72);
+  --glass-bg-active:     rgba(255,255,255,0.82);
+  --glass-border:        rgba(180,100,255,0.18);
+  --glass-border-hover:  rgba(200,120,255,0.32);
+  --glass-shine-top:     rgba(255,255,255,0.92);
+  --glass-shine-bottom:  rgba(255,255,255,0.00);
+  --glass-inner-shadow:  rgba(150,80,200,0.06);
+
+  --sidebar-bg: rgba(255,255,255,0.55);
+  --text:         rgba(50,20,80,0.90);
+  --text-muted:   rgba(100,60,140,0.52);
+  --text-faint:   rgba(140,90,180,0.30);
+  --text-inverse: rgba(255,255,255,0.95);
+  --accent:      #bf5af2;
+  --accent-glow: rgba(191,90,242,0.38);
+  --accent-dim:  rgba(191,90,242,0.12);
+  --select-bg:   #fef8ff;
+  --shadow-sm: 0 2px 12px rgba(150,80,200,0.10), 0 1px 3px rgba(150,80,200,0.07);
+  --shadow-md: 0 8px 36px rgba(150,80,200,0.14), 0 2px 10px rgba(150,80,200,0.09);
+  --shadow-lg: 0 22px 64px rgba(150,80,200,0.18), 0 4px 18px rgba(150,80,200,0.12);
+  --wallpaper-hue-from: 0deg;
+  --wallpaper-hue-to:   20deg;
+}
+
+/* ── GRAPHITE (monochrome steel) ── */
+[data-theme="graphite"] {
+  --orb-1: rgba(160, 160, 175, 0.35);
+  --orb-2: rgba(120, 120, 140, 0.28);
+  --orb-3: rgba(180, 180, 200, 0.22);
+  --orb-4: rgba(100, 100, 120, 0.18);
+  --orb-5: rgba(140, 140, 160, 0.15);
+  --body-bg: #0e0e10;
+  --body-grad: linear-gradient(150deg, #161618 0%, #121214 40%, #0e0e10 100%);
+
+  --glass-bg:            rgba(255,255,255,0.08);
+  --glass-bg-hover:      rgba(255,255,255,0.13);
+  --glass-bg-active:     rgba(255,255,255,0.18);
+  --glass-border:        rgba(255,255,255,0.14);
+  --glass-border-hover:  rgba(255,255,255,0.26);
+  --glass-shine-top:     rgba(255,255,255,0.30);
+  --glass-shine-bottom:  rgba(255,255,255,0.00);
+  --glass-inner-shadow:  rgba(0,0,0,0.38);
+
+  --sidebar-bg: rgba(20,20,22,0.72);
+  --text:         rgba(240,240,245,0.95);
+  --text-muted:   rgba(180,180,190,0.60);
+  --text-faint:   rgba(130,130,145,0.36);
+  --text-inverse: rgba(10,10,12,0.90);
+  --accent:      #adadbe;
+  --accent-glow: rgba(173,173,190,0.38);
+  --accent-dim:  rgba(173,173,190,0.14);
+  --select-bg:   #0e0e10;
+  --wallpaper-hue-from: 0deg;
+  --wallpaper-hue-to:   0deg;
+}
+
 /* ════════════════════════════════
    SHARED TOKENS (all themes)
 ════════════════════════════════ */
