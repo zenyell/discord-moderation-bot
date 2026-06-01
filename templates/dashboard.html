@@ -80,12 +80,18 @@
   50%      { transform: translateY(-8px); }
 }
 
-/* Stat grid */
+/* Stat grid — always 4 equal columns, collapses on mobile */
 .stat-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 16px;
   margin-bottom: 28px;
+}
+@media (max-width: 768px) {
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+  .stat-grid { grid-template-columns: 1fr; }
 }
 .stat-card {
   padding: 20px;
