@@ -29,6 +29,22 @@ print(f"[Dashboard] GUILD_ID={GUILD_ID!r}  BOT_TOKEN present={bool(BOT_TOKEN)}",
 db.init_db_sync()
 
 
+# ── Context processor ── injects current_user into every template ────────────
+
+@app.context_processor
+def inject_user():
+    """Make current_user available in every template automatically."""
+    if session.get("logged_in"):
+        current_user = {
+            "username": session.get("username", DASHBOARD_USER),
+            "avatar":   session.get("avatar", ""),
+            "logged_in": True,
+        }
+    else:
+        current_user = {"username": "", "avatar": "", "logged_in": False}
+    return {"current_user": current_user}
+
+
 # ── Error handlers ──────────────────────────────────────────────────
 
 @app.errorhandler(500)
@@ -206,6 +222,7 @@ def login():
         if request.form.get("username") == DASHBOARD_USER and \
            request.form.get("password") == DASHBOARD_PASS:
             session["logged_in"] = True
+            session["username"]   = DASHBOARD_USER
             return redirect(url_for("index"))
         flash("Invalid credentials.")
     return render_template("login.html")
