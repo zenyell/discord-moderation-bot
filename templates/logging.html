@@ -1,38 +1,212 @@
 {% extends 'base.html' %}
-{% block title %}Logging{% endblock %}
-{% block page_title %}Logging{% endblock %}
+{% block title %}Logs{% endblock %}
+{% block page_title %}Logs{% endblock %}
+
 {% block content %}
-<div style="max-width:600px">
-  <form method="post">
-    <div class="card">
-      <div class="card-title">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 9a16 16 0 0 0 6 6l.92-.92a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-        Log Channel
-      </div>
-      <div class="form-group">
-        <label class="form-label">Channel ID</label>
-        <input type="text" name="log_channel_id" class="form-control" value="{{ cfg.log_channel_id }}" placeholder="Discord channel ID for logs">
-      </div>
+<div class="page-header">
+  <h1>Server Logs</h1>
+  <p>Configure which events get logged and where they are sent.</p>
+</div>
+
+<form method="POST">
+
+  <!-- Message Logs -->
+  <div class="card">
+    <div class="card-title">
+      <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+      Message Logs
     </div>
-    <div class="card">
-      <div class="card-title">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-        Events to Log
-      </div>
-      {% for e in events %}
+    <div class="toggle-grid">
       <div class="toggle-row">
         <div class="toggle-info">
-          <h4>{{ e.label }}</h4>
-          <p>{{ e.desc }}</p>
+          <h4>Message Deleted</h4>
+          <p>Log when a message is deleted in any channel</p>
         </div>
         <label class="toggle">
-          <input type="checkbox" name="log_{{ e.key }}" {% if cfg['log_' + e.key] == '1' %}checked{% endif %}>
+          <input type="checkbox" name="log_message_delete" {% if settings.get('log_message_delete') %}checked{% endif %}>
           <span class="toggle-track"></span>
         </label>
       </div>
-      {% endfor %}
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <h4>Message Edited</h4>
+          <p>Log when a message is edited</p>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" name="log_message_edit" {% if settings.get('log_message_edit') %}checked{% endif %}>
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <h4>Bulk Message Delete</h4>
+          <p>Log when multiple messages are purged at once</p>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" name="log_bulk_delete" {% if settings.get('log_bulk_delete') %}checked{% endif %}>
+          <span class="toggle-track"></span>
+        </label>
+      </div>
     </div>
-    <button type="submit" class="btn btn-primary">Save Logging Settings</button>
-  </form>
-</div>
+  </div>
+
+  <!-- Member Logs -->
+  <div class="card">
+    <div class="card-title">
+      <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+      Member Logs
+    </div>
+    <div class="toggle-grid">
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <h4>Member Join</h4>
+          <p>Log when a new member joins the server</p>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" name="log_member_join" {% if settings.get('log_member_join') %}checked{% endif %}>
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <h4>Member Leave</h4>
+          <p>Log when a member leaves or is removed</p>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" name="log_member_leave" {% if settings.get('log_member_leave') %}checked{% endif %}>
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <h4>Nickname Change</h4>
+          <p>Log when a member changes their nickname</p>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" name="log_nickname_change" {% if settings.get('log_nickname_change') %}checked{% endif %}>
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <h4>Role Change</h4>
+          <p>Log when a member’s roles are updated</p>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" name="log_role_change" {% if settings.get('log_role_change') %}checked{% endif %}>
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Moderation Logs -->
+  <div class="card">
+    <div class="card-title">
+      <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
+      Moderation Logs
+    </div>
+    <div class="toggle-grid">
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <h4>Ban / Unban</h4>
+          <p>Log when a member is banned or unbanned</p>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" name="log_ban" {% if settings.get('log_ban') %}checked{% endif %}>
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <h4>Kick</h4>
+          <p>Log when a member is kicked from the server</p>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" name="log_kick" {% if settings.get('log_kick') %}checked{% endif %}>
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <h4>Mute / Timeout</h4>
+          <p>Log when a member is muted or timed out</p>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" name="log_mute" {% if settings.get('log_mute') %}checked{% endif %}>
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <h4>Warn</h4>
+          <p>Log when a member receives a warning</p>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" name="log_warn" {% if settings.get('log_warn') %}checked{% endif %}>
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Server Logs -->
+  <div class="card">
+    <div class="card-title">
+      <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
+      Server Logs
+    </div>
+    <div class="toggle-grid">
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <h4>Channel Created / Deleted</h4>
+          <p>Log channel creation and deletion events</p>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" name="log_channel_update" {% if settings.get('log_channel_update') %}checked{% endif %}>
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <h4>Role Created / Deleted</h4>
+          <p>Log role creation and deletion events</p>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" name="log_role_update" {% if settings.get('log_role_update') %}checked{% endif %}>
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <h4>Voice Channel Activity</h4>
+          <p>Log members joining, leaving, or moving voice channels</p>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" name="log_voice" {% if settings.get('log_voice') %}checked{% endif %}>
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Log Channel -->
+  <div class="card">
+    <div class="card-title">
+      <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></span>
+      Log Channel
+    </div>
+    <div class="form-group" style="margin-bottom:0">
+      <label class="form-label">Channel ID</label>
+      <input type="text" name="log_channel_id" class="form-control" placeholder="e.g. 1234567890123456789" value="{{ settings.get('log_channel_id', '') }}">
+      <p style="font-size:11.5px;color:var(--muted);margin-top:6px">All enabled log events will be sent to this channel.</p>
+    </div>
+  </div>
+
+  <button type="submit" class="btn btn-primary">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+    Save Log Settings
+  </button>
+
+</form>
 {% endblock %}
