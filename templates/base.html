@@ -4,6 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}ModPanel{% endblock %} — ModPanel</title>
+
+  <!-- ══ THEME RESTORE — must run before any paint to avoid flash ══ -->
+  <script>
+    (function(){
+      var t = localStorage.getItem('mp-theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23bf5af2' opacity='.18'/%3E%3Cpath d='M16 6a10 10 0 1 0 0 20A10 10 0 0 0 16 6zm0 3a7 7 0 1 1 0 14A7 7 0 0 1 16 9zm-1 3v5.27l4 2.4-.78 1.33L13 18V12h2z' fill='%23bf5af2'/%3E%3C/svg%3E">
   <style>
@@ -333,6 +342,10 @@
           <span class="status-dot" id="statusDot"></span>
           <span id="statusText">Checking...</span>
         </div>
+        <!-- Theme quick-cycle button -->
+        <button class="topbar-btn" id="themeQuickBtn" aria-label="Cycle theme" title="Change theme" onclick="cycleTheme()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        </button>
         <a href="{{ url_for('settings') }}" class="topbar-btn" aria-label="Settings">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         </a>
@@ -369,10 +382,74 @@
    iOS 26 Animation Engine
 ════════════════════════════════════════ */
 
+// ── Theme persistence helpers ──
+var THEMES = ['dark', 'light', 'midnight', 'space'];
+
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  localStorage.setItem('mp-theme', t);
+}
+
+function cycleTheme() {
+  var cur = document.documentElement.getAttribute('data-theme') || 'dark';
+  var idx = THEMES.indexOf(cur);
+  var next = THEMES[(idx + 1) % THEMES.length];
+  applyTheme(next);
+  // spring pop on button
+  var btn = document.getElementById('themeQuickBtn');
+  if (btn) {
+    btn.style.transform = 'scale(0.88) rotate(30deg)';
+    setTimeout(function(){
+      btn.style.transition = 'transform 420ms cubic-bezier(0.34,1.56,0.64,1)';
+      btn.style.transform = 'scale(1) rotate(0deg)';
+      setTimeout(function(){ btn.style.transition = ''; }, 420);
+    }, 90);
+  }
+  // show toast
+  showThemeToast(next);
+}
+
+function showThemeToast(name) {
+  var existing = document.getElementById('theme-toast');
+  if (existing) existing.remove();
+  var labels = { dark: '🌙 Dark', light: '☀️ Light', midnight: '⬛ Midnight', space: '🚀 Space' };
+  var toast = document.createElement('div');
+  toast.id = 'theme-toast';
+  toast.textContent = labels[name] || name;
+  toast.style.cssText = [
+    'position:fixed','bottom:28px','left:50%',
+    'transform:translateX(-50%) translateY(20px)',
+    'background:var(--glass-bg)',
+    'backdrop-filter:blur(30px)',
+    '-webkit-backdrop-filter:blur(30px)',
+    'border:1px solid var(--glass-border)',
+    'color:var(--text)',
+    'padding:9px 22px',
+    'border-radius:9999px',
+    'font-size:13px','font-weight:600',
+    'box-shadow:0 8px 32px rgba(0,0,0,0.35),inset 0 1.5px 0 rgba(255,255,255,0.22)',
+    'z-index:9999',
+    'opacity:0',
+    'transition:opacity 260ms ease,transform 320ms cubic-bezier(0.34,1.56,0.64,1)'
+  ].join(';');
+  document.body.appendChild(toast);
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){
+      toast.style.opacity = '1';
+      toast.style.transform = 'translateX(-50%) translateY(0)';
+    });
+  });
+  setTimeout(function(){
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(-50%) translateY(10px)';
+    setTimeout(function(){ toast.remove(); }, 320);
+  }, 1800);
+}
+
 // ── Sidebar toggle ──
 function toggleSection(header) {
   header.classList.toggle('open');
-  const body = header.nextElementSibling;
+  var body = header.nextElementSibling;
   body.classList.toggle('open');
 }
 function openSidebar() {
@@ -386,140 +463,140 @@ function closeSidebar() {
 if (window.innerWidth <= 768) document.getElementById('menuBtn').style.display = 'flex';
 
 // ── Bot status ──
-fetch('/api/status').then(r=>r.json()).then(d=>{
-  const dot = document.getElementById('statusDot');
-  const txt = document.getElementById('statusText');
+fetch('/api/status').then(function(r){ return r.json(); }).then(function(d){
+  var dot = document.getElementById('statusDot');
+  var txt = document.getElementById('statusText');
   if (d.online) { dot.classList.remove('offline'); txt.textContent = d.name || 'Online'; }
   else { dot.classList.add('offline'); txt.textContent = 'Offline'; }
-}).catch(()=>{ document.getElementById('statusText').textContent = 'Unknown'; });
+}).catch(function(){ document.getElementById('statusText').textContent = 'Unknown'; });
 
 // ── Cursor light glow ──
-const cursorGlow = document.getElementById('cursor-glow');
-document.addEventListener('mousemove', e => {
+var cursorGlow = document.getElementById('cursor-glow');
+document.addEventListener('mousemove', function(e) {
   cursorGlow.style.left = e.clientX + 'px';
   cursorGlow.style.top  = e.clientY + 'px';
 });
 
 // ── Staggered card spring reveal ──
 (function() {
-  const cards = document.querySelectorAll('.card, .stat-card');
-  cards.forEach((card, i) => {
+  var cards = document.querySelectorAll('.card, .stat-card');
+  cards.forEach(function(card, i) {
     card.style.animationDelay = (80 + i * 60) + 'ms';
   });
 })();
 
 // ── Staggered nav item reveal ──
 (function() {
-  const items = document.querySelectorAll('.nav-item');
-  items.forEach((item, i) => {
+  var items = document.querySelectorAll('.nav-item');
+  items.forEach(function(item, i) {
     item.style.animationDelay = (120 + i * 40) + 'ms';
   });
 })();
 
 // ── Stat counter with spring easing ──
 (function() {
-  document.querySelectorAll('.stat-value').forEach((el, idx) => {
-    const raw = el.textContent.trim();
-    const target = parseInt(raw.replace(/,/g, ''));
+  document.querySelectorAll('.stat-value').forEach(function(el, idx) {
+    var raw = el.textContent.trim();
+    var target = parseInt(raw.replace(/,/g, ''));
     if (isNaN(target) || target === 0) return;
     el.style.animationDelay = (200 + idx * 80) + 'ms';
-    let start = null;
-    const duration = 900;
-    const easeOutSpring = t => 1 - Math.pow(2, -10*t) * Math.cos(20*t);
-    const tick = ts => {
+    var start = null;
+    var duration = 900;
+    var easeOutSpring = function(t) { return 1 - Math.pow(2, -10*t) * Math.cos(20*t); };
+    var tick = function(ts) {
       if (!start) start = ts;
-      const p = Math.min((ts - start) / duration, 1);
+      var p = Math.min((ts - start) / duration, 1);
       el.textContent = Math.round(easeOutSpring(p) * target).toLocaleString();
       if (p < 1) requestAnimationFrame(tick);
       else el.textContent = target.toLocaleString();
     };
-    setTimeout(() => requestAnimationFrame(tick), 250 + idx * 80);
+    setTimeout(function() { requestAnimationFrame(tick); }, 250 + idx * 80);
   });
 })();
 
 // ── Ripple on buttons ──
-document.addEventListener('pointerdown', e => {
-  const btn = e.target.closest('.btn, .nav-item, .topbar-btn');
+document.addEventListener('pointerdown', function(e) {
+  var btn = e.target.closest('.btn, .nav-item, .topbar-btn');
   if (!btn) return;
   btn.classList.add('ripple-host');
-  const r = document.createElement('span');
+  var r = document.createElement('span');
   r.className = 'ripple-wave';
-  const rect = btn.getBoundingClientRect();
+  var rect = btn.getBoundingClientRect();
   r.style.left = (e.clientX - rect.left) + 'px';
   r.style.top  = (e.clientY - rect.top)  + 'px';
   btn.appendChild(r);
-  setTimeout(() => r.remove(), 600);
+  setTimeout(function() { r.remove(); }, 600);
 });
 
 // ── Magnetic nav: track mouse inside each nav-item ──
-document.querySelectorAll('.nav-item').forEach(item => {
-  item.addEventListener('mousemove', e => {
-    const rect = item.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width  * 100).toFixed(1) + '%';
-    const y = ((e.clientY - rect.top)  / rect.height * 100).toFixed(1) + '%';
+document.querySelectorAll('.nav-item').forEach(function(item) {
+  item.addEventListener('mousemove', function(e) {
+    var rect = item.getBoundingClientRect();
+    var x = ((e.clientX - rect.left) / rect.width  * 100).toFixed(1) + '%';
+    var y = ((e.clientY - rect.top)  / rect.height * 100).toFixed(1) + '%';
     item.style.setProperty('--mx', x);
     item.style.setProperty('--my', y);
   });
 });
 
 // ── Card parallax tilt on mouse move ──
-document.querySelectorAll('.card, .stat-card').forEach(card => {
-  card.addEventListener('mousemove', e => {
-    const rect = card.getBoundingClientRect();
-    const cx = (e.clientX - rect.left) / rect.width  - 0.5;
-    const cy = (e.clientY - rect.top)  / rect.height - 0.5;
-    card.style.transform = `perspective(600px) rotateY(${cx*6}deg) rotateX(${-cy*6}deg) translateY(-4px) scale(1.012)`;
+document.querySelectorAll('.card, .stat-card').forEach(function(card) {
+  card.addEventListener('mousemove', function(e) {
+    var rect = card.getBoundingClientRect();
+    var cx = (e.clientX - rect.left) / rect.width  - 0.5;
+    var cy = (e.clientY - rect.top)  / rect.height - 0.5;
+    card.style.transform = 'perspective(600px) rotateY(' + (cx*6) + 'deg) rotateX(' + (-cy*6) + 'deg) translateY(-4px) scale(1.012)';
   });
-  card.addEventListener('mouseleave', () => {
+  card.addEventListener('mouseleave', function() {
     card.style.transition = 'transform 500ms cubic-bezier(0.34,1.46,0.64,1)';
     card.style.transform  = '';
-    setTimeout(() => card.style.transition = '', 500);
+    setTimeout(function() { card.style.transition = ''; }, 500);
   });
 });
 
 // ── Page-leave animation on link click ──
-document.querySelectorAll('a[href]').forEach(link => {
-  const href = link.getAttribute('href');
+document.querySelectorAll('a[href]').forEach(function(link) {
+  var href = link.getAttribute('href');
   if (!href || href.startsWith('#') || href.startsWith('javascript') || link.target === '_blank') return;
-  link.addEventListener('click', e => {
-    const isSamePage = link.href === window.location.href;
+  link.addEventListener('click', function(e) {
+    var isSamePage = link.href === window.location.href;
     if (isSamePage) return;
     e.preventDefault();
     document.body.classList.add('leaving');
-    setTimeout(() => { window.location.href = link.href; }, 200);
+    setTimeout(function() { window.location.href = link.href; }, 200);
   });
 });
 
 // ── Floating orb particles ──
 (function() {
-  const layer = document.getElementById('orb-layer');
-  const colors = [
+  var layer = document.getElementById('orb-layer');
+  var colors = [
     'rgba(120,60,255,0.22)',
     'rgba(255,45,150,0.16)',
     'rgba(0,160,255,0.14)',
     'rgba(50,230,180,0.12)',
     'rgba(191,90,242,0.18)'
   ];
-  for (let i = 0; i < 6; i++) {
-    const orb = document.createElement('div');
+  for (var i = 0; i < 6; i++) {
+    var orb = document.createElement('div');
     orb.className = 'orb-particle';
-    const size = 180 + Math.random() * 220;
-    const x = Math.random() * 100;
-    const y = Math.random() * 100;
-    const tx = (Math.random() - 0.5) * 160 + 'px';
-    const ty = (Math.random() - 0.5) * 160 + 'px';
-    const dur = 14 + Math.random() * 18;
-    const delay = Math.random() * -20;
+    var size = 180 + Math.random() * 220;
+    var x = Math.random() * 100;
+    var y = Math.random() * 100;
+    var tx = (Math.random() - 0.5) * 160 + 'px';
+    var ty = (Math.random() - 0.5) * 160 + 'px';
+    var dur = 14 + Math.random() * 18;
+    var delay = Math.random() * -20;
     orb.style.cssText = [
-      `width:${size}px`,
-      `height:${size}px`,
-      `left:${x}%`,
-      `top:${y}%`,
-      `background:${colors[i % colors.length]}`,
-      `--tx:${tx}`,
-      `--ty:${ty}`,
-      `animation-duration:${dur}s`,
-      `animation-delay:${delay}s`
+      'width:' + size + 'px',
+      'height:' + size + 'px',
+      'left:' + x + '%',
+      'top:' + y + '%',
+      'background:' + colors[i % colors.length],
+      '--tx:' + tx,
+      '--ty:' + ty,
+      'animation-duration:' + dur + 's',
+      'animation-delay:' + delay + 's'
     ].join(';');
     layer.appendChild(orb);
   }
@@ -527,26 +604,27 @@ document.querySelectorAll('a[href]').forEach(link => {
 
 // ── Wallpaper parallax on mouse move (subtle) ──
 (function() {
-  let rx = 0, ry = 0;
-  document.addEventListener('mousemove', e => {
-    const tx = (e.clientX / window.innerWidth  - 0.5) * 22;
-    const ty = (e.clientY / window.innerHeight - 0.5) * 22;
+  var rx = 0, ry = 0;
+  document.addEventListener('mousemove', function(e) {
+    var tx = (e.clientX / window.innerWidth  - 0.5) * 22;
+    var ty = (e.clientY / window.innerHeight - 0.5) * 22;
     rx += (tx - rx) * 0.06;
     ry += (ty - ry) * 0.06;
-    document.body.style.backgroundPosition = `${50 + rx * 0.1}% ${50 + ry * 0.1}%`;
-    const layer = document.getElementById('orb-layer');
-    if (layer) layer.style.transform = `translate(${rx * 0.4}px, ${ry * 0.4}px)`;
+    document.body.style.backgroundPosition = (50 + rx * 0.1) + '% ' + (50 + ry * 0.1) + '%';
+    var layer = document.getElementById('orb-layer');
+    if (layer) layer.style.transform = 'translate(' + (rx * 0.4) + 'px, ' + (ry * 0.4) + 'px)';
   });
 })();
 
 // ── Toggle switch spring feedback ──
-document.querySelectorAll('input[type=checkbox].toggle, label.toggle').forEach(el => {
+document.querySelectorAll('input[type=checkbox].toggle, label.toggle').forEach(function(el) {
   el.addEventListener('change', function() {
     this.style.transform = 'scale(0.92)';
-    setTimeout(() => {
-      this.style.transition = 'transform 400ms cubic-bezier(0.34,1.56,0.64,1)';
-      this.style.transform = 'scale(1)';
-      setTimeout(() => this.style.transition = '', 400);
+    var self = this;
+    setTimeout(function() {
+      self.style.transition = 'transform 400ms cubic-bezier(0.34,1.56,0.64,1)';
+      self.style.transform = 'scale(1)';
+      setTimeout(function() { self.style.transition = ''; }, 400);
     }, 80);
   });
 });
