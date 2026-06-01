@@ -6,8 +6,168 @@
   <title>{% block title %}ModPanel{% endblock %} — ModPanel</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23bf5af2' opacity='.18'/%3E%3Cpath d='M16 6a10 10 0 1 0 0 20A10 10 0 0 0 16 6zm0 3a7 7 0 1 1 0 14A7 7 0 0 1 16 9zm-1 3v5.27l4 2.4-.78 1.33L13 18V12h2z' fill='%23bf5af2'/%3E%3C/svg%3E">
+  <style>
+    /* ────────────────────────────────────────────────────
+       iOS 26 — Entrance & Motion Animations
+    ──────────────────────────────────────────────────── */
+
+    /* Page fade-slide in */
+    @keyframes page-enter {
+      from { opacity: 0; transform: translateY(18px) scale(0.985); }
+      to   { opacity: 1; transform: translateY(0)    scale(1); }
+    }
+    .main-content {
+      animation: page-enter 420ms cubic-bezier(0.34,1.20,0.64,1) both;
+    }
+
+    /* Card spring-reveal (staggered) */
+    @keyframes card-spring {
+      0%   { opacity: 0; transform: translateY(28px) scale(0.96); }
+      60%  { opacity: 1; transform: translateY(-4px) scale(1.008); }
+      100% { opacity: 1; transform: translateY(0)    scale(1); }
+    }
+    .card, .stat-card {
+      opacity: 0;
+      animation: card-spring 500ms cubic-bezier(0.34,1.46,0.64,1) forwards;
+    }
+
+    /* Sidebar brand entrance */
+    @keyframes brand-drop {
+      from { opacity: 0; transform: translateY(-10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .sidebar-brand {
+      animation: brand-drop 380ms cubic-bezier(0.34,1.56,0.64,1) 80ms both;
+    }
+
+    /* Nav items slide-in */
+    @keyframes nav-slide {
+      from { opacity: 0; transform: translateX(-14px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    .nav-item {
+      opacity: 0;
+      animation: nav-slide 340ms cubic-bezier(0.34,1.46,0.64,1) forwards;
+    }
+
+    /* Stat value pop */
+    @keyframes stat-pop {
+      0%   { transform: scale(0.80); opacity: 0; }
+      70%  { transform: scale(1.06); opacity: 1; }
+      100% { transform: scale(1);    opacity: 1; }
+    }
+    .stat-value {
+      display: inline-block;
+      animation: stat-pop 480ms cubic-bezier(0.34,1.56,0.64,1) both;
+    }
+
+    /* Topbar slide down */
+    @keyframes topbar-enter {
+      from { opacity: 0; transform: translateY(-100%); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .topbar {
+      animation: topbar-enter 360ms cubic-bezier(0.34,1.30,0.64,1) 60ms both;
+    }
+
+    /* Flash alert bounce-in */
+    @keyframes flash-bounce {
+      0%   { opacity: 0; transform: scale(0.92) translateY(-8px); }
+      65%  { transform: scale(1.02) translateY(2px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .flash {
+      animation: flash-bounce 360ms cubic-bezier(0.34,1.56,0.64,1) both;
+    }
+
+    /* Ripple effect */
+    .ripple-host { position: relative; overflow: hidden; }
+    @keyframes ripple-spread {
+      from { transform: scale(0); opacity: 0.45; }
+      to   { transform: scale(4); opacity: 0; }
+    }
+    .ripple-wave {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.35);
+      pointer-events: none;
+      width: 80px; height: 80px;
+      margin-top: -40px; margin-left: -40px;
+      animation: ripple-spread 550ms cubic-bezier(0.16,1,0.3,1) forwards;
+    }
+
+    /* Magnetic hover glow on nav items */
+    .nav-item::before {
+      content: '';
+      position: absolute; inset: 0;
+      border-radius: inherit;
+      background: radial-gradient(ellipse at var(--mx,50%) var(--my,50%), rgba(191,90,242,0.18) 0%, transparent 70%);
+      opacity: 0;
+      transition: opacity 250ms ease;
+      pointer-events: none;
+    }
+    .nav-item:hover::before { opacity: 1; }
+
+    /* Parallax orbs container */
+    #orb-layer {
+      position: fixed; inset: 0; z-index: 0;
+      pointer-events: none; overflow: hidden;
+    }
+    .orb-particle {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(60px);
+      opacity: 0;
+      will-change: transform, opacity;
+      animation: orb-float linear infinite;
+    }
+    @keyframes orb-float {
+      0%   { transform: translate(0,0)     scale(1);    opacity: 0; }
+      10%  { opacity: 1; }
+      50%  { transform: translate(var(--tx),var(--ty)) scale(1.15); }
+      90%  { opacity: 0.7; }
+      100% { transform: translate(0,0)     scale(1);    opacity: 0; }
+    }
+
+    /* Page-leave fade out */
+    body.leaving .main-content {
+      animation: none;
+      transition: opacity 200ms ease, transform 200ms ease;
+      opacity: 0;
+      transform: translateY(-10px) scale(0.99);
+    }
+
+    /* Cursor light trail */
+    #cursor-glow {
+      position: fixed;
+      width: 340px; height: 340px;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 1;
+      background: radial-gradient(circle, rgba(191,90,242,0.09) 0%, transparent 70%);
+      transform: translate(-50%, -50%);
+      transition: left 90ms linear, top 90ms linear;
+      will-change: left, top;
+    }
+
+    /* Reduced motion — respect user preference */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-delay: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
 </head>
 <body>
+
+<!-- Cursor light glow -->
+<div id="cursor-glow"></div>
+
+<!-- Floating orb particles -->
+<div id="orb-layer"></div>
+
 <div class="layout">
 
   <!-- Sidebar -->
@@ -205,6 +365,11 @@
 </div>
 
 <script>
+/* ════════════════════════════════════════
+   iOS 26 Animation Engine
+════════════════════════════════════════ */
+
+// ── Sidebar toggle ──
 function toggleSection(header) {
   header.classList.toggle('open');
   const body = header.nextElementSibling;
@@ -218,24 +383,172 @@ function closeSidebar() {
   document.getElementById('sidebar').classList.remove('open');
   document.getElementById('sidebarOverlay').classList.remove('open');
 }
-if (window.innerWidth <= 768) {
-  document.getElementById('menuBtn').style.display = 'flex';
-}
-// Live bot status
+if (window.innerWidth <= 768) document.getElementById('menuBtn').style.display = 'flex';
+
+// ── Bot status ──
 fetch('/api/status').then(r=>r.json()).then(d=>{
   const dot = document.getElementById('statusDot');
   const txt = document.getElementById('statusText');
   if (d.online) { dot.classList.remove('offline'); txt.textContent = d.name || 'Online'; }
   else { dot.classList.add('offline'); txt.textContent = 'Offline'; }
 }).catch(()=>{ document.getElementById('statusText').textContent = 'Unknown'; });
-// Stat counter animation
-document.querySelectorAll('.stat-value').forEach(el => {
-  const target = parseInt(el.textContent);
-  if (isNaN(target) || target === 0) return;
-  let current = 0;
-  const step = Math.max(1, Math.ceil(target / 28));
-  const tick = () => { current = Math.min(current+step, target); el.textContent = current.toLocaleString(); if (current < target) requestAnimationFrame(tick); };
-  requestAnimationFrame(tick);
+
+// ── Cursor light glow ──
+const cursorGlow = document.getElementById('cursor-glow');
+document.addEventListener('mousemove', e => {
+  cursorGlow.style.left = e.clientX + 'px';
+  cursorGlow.style.top  = e.clientY + 'px';
+});
+
+// ── Staggered card spring reveal ──
+(function() {
+  const cards = document.querySelectorAll('.card, .stat-card');
+  cards.forEach((card, i) => {
+    card.style.animationDelay = (80 + i * 60) + 'ms';
+  });
+})();
+
+// ── Staggered nav item reveal ──
+(function() {
+  const items = document.querySelectorAll('.nav-item');
+  items.forEach((item, i) => {
+    item.style.animationDelay = (120 + i * 40) + 'ms';
+  });
+})();
+
+// ── Stat counter with spring easing ──
+(function() {
+  document.querySelectorAll('.stat-value').forEach((el, idx) => {
+    const raw = el.textContent.trim();
+    const target = parseInt(raw.replace(/,/g, ''));
+    if (isNaN(target) || target === 0) return;
+    el.style.animationDelay = (200 + idx * 80) + 'ms';
+    let start = null;
+    const duration = 900;
+    const easeOutSpring = t => 1 - Math.pow(2, -10*t) * Math.cos(20*t);
+    const tick = ts => {
+      if (!start) start = ts;
+      const p = Math.min((ts - start) / duration, 1);
+      el.textContent = Math.round(easeOutSpring(p) * target).toLocaleString();
+      if (p < 1) requestAnimationFrame(tick);
+      else el.textContent = target.toLocaleString();
+    };
+    setTimeout(() => requestAnimationFrame(tick), 250 + idx * 80);
+  });
+})();
+
+// ── Ripple on buttons ──
+document.addEventListener('pointerdown', e => {
+  const btn = e.target.closest('.btn, .nav-item, .topbar-btn');
+  if (!btn) return;
+  btn.classList.add('ripple-host');
+  const r = document.createElement('span');
+  r.className = 'ripple-wave';
+  const rect = btn.getBoundingClientRect();
+  r.style.left = (e.clientX - rect.left) + 'px';
+  r.style.top  = (e.clientY - rect.top)  + 'px';
+  btn.appendChild(r);
+  setTimeout(() => r.remove(), 600);
+});
+
+// ── Magnetic nav: track mouse inside each nav-item ──
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('mousemove', e => {
+    const rect = item.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width  * 100).toFixed(1) + '%';
+    const y = ((e.clientY - rect.top)  / rect.height * 100).toFixed(1) + '%';
+    item.style.setProperty('--mx', x);
+    item.style.setProperty('--my', y);
+  });
+});
+
+// ── Card parallax tilt on mouse move ──
+document.querySelectorAll('.card, .stat-card').forEach(card => {
+  card.addEventListener('mousemove', e => {
+    const rect = card.getBoundingClientRect();
+    const cx = (e.clientX - rect.left) / rect.width  - 0.5;
+    const cy = (e.clientY - rect.top)  / rect.height - 0.5;
+    card.style.transform = `perspective(600px) rotateY(${cx*6}deg) rotateX(${-cy*6}deg) translateY(-4px) scale(1.012)`;
+  });
+  card.addEventListener('mouseleave', () => {
+    card.style.transition = 'transform 500ms cubic-bezier(0.34,1.46,0.64,1)';
+    card.style.transform  = '';
+    setTimeout(() => card.style.transition = '', 500);
+  });
+});
+
+// ── Page-leave animation on link click ──
+document.querySelectorAll('a[href]').forEach(link => {
+  const href = link.getAttribute('href');
+  if (!href || href.startsWith('#') || href.startsWith('javascript') || link.target === '_blank') return;
+  link.addEventListener('click', e => {
+    const isSamePage = link.href === window.location.href;
+    if (isSamePage) return;
+    e.preventDefault();
+    document.body.classList.add('leaving');
+    setTimeout(() => { window.location.href = link.href; }, 200);
+  });
+});
+
+// ── Floating orb particles ──
+(function() {
+  const layer = document.getElementById('orb-layer');
+  const colors = [
+    'rgba(120,60,255,0.22)',
+    'rgba(255,45,150,0.16)',
+    'rgba(0,160,255,0.14)',
+    'rgba(50,230,180,0.12)',
+    'rgba(191,90,242,0.18)'
+  ];
+  for (let i = 0; i < 6; i++) {
+    const orb = document.createElement('div');
+    orb.className = 'orb-particle';
+    const size = 180 + Math.random() * 220;
+    const x = Math.random() * 100;
+    const y = Math.random() * 100;
+    const tx = (Math.random() - 0.5) * 160 + 'px';
+    const ty = (Math.random() - 0.5) * 160 + 'px';
+    const dur = 14 + Math.random() * 18;
+    const delay = Math.random() * -20;
+    orb.style.cssText = [
+      `width:${size}px`,
+      `height:${size}px`,
+      `left:${x}%`,
+      `top:${y}%`,
+      `background:${colors[i % colors.length]}`,
+      `--tx:${tx}`,
+      `--ty:${ty}`,
+      `animation-duration:${dur}s`,
+      `animation-delay:${delay}s`
+    ].join(';');
+    layer.appendChild(orb);
+  }
+})();
+
+// ── Wallpaper parallax on mouse move (subtle) ──
+(function() {
+  let rx = 0, ry = 0;
+  document.addEventListener('mousemove', e => {
+    const tx = (e.clientX / window.innerWidth  - 0.5) * 22;
+    const ty = (e.clientY / window.innerHeight - 0.5) * 22;
+    rx += (tx - rx) * 0.06;
+    ry += (ty - ry) * 0.06;
+    document.body.style.backgroundPosition = `${50 + rx * 0.1}% ${50 + ry * 0.1}%`;
+    const layer = document.getElementById('orb-layer');
+    if (layer) layer.style.transform = `translate(${rx * 0.4}px, ${ry * 0.4}px)`;
+  });
+})();
+
+// ── Toggle switch spring feedback ──
+document.querySelectorAll('input[type=checkbox].toggle, label.toggle').forEach(el => {
+  el.addEventListener('change', function() {
+    this.style.transform = 'scale(0.92)';
+    setTimeout(() => {
+      this.style.transition = 'transform 400ms cubic-bezier(0.34,1.56,0.64,1)';
+      this.style.transform = 'scale(1)';
+      setTimeout(() => this.style.transition = '', 400);
+    }, 80);
+  });
 });
 </script>
 {% block scripts %}{% endblock %}
