@@ -162,6 +162,23 @@ def _fetch_guild_roles() -> list:
         return []
 
 
+def _fetch_guild_member_count() -> int:
+    """Fetch the approximate or exact member count from the Discord Guild API."""
+    if not BOT_TOKEN or not GUILD_ID or GUILD_ID == "0":
+        return 0
+    try:
+        req = urllib.request.Request(
+            f"{DISCORD_API}/guilds/{GUILD_ID}?with_counts=true",
+            headers=_discord_headers()
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read())
+            # approximate_member_count is returned when with_counts=true
+            return data.get("approximate_member_count") or data.get("member_count") or 0
+    except Exception:
+        return 0
+
+
 def _search_guild_members(query: str) -> list:
     if not BOT_TOKEN or not GUILD_ID or GUILD_ID == "0":
         return []
@@ -258,7 +275,9 @@ def index():
         logs = db.recent_logs_sync(GUILD_ID, 15)
     except Exception:
         logs = []
-    return render_template("dashboard.html", stats=stats, logs=logs)
+    # Fetch real member count from Discord API
+    total_members = _fetch_guild_member_count()
+    return render_template("dashboard.html", stats=stats, logs=logs, total_members=total_members)
 
 
 @app.route("/login", methods=["GET", "POST"])
