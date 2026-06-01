@@ -13,9 +13,11 @@
         <div class="toggle-info"><h4>Enable Suggestions</h4><p>Allow members to submit suggestions via a command</p></div>
         <label class="toggle"><input type="checkbox" name="suggestions_enabled" {% if cfg.suggestions_enabled == '1' %}checked{% endif %}><span class="toggle-track"></span></label>
       </div>
-      <div class="form-group" style="margin-top:16px">
-        <label class="form-label">Suggestions Channel ID</label>
-        <input type="text" name="suggestions_channel" class="form-control" value="{{ cfg.suggestions_channel }}" placeholder="Channel ID">
+      <div class="card-body">
+        <div class="form-group">
+          <label class="form-label">Suggestions Channel ID</label>
+          <input type="text" name="suggestions_channel" value="{{ cfg.suggestions_channel }}" placeholder="Channel ID">
+        </div>
       </div>
     </div>
     <button type="submit" class="btn btn-primary">Save</button>

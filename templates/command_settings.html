@@ -10,27 +10,19 @@
     </div>
     {% for cmd in commands %}
     {% set cs = cmd_settings.get(cmd, {}) %}
-    <div style="padding:14px 0;border-bottom:1px solid var(--border);{% if loop.last %}border-bottom:none{% endif %}">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <code style="font-size:13px">/{{ cmd }}</code>
-        <label class="toggle">
-          <input type="checkbox" name="{{ cmd }}_enabled" {% if cs.get('enabled',1) %}checked{% endif %}>
-          <span class="toggle-track"></span>
-        </label>
+    <div class="toggle-row">
+      <div class="toggle-info">
+        <h4>{{ cmd }}</h4>
+        <p>Enable or disable this command</p>
       </div>
-      <div class="grid-2" style="gap:8px">
-        <div class="form-group" style="margin-bottom:0">
-          <label class="form-label">Whitelist Roles (IDs, comma-sep)</label>
-          <input type="text" name="{{ cmd }}_whitelist_roles" class="form-control" value="{{ cs.get('whitelist_roles','') }}" placeholder="Leave blank for all">
-        </div>
-        <div class="form-group" style="margin-bottom:0">
-          <label class="form-label">Blacklist Mods (IDs)</label>
-          <input type="text" name="{{ cmd }}_blacklist_mods" class="form-control" value="{{ cs.get('blacklist_mods','') }}">
-        </div>
-      </div>
+      <label class="toggle"><input type="checkbox" name="enabled_{{ cmd }}" {% if cs.get('enabled', True) %}checked{% endif %}><span class="toggle-track"></span></label>
     </div>
     {% endfor %}
+    <div class="card-body">
+      <div class="submit-row">
+        <button type="submit" class="btn btn-primary">Save Command Settings</button>
+      </div>
+    </div>
   </div>
-  <button type="submit" class="btn btn-primary">Save Command Settings</button>
 </form>
 {% endblock %}

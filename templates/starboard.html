@@ -13,18 +13,20 @@
         <div class="toggle-info"><h4>Enable Starboard</h4><p>Pin highly-reacted messages to a channel</p></div>
         <label class="toggle"><input type="checkbox" name="starboard_enabled" {% if cfg.starboard_enabled == '1' %}checked{% endif %}><span class="toggle-track"></span></label>
       </div>
-      <div class="form-group" style="margin-top:16px">
-        <label class="form-label">Starboard Channel ID</label>
-        <input type="text" name="starboard_channel" class="form-control" value="{{ cfg.starboard_channel }}" placeholder="Channel ID">
-      </div>
-      <div class="grid-2">
+      <div class="card-body">
         <div class="form-group">
-          <label class="form-label">Minimum Stars</label>
-          <input type="number" name="starboard_min" class="form-control" value="{{ cfg.starboard_min or 3 }}" min="1">
+          <label class="form-label">Starboard Channel ID</label>
+          <input type="text" name="starboard_channel" value="{{ cfg.starboard_channel }}" placeholder="Channel ID">
         </div>
-        <div class="form-group">
-          <label class="form-label">Star Emoji</label>
-          <input type="text" name="starboard_emoji" class="form-control" value="{{ cfg.starboard_emoji or '⭐' }}">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Minimum Stars</label>
+            <input type="number" name="starboard_min" value="{{ cfg.starboard_min or 3 }}" min="1">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Star Emoji</label>
+            <input type="text" name="starboard_emoji" value="{{ cfg.starboard_emoji or '⭐' }}">
+          </div>
         </div>
       </div>
     </div>

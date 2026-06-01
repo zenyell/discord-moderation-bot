@@ -13,13 +13,15 @@
         <div class="toggle-info"><h4>Enable Welcome Messages</h4><p>Send a message when a member joins</p></div>
         <label class="toggle"><input type="checkbox" name="welcome_enabled" {% if cfg.welcome_enabled == '1' %}checked{% endif %}><span class="toggle-track"></span></label>
       </div>
-      <div class="form-group" style="margin-top:16px">
-        <label class="form-label">Welcome Channel ID</label>
-        <input type="text" name="welcome_channel" class="form-control" value="{{ cfg.welcome_channel }}" placeholder="Channel ID">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Welcome Message</label>
-        <textarea name="welcome_message" class="form-control" placeholder="Use {user} for mention, {server} for server name">{{ cfg.welcome_message }}</textarea>
+      <div class="card-body">
+        <div class="form-group">
+          <label class="form-label">Welcome Channel ID</label>
+          <input type="text" name="welcome_channel" value="{{ cfg.welcome_channel }}" placeholder="Channel ID">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Welcome Message</label>
+          <textarea name="welcome_message" placeholder="Use {user} for mention, {server} for server name">{{ cfg.welcome_message }}</textarea>
+        </div>
       </div>
     </div>
     <div class="card">
@@ -31,13 +33,15 @@
         <div class="toggle-info"><h4>Enable Farewell Messages</h4><p>Send a message when a member leaves</p></div>
         <label class="toggle"><input type="checkbox" name="farewell_enabled" {% if cfg.farewell_enabled == '1' %}checked{% endif %}><span class="toggle-track"></span></label>
       </div>
-      <div class="form-group" style="margin-top:16px">
-        <label class="form-label">Farewell Channel ID</label>
-        <input type="text" name="farewell_channel" class="form-control" value="{{ cfg.farewell_channel }}" placeholder="Channel ID">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Farewell Message</label>
-        <textarea name="farewell_message" class="form-control" placeholder="Use {user} for username, {server} for server name">{{ cfg.farewell_message }}</textarea>
+      <div class="card-body">
+        <div class="form-group">
+          <label class="form-label">Farewell Channel ID</label>
+          <input type="text" name="farewell_channel" value="{{ cfg.farewell_channel }}" placeholder="Channel ID">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Farewell Message</label>
+          <textarea name="farewell_message" placeholder="Use {user} for username, {server} for server name">{{ cfg.farewell_message }}</textarea>
+        </div>
       </div>
     </div>
     <button type="submit" class="btn btn-primary">Save Greetings</button>

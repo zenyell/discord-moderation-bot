@@ -9,13 +9,15 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         General
       </div>
-      <div class="form-group">
-        <label class="form-label">Auto Role ID</label>
-        <input type="text" name="auto_role_id" class="form-control" value="{{ cfg.auto_role_id }}" placeholder="Role ID assigned on join">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Blacklisted Words (comma-separated)</label>
-        <textarea name="bad_words" class="form-control" placeholder="word1, word2, word3">{{ cfg.bad_words }}</textarea>
+      <div class="card-body">
+        <div class="form-group">
+          <label class="form-label">Auto Role ID</label>
+          <input type="text" name="auto_role_id" value="{{ cfg.auto_role_id }}" placeholder="Role ID assigned on join">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Blacklisted Words (comma-separated)</label>
+          <textarea name="bad_words" placeholder="word1, word2, word3">{{ cfg.bad_words }}</textarea>
+        </div>
       </div>
     </div>
     <div class="card">
@@ -23,18 +25,20 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
         Spam Protection
       </div>
-      <div class="grid-3">
-        <div class="form-group">
-          <label class="form-label">Message Limit</label>
-          <input type="number" name="spam_limit" class="form-control" value="{{ cfg.spam_limit }}">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Window (seconds)</label>
-          <input type="number" name="spam_window" class="form-control" value="{{ cfg.spam_window }}">
+      <div class="card-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Message Limit</label>
+            <input type="number" name="spam_limit" value="{{ cfg.spam_limit }}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Window (seconds)</label>
+            <input type="number" name="spam_window" value="{{ cfg.spam_window }}">
+          </div>
         </div>
         <div class="form-group">
           <label class="form-label">Timeout (minutes)</label>
-          <input type="number" name="spam_timeout" class="form-control" value="{{ cfg.spam_timeout }}">
+          <input type="number" name="spam_timeout" value="{{ cfg.spam_timeout }}">
         </div>
       </div>
     </div>
