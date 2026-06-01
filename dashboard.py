@@ -265,6 +265,14 @@ def login_required(f):
 # ── Core routes ────────────────────────────────────────────────────────────
 
 @app.route("/", methods=["GET"])
+def landing():
+    """Public landing page — no login required."""
+    if session.get("logged_in"):
+        return redirect(url_for("index"))
+    return render_template("landing.html")
+
+
+@app.route("/dashboard", methods=["GET"])
 @login_required
 def index():
     try:
@@ -295,7 +303,7 @@ def login():
 @app.route("/logout")
 def logout():
     session.clear()
-    return redirect(url_for("login"))
+    return redirect(url_for("landing"))
 
 
 @app.route("/api/status")
