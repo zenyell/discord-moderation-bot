@@ -76,9 +76,11 @@ body { font-family: var(--font); font-size: 14px; color: var(--text); background
   font-size: 10.5px; font-weight: 700; letter-spacing: .8px;
   text-transform: uppercase; color: var(--text-muted);
   cursor: pointer; user-select: none;
+  transition: color var(--transition);
 }
 .nav-section-header:hover { color: var(--text); }
-.nav-section-header .chevron { flex-shrink:0; }
+.nav-section-header .chevron { transition: transform var(--transition); flex-shrink:0; }
+.nav-section-header.open .chevron { transform: rotate(90deg); }
 .nav-section-body { display: none; }
 .nav-section-body.open { display: block; }
 
@@ -88,6 +90,7 @@ body { font-family: var(--font); font-size: 14px; color: var(--text); background
   font-size: 13.5px; color: var(--text-muted);
   text-decoration: none; border-radius: 0;
   position: relative;
+  transition: color var(--transition), background var(--transition);
 }
 .nav-item:hover { color: var(--text); background: rgba(255,255,255,0.04); }
 .nav-item.active { color: var(--accent); background: var(--accent-dim); }
@@ -132,9 +135,7 @@ body { font-family: var(--font); font-size: 14px; color: var(--text); background
   border-radius: var(--radius); padding: 16px 18px;
   display: flex; flex-direction: column; gap: 8px;
 }
-.stat-card:hover {
-  border-color: var(--border-hover);
-}
+.stat-card:hover { border-color: var(--border-hover); }
 .stat-label {
   font-size: 10.5px; font-weight: 700;
   text-transform: uppercase; letter-spacing: .8px;
@@ -243,6 +244,7 @@ textarea { resize: vertical; min-height: 80px; }
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: 99px; cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
 }
 .switch .slider::before {
   content: '';
@@ -250,6 +252,7 @@ textarea { resize: vertical; min-height: 80px; }
   bottom: 2.5px; left: 2.5px;
   background: var(--text-muted);
   border-radius: 50%;
+  transition: transform var(--transition), background var(--transition);
 }
 .switch input:checked + .slider { background: var(--accent-dim); border-color: rgba(201,170,113,0.35); }
 .switch input:checked + .slider::before { transform: translateX(18px); background: var(--accent); }
