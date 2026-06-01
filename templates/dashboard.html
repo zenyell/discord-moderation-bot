@@ -116,31 +116,6 @@
   max-width: 44ch;
   line-height: 1.6;
 }
-.dash-hero-badges {
-  display: flex; gap: 9px; flex-wrap: wrap; margin-top: 22px;
-}
-.hero-badge {
-  display: flex; align-items: center; gap: 7px;
-  padding: 7px 14px;
-  background: rgba(255,255,255,0.13);
-  border: 1px solid rgba(255,255,255,0.22);
-  border-radius: 999px;
-  font-size: 12px; font-weight: 600; color: #fff;
-  box-shadow: inset 0 1.5px 0 rgba(255,255,255,0.22), 0 2px 8px rgba(0,0,0,0.20);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  transition: all 220ms cubic-bezier(0.16,1,0.3,1);
-}
-.hero-badge:hover {
-  background: rgba(255,255,255,0.22);
-  border-color: rgba(255,255,255,0.38);
-  transform: translateY(-1px);
-  box-shadow: inset 0 1.5px 0 rgba(255,255,255,0.30), 0 4px 14px rgba(0,0,0,0.28);
-}
-.hero-badge-dot {
-  width: 7px; height: 7px; border-radius: 50%;
-  flex-shrink: 0;
-}
 .dash-hero-right {
   display: flex; flex-direction: column; align-items: flex-end; gap: 12px;
   flex-shrink: 0;
@@ -208,7 +183,6 @@
   padding: 20px 20px 18px;
   display: flex; flex-direction: column; gap: 4px;
 }
-/* Accent glow on top edge */
 .stat-card::before {
   content: '';
   position: absolute; top: 0; left: 12px; right: 12px;
@@ -278,7 +252,6 @@
   text-decoration: none; color: var(--text);
   display: flex; flex-direction: column; gap: 10px;
 }
-/* Inset top-light per card */
 .feature-card::before {
   content: '';
   position: absolute; top: 0; left: 10%; right: 10%;
@@ -324,11 +297,6 @@
 /* ── Activity card ── */
 .activity-card {
   display: flex; flex-direction: column; gap: 0;
-}
-.activity-card .card-title {
-  padding: 18px 20px 14px;
-  margin-bottom: 0;
-  border-bottom: 1px solid var(--glass-border);
 }
 
 /* ── Actions table ── */
@@ -382,15 +350,6 @@
 .server-info-value {
   font-size: 13px; font-weight: 700; color: var(--text);
 }
-.server-info-badge {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 4px 10px;
-  background: var(--glass-bg-light);
-  border: 1px solid var(--glass-border);
-  border-radius: 999px;
-  font-size: 11px; font-weight: 600;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
-}
 
 /* ── Empty state ── */
 .empty-state {
@@ -435,20 +394,6 @@
     <div class="dash-hero-text">
       <h1>Welcome back{% if session.get('username') %}, {{ session['username'] }}{% endif %} 👋</h1>
       <p>Your server is protected and running smoothly. Here's what's happening today.</p>
-      <div class="dash-hero-badges">
-        <div class="hero-badge">
-          <span class="hero-badge-dot" style="background:var(--ios-green); box-shadow:0 0 8px var(--ios-green);"></span>
-          Bot Online
-        </div>
-        <div class="hero-badge">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          Shield Active
-        </div>
-        <div class="hero-badge">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          Auto-Mod On
-        </div>
-      </div>
     </div>
 
     <div class="dash-hero-right">
@@ -573,29 +518,8 @@
     </div>
     <div class="server-info-card" style="padding:16px 20px 20px;">
       <div class="server-info-row">
-        <span class="server-info-label">Bot Status</span>
-        <span class="server-info-badge">
-          <span style="width:6px;height:6px;border-radius:50%;background:var(--ios-green);box-shadow:0 0 8px var(--ios-green);display:inline-block;"></span>
-          Online
-        </span>
-      </div>
-      <div class="server-info-row">
-        <span class="server-info-label">Auto-Mod</span>
-        <span class="server-info-badge">
-          <span style="width:6px;height:6px;border-radius:50%;background:var(--ios-green);box-shadow:0 0 8px var(--ios-green);display:inline-block;"></span>
-          Enabled
-        </span>
-      </div>
-      <div class="server-info-row">
         <span class="server-info-label">Total Actions</span>
         <span class="server-info-value" style="font-variant-numeric:tabular-nums;">{{ (stats.bans or 0) + (stats.kicks or 0) + (stats.timeouts or 0) + (stats.warnings or 0) }}</span>
-      </div>
-      <div class="server-info-row">
-        <span class="server-info-label">Logging</span>
-        <span class="server-info-badge">
-          <span style="width:6px;height:6px;border-radius:50%;background:var(--ios-blue);box-shadow:0 0 8px var(--ios-blue);display:inline-block;"></span>
-          Active
-        </span>
       </div>
       {% if session.get('guild_id') %}
       <div class="server-info-row">
@@ -662,9 +586,6 @@
 
 </div>
 
-<!-- ═══════════════════════════════════════════════
-     ANIMATED STAT COUNTERS + RIPPLE JS
-═══════════════════════════════════════════════ -->
 <script>
 /* Animated stat counter */
 function animateCounters() {
@@ -697,7 +618,6 @@ document.querySelectorAll('.btn').forEach(btn => {
   });
 });
 
-/* Trigger counters on page load */
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', animateCounters);
 } else {
