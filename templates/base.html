@@ -6,38 +6,46 @@
   <title>{% block title %}Dashboard{% endblock %} — ModPanel</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:            #111113;
-      --surface:       #161618;
-      --surface-2:     #1c1c1f;
-      --surface-3:     #232327;
-      --surface-hover: #1e1e22;
-      --border:        rgba(255,255,255,0.06);
-      --border-2:      rgba(255,255,255,0.09);
-      --border-3:      rgba(255,255,255,0.14);
-      --text:          #e8e8ea;
-      --muted:         #636368;
-      --faint:         #3a3a3f;
-      --accent:        #818cf8;
-      --accent-dim:    #5c6bc0;
-      --accent-glow:   rgba(99,102,241,0.10);
-      --accent-glow-2: rgba(99,102,241,0.18);
-      --accent-btn:    #5b5fd6;
-      --accent-btn-h:  #6c70e8;
+      --bg:            #0d0d10;
+      --surface:       #13131a;
+      --surface-2:     #18181f;
+      --surface-3:     #1e1e28;
+      --surface-4:     #25252f;
+      --border:        rgba(255,255,255,0.055);
+      --border-2:      rgba(255,255,255,0.085);
+      --border-3:      rgba(255,255,255,0.13);
+      --text:          #f0f0f5;
+      --text-2:        #c4c4d0;
+      --muted:         #6b6b80;
+      --faint:         #38384a;
+      --accent:        #a78bfa;
+      --accent-2:      #7c3aed;
+      --accent-glow:   rgba(139,92,246,0.12);
+      --accent-glow-2: rgba(139,92,246,0.22);
+      --accent-btn:    #7c3aed;
+      --accent-btn-h:  #8b5cf6;
       --danger:        #f87171;
-      --danger-glow:   rgba(248,113,113,0.10);
-      --success:       #4ade80;
-      --success-glow:  rgba(74,222,128,0.10);
+      --danger-dim:    #ef4444;
+      --danger-glow:   rgba(248,113,113,0.12);
+      --success:       #34d399;
+      --success-glow:  rgba(52,211,153,0.12);
       --warning:       #fbbf24;
-      --sidebar-w:     230px;
-      --topbar-h:      52px;
-      --r:             8px;
-      --r-sm:          6px;
-      --r-lg:          12px;
+      --warning-glow:  rgba(251,191,36,0.12);
+      --blue:          #60a5fa;
+      --blue-glow:     rgba(96,165,250,0.12);
+      --pink:          #f472b6;
+      --pink-glow:     rgba(244,114,182,0.12);
+      --sidebar-w:     240px;
+      --topbar-h:      56px;
+      --r:             10px;
+      --r-sm:          7px;
+      --r-lg:          14px;
+      --r-xl:          18px;
       --ease:          cubic-bezier(0.16,1,0.3,1);
       --dur:           200ms;
     }
@@ -68,108 +76,108 @@
       z-index: 100;
       overflow: hidden;
     }
+    .sidebar::before {
+      content: '';
+      position: absolute;
+      top: -60px; left: -60px;
+      width: 200px; height: 200px;
+      background: radial-gradient(circle, rgba(124,58,237,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
 
-    /* ── Logo ── */
+    /* Logo */
     .sidebar-logo {
       display: flex;
       align-items: center;
-      gap: 9px;
-      padding: 16px 14px 14px;
+      gap: 10px;
+      padding: 18px 16px 12px;
       text-decoration: none;
       flex-shrink: 0;
     }
     .logo-icon {
-      width: 28px; height: 28px;
-      background: linear-gradient(135deg, #5b5fd6 0%, #818cf8 100%);
-      border-radius: 8px;
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
+      border-radius: 9px;
       display: flex; align-items: center; justify-content: center;
       flex-shrink: 0;
-      box-shadow: 0 2px 8px rgba(91,95,214,0.35);
+      box-shadow: 0 4px 12px rgba(124,58,237,0.4);
     }
     .sidebar-logo-text {
-      font-weight: 700;
-      font-size: 15px;
+      font-weight: 800;
+      font-size: 15.5px;
       color: var(--text);
-      letter-spacing: -0.4px;
+      letter-spacing: -0.5px;
+    }
+    .sidebar-logo-badge {
+      margin-left: auto;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: var(--accent-glow);
+      color: var(--accent);
+      border: 1px solid rgba(167,139,250,0.2);
+      text-transform: uppercase;
     }
 
-    /* ── Search ── */
+    /* Search */
     .sidebar-search {
-      padding: 0 10px 10px;
+      padding: 0 12px 10px;
       flex-shrink: 0;
     }
     .sidebar-search-inner {
       display: flex;
       align-items: center;
-      gap: 7px;
+      gap: 8px;
       background: var(--surface-2);
       border: 1px solid var(--border-2);
       border-radius: var(--r-sm);
-      padding: 6px 10px;
+      padding: 7px 11px;
       cursor: text;
-      transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+      transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
     }
     .sidebar-search-inner:focus-within {
-      border-color: rgba(99,102,241,0.4);
-      background: var(--surface-3);
+      border-color: rgba(124,58,237,0.4);
+      box-shadow: 0 0 0 3px rgba(124,58,237,0.08);
     }
     .sidebar-search-inner svg { color: var(--muted); flex-shrink: 0; }
     .sidebar-search-inner input {
-      background: none;
-      border: none;
-      outline: none;
-      font-family: inherit;
-      font-size: 12.5px;
-      color: var(--text);
-      width: 100%;
+      background: none; border: none; outline: none;
+      font-family: inherit; font-size: 12.5px;
+      color: var(--text); width: 100%;
       caret-color: var(--accent);
     }
     .sidebar-search-inner input::placeholder { color: var(--muted); }
-    .sidebar-search-kbd {
-      display: flex;
-      align-items: center;
-      gap: 2px;
-      margin-left: auto;
-      flex-shrink: 0;
-    }
     .kbd {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 1px 5px;
-      border-radius: 4px;
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 1px 5px; border-radius: 4px;
       border: 1px solid var(--border-3);
-      background: var(--surface-3);
-      font-size: 10px;
-      color: var(--muted);
-      font-family: inherit;
-      line-height: 1.4;
+      background: var(--surface-4);
+      font-size: 10px; color: var(--muted);
+      font-family: inherit; line-height: 1.4;
     }
 
-    /* ── Nav ── */
+    /* Nav */
     .sidebar-nav {
       flex: 1;
-      padding: 4px 10px 8px;
+      padding: 2px 10px 8px;
       overflow-y: auto;
       scrollbar-width: none;
     }
     .sidebar-nav::-webkit-scrollbar { display: none; }
-
-    .nav-section { margin-bottom: 4px; }
+    .nav-section { margin-bottom: 6px; }
     .nav-section-label {
-      font-size: 10px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.7px;
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.8px;
       color: var(--faint);
-      padding: 10px 8px 3px;
+      padding: 10px 10px 4px;
     }
-
     .nav-item {
       display: flex;
       align-items: center;
-      gap: 9px;
-      padding: 6px 8px;
+      gap: 10px;
+      padding: 7px 10px;
       border-radius: var(--r-sm);
       text-decoration: none;
       color: var(--muted);
@@ -177,82 +185,65 @@
       font-weight: 500;
       transition: color var(--dur) var(--ease), background var(--dur) var(--ease);
       position: relative;
-      margin-bottom: 1px;
+      margin-bottom: 2px;
       white-space: nowrap;
     }
     .nav-item:hover {
-      color: var(--text);
+      color: var(--text-2);
       background: var(--surface-2);
     }
     .nav-item.active {
       color: var(--text);
-      background: linear-gradient(90deg, rgba(99,102,241,0.18) 0%, rgba(99,102,241,0.06) 100%);
+      background: linear-gradient(90deg, rgba(124,58,237,0.22) 0%, rgba(124,58,237,0.06) 100%);
+      font-weight: 600;
     }
     .nav-item.active::before {
       content: '';
       position: absolute;
-      left: 0; top: 20%; bottom: 20%;
-      width: 2.5px;
-      border-radius: 0 3px 3px 0;
-      background: var(--accent);
+      left: 0; top: 18%; bottom: 18%;
+      width: 3px;
+      border-radius: 0 4px 4px 0;
+      background: linear-gradient(180deg, #a78bfa, #7c3aed);
     }
     .nav-item .icon {
       display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-      opacity: 0.55;
+      flex-shrink: 0; width: 18px; height: 18px;
+      opacity: 0.5;
       transition: opacity var(--dur) var(--ease);
     }
     .nav-item:hover .icon, .nav-item.active .icon { opacity: 1; }
+    .nav-divider { border: none; border-top: 1px solid var(--border); margin: 6px 2px; }
 
-    /* ── Divider in nav ── */
-    .nav-divider {
-      border: none;
-      border-top: 1px solid var(--border);
-      margin: 8px 0;
-    }
-
-    /* ── User footer ── */
+    /* User footer */
     .sidebar-user {
-      margin: 0 10px 10px;
+      margin: 0 10px 12px;
       padding: 10px 12px;
       background: var(--surface-2);
       border: 1px solid var(--border-2);
       border-radius: var(--r-lg);
       display: flex;
       align-items: center;
-      gap: 9px;
+      gap: 10px;
       flex-shrink: 0;
       cursor: pointer;
-      transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+      transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
       text-decoration: none;
     }
-    .sidebar-user:hover { background: var(--surface-3); border-color: var(--border-3); }
-    .sidebar-user-info { flex: 1; min-width: 0; }
-    .sidebar-user-name {
-      font-size: 12.5px;
-      font-weight: 600;
-      color: var(--text);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .sidebar-user-email {
-      font-size: 11px;
-      color: var(--muted);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .sidebar-user-chevrons {
-      display: flex;
-      flex-direction: column;
-      gap: 1px;
-      color: var(--faint);
+    .sidebar-user:hover { background: var(--surface-3); border-color: var(--border-3); box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
+    .sidebar-user-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: linear-gradient(135deg, #7c3aed, #a78bfa);
+      display: flex; align-items: center; justify-content: center;
       flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(124,58,237,0.3);
     }
+    .sidebar-user-info { flex: 1; min-width: 0; }
+    .sidebar-user-name { font-size: 12.5px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sidebar-user-email { font-size: 11px; color: var(--muted); }
+    .sidebar-user-chevrons { display: flex; flex-direction: column; gap: 1px; color: var(--faint); flex-shrink: 0; }
 
     /* ═══════════════════════════════════════
-       MAIN AREA
+       MAIN
     ═══════════════════════════════════════ */
     .main {
       margin-left: var(--sidebar-w);
@@ -269,81 +260,86 @@
     ═══════════════════════════════════════ */
     .topbar {
       height: var(--topbar-h);
-      background: rgba(17,17,19,0.85);
+      background: rgba(13,13,16,0.8);
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
-      padding: 0 24px;
+      padding: 0 28px;
       gap: 12px;
       position: sticky;
-      top: 0;
-      z-index: 50;
-      backdrop-filter: blur(20px) saturate(160%);
-      -webkit-backdrop-filter: blur(20px) saturate(160%);
+      top: 0; z-index: 50;
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
     }
-    .topbar-breadcrumb {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      flex: 1;
-    }
+    .topbar-breadcrumb { display: flex; align-items: center; gap: 7px; flex: 1; }
     .topbar-breadcrumb-home {
-      color: var(--muted);
-      font-size: 13px;
-      font-weight: 500;
-      text-decoration: none;
-      transition: color var(--dur) var(--ease);
+      color: var(--muted); font-size: 13px; font-weight: 500;
+      text-decoration: none; transition: color var(--dur) var(--ease);
     }
     .topbar-breadcrumb-home:hover { color: var(--text); }
-    .topbar-breadcrumb-sep { color: var(--faint); font-size: 13px; user-select: none; }
-    .topbar-breadcrumb-current { font-size: 13px; font-weight: 600; color: var(--text); }
+    .topbar-breadcrumb-sep { color: var(--faint); font-size: 15px; user-select: none; }
+    .topbar-breadcrumb-current { font-size: 13px; font-weight: 700; color: var(--text); }
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .topbar-pill {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 11px;
+      border-radius: 100px;
+      background: var(--surface-2);
+      border: 1px solid var(--border-2);
+      font-size: 12px; font-weight: 500;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all var(--dur) var(--ease);
+    }
+    .topbar-pill:hover { background: var(--surface-3); color: var(--text); border-color: var(--border-3); }
+    .topbar-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 6px var(--success);
+      flex-shrink: 0;
+    }
+    .topbar-dot.offline { background: var(--danger); box-shadow: 0 0 6px var(--danger); }
 
     /* ═══════════════════════════════════════
        CONTENT
     ═══════════════════════════════════════ */
-    .content { padding: 24px; flex: 1; }
-
-    #page-wrapper { animation: pageIn 280ms var(--ease) both; }
+    .content { padding: 28px; flex: 1; }
+    #page-wrapper { animation: pageIn 300ms var(--ease) both; }
     @keyframes pageIn {
-      from { opacity: 0; transform: translateY(8px); }
+      from { opacity: 0; transform: translateY(10px); }
       to   { opacity: 1; transform: translateY(0); }
     }
 
     /* ═══════════════════════════════════════
-       FLASH MESSAGES
+       FLASH
     ═══════════════════════════════════════ */
     .flash-list { margin-bottom: 20px; display: flex; flex-direction: column; gap: 8px; }
     .flash {
-      padding: 10px 14px;
-      border-radius: var(--r);
-      font-size: 13px;
-      font-weight: 500;
-      border: 1px solid;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      padding: 10px 14px; border-radius: var(--r); font-size: 13px; font-weight: 500;
+      border: 1px solid; display: flex; align-items: center; gap: 8px;
       animation: flashIn 260ms var(--ease) both;
     }
     @keyframes flashIn {
       from { opacity: 0; transform: translateY(-6px) scale(0.98); }
       to   { opacity: 1; transform: none; }
     }
-    .flash-success { background: var(--success-glow); border-color: rgba(74,222,128,0.2);  color: var(--success); }
+    .flash-success { background: var(--success-glow); border-color: rgba(52,211,153,0.2);  color: var(--success); }
     .flash-error   { background: var(--danger-glow);  border-color: rgba(248,113,113,0.2); color: var(--danger); }
-    .flash-info    { background: var(--accent-glow);  border-color: rgba(129,140,248,0.2); color: var(--accent); }
+    .flash-info    { background: var(--accent-glow);  border-color: rgba(167,139,250,0.2); color: var(--accent); }
 
     /* ═══════════════════════════════════════
        PAGE HEADER
     ═══════════════════════════════════════ */
-    .page-header { margin-bottom: 22px; }
+    .page-header { margin-bottom: 24px; }
     .page-header h1 {
-      font-size: 20px;
-      font-weight: 700;
-      color: var(--text);
-      letter-spacing: -0.4px;
-      margin-bottom: 3px;
+      font-size: 22px; font-weight: 800;
+      color: var(--text); letter-spacing: -0.6px; margin-bottom: 4px;
     }
-    .page-header p { font-size: 13px; color: var(--muted); }
+    .page-header p { font-size: 13.5px; color: var(--muted); }
 
     /* ═══════════════════════════════════════
        CARDS
@@ -352,29 +348,27 @@
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--r-lg);
-      padding: 20px;
+      padding: 22px;
       margin-bottom: 14px;
       transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
-      animation: cardIn 300ms var(--ease) both;
+      animation: cardIn 320ms var(--ease) both;
+      position: relative;
+      overflow: hidden;
     }
-    .card:hover { border-color: var(--border-2); }
+    .card:hover { border-color: var(--border-2); box-shadow: 0 8px 32px rgba(0,0,0,0.25); }
     @keyframes cardIn {
-      from { opacity: 0; transform: translateY(6px); }
+      from { opacity: 0; transform: translateY(8px); }
       to   { opacity: 1; transform: none; }
     }
-    .card:nth-child(1){animation-delay:0ms} .card:nth-child(2){animation-delay:50ms}
-    .card:nth-child(3){animation-delay:100ms} .card:nth-child(4){animation-delay:150ms}
-    .card:nth-child(5){animation-delay:200ms} .card:nth-child(6){animation-delay:250ms}
+    .card:nth-child(1){animation-delay:0ms} .card:nth-child(2){animation-delay:60ms}
+    .card:nth-child(3){animation-delay:120ms} .card:nth-child(4){animation-delay:180ms}
+    .card:nth-child(5){animation-delay:240ms}
     .card-title {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text);
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 7px;
+      font-size: 13.5px; font-weight: 700;
+      color: var(--text); margin-bottom: 18px;
+      display: flex; align-items: center; gap: 8px;
     }
-    .card-title .icon { color: var(--accent); opacity: 0.8; }
+    .card-title .icon { color: var(--accent); opacity: 0.9; }
 
     /* ═══════════════════════════════════════
        GRIDS
@@ -385,59 +379,72 @@
     @media(max-width:900px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr}}
 
     /* ═══════════════════════════════════════
-       STAT CARDS
+       STAT CARDS  (gradient style)
     ═══════════════════════════════════════ */
     .stat-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--r-lg);
-      padding: 18px 20px;
+      border-radius: var(--r-xl);
+      padding: 22px;
       position: relative;
       overflow: hidden;
-      animation: cardIn 300ms var(--ease) both;
-      transition: border-color var(--dur) var(--ease), transform var(--dur) var(--ease);
+      animation: cardIn 320ms var(--ease) both;
+      transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+      cursor: default;
     }
-    .stat-card:hover { border-color: var(--border-2); transform: translateY(-1px); }
-    .stat-card:nth-child(1){animation-delay:0ms} .stat-card:nth-child(2){animation-delay:60ms}
-    .stat-card:nth-child(3){animation-delay:120ms} .stat-card:nth-child(4){animation-delay:180ms}
-    .stat-card-accent {
+    .stat-card:hover { transform: translateY(-3px); box-shadow: 0 16px 40px rgba(0,0,0,0.35); }
+    .stat-card:nth-child(1){animation-delay:0ms}  .stat-card:nth-child(2){animation-delay:70ms}
+    .stat-card:nth-child(3){animation-delay:140ms} .stat-card:nth-child(4){animation-delay:210ms}
+
+    /* Per-card gradients */
+    .stat-card-red    { background: linear-gradient(135deg, #2d1a1a 0%, #1a0d0d 100%); border: 1px solid rgba(248,113,113,0.2); }
+    .stat-card-orange { background: linear-gradient(135deg, #2d2010 0%, #1a1308 100%); border: 1px solid rgba(251,191,36,0.2); }
+    .stat-card-purple { background: linear-gradient(135deg, #1e1530 0%, #120d1f 100%); border: 1px solid rgba(167,139,250,0.2); }
+    .stat-card-yellow { background: linear-gradient(135deg, #2a2310 0%, #181508 100%); border: 1px solid rgba(251,191,36,0.18); }
+
+    .stat-card-icon {
+      width: 38px; height: 38px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 14px;
+      flex-shrink: 0;
+    }
+    .stat-card-icon-red    { background: rgba(248,113,113,0.15); color: var(--danger); }
+    .stat-card-icon-orange { background: rgba(251,191,36,0.15);  color: var(--warning); }
+    .stat-card-icon-purple { background: rgba(167,139,250,0.15); color: var(--accent); }
+    .stat-card-icon-yellow { background: rgba(251,191,36,0.12);  color: #e0a800; }
+
+    .stat-card-glow {
       position: absolute;
-      top: 0; right: 0;
-      width: 80px; height: 80px;
+      bottom: -30px; right: -30px;
+      width: 100px; height: 100px;
       border-radius: 50%;
-      background: var(--accent-glow);
-      filter: blur(24px);
+      filter: blur(40px);
       pointer-events: none;
+      opacity: 0.5;
     }
+    .stat-card-glow-red    { background: rgba(248,113,113,0.3); }
+    .stat-card-glow-orange { background: rgba(251,191,36,0.3); }
+    .stat-card-glow-purple { background: rgba(167,139,250,0.3); }
+    .stat-card-glow-yellow { background: rgba(251,191,36,0.22); }
+
     .stat-label {
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-      color: var(--muted);
-      margin-bottom: 10px;
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.7px;
+      margin-bottom: 6px;
     }
     .stat-value {
-      font-size: 26px;
-      font-weight: 700;
-      color: var(--text);
+      font-size: 30px; font-weight: 800;
       font-variant-numeric: tabular-nums;
-      letter-spacing: -0.8px;
-      line-height: 1;
+      letter-spacing: -1px; line-height: 1;
     }
-    .stat-sub { font-size: 11px; color: var(--muted); margin-top: 6px; }
+    .stat-sub { font-size: 11.5px; color: var(--muted); margin-top: 6px; }
 
     /* ═══════════════════════════════════════
        FORMS
     ═══════════════════════════════════════ */
     .form-group { margin-bottom: 16px; }
     .form-label {
-      display: block;
-      font-size: 11.5px;
-      font-weight: 600;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      display: block; font-size: 11.5px; font-weight: 600;
+      color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;
       margin-bottom: 6px;
     }
     .form-control {
@@ -445,77 +452,54 @@
       background: var(--surface-2);
       border: 1px solid var(--border-2);
       border-radius: var(--r-sm);
-      padding: 8px 11px;
-      font-size: 13px;
-      color: var(--text);
-      font-family: inherit;
-      outline: none;
-      transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), background var(--dur) var(--ease);
+      padding: 9px 12px;
+      font-size: 13px; color: var(--text);
+      font-family: inherit; outline: none;
+      transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
     }
     .form-control:hover { border-color: var(--border-3); }
     .form-control:focus {
-      border-color: rgba(99,102,241,0.5);
-      background: var(--surface-3);
-      box-shadow: 0 0 0 3px var(--accent-glow);
+      border-color: rgba(124,58,237,0.5);
+      box-shadow: 0 0 0 3px rgba(124,58,237,0.1);
     }
     .form-control::placeholder { color: var(--faint); }
-    textarea.form-control { resize: vertical; min-height: 88px; line-height: 1.5; }
+    textarea.form-control { resize: vertical; min-height: 90px; line-height: 1.5; }
     select.form-control { cursor: pointer; }
 
     /* ═══════════════════════════════════════
        BUTTONS
     ═══════════════════════════════════════ */
     .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      padding: 7px 14px;
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 6px; padding: 8px 16px;
       border-radius: var(--r-sm);
-      font-size: 12.5px;
-      font-weight: 600;
-      font-family: inherit;
-      border: none;
-      cursor: pointer;
+      font-size: 13px; font-weight: 600;
+      font-family: inherit; border: none; cursor: pointer;
       text-decoration: none;
       transition: all var(--dur) var(--ease);
-      white-space: nowrap;
-      position: relative;
-      overflow: hidden;
+      white-space: nowrap; position: relative; overflow: hidden;
     }
-    .btn::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: rgba(255,255,255,0.06);
-      opacity: 0;
-      transition: opacity 150ms ease;
-    }
-    .btn:active::after { opacity: 1; }
     .btn-primary {
-      background: var(--accent-btn);
+      background: linear-gradient(135deg, #7c3aed, #a78bfa);
       color: #fff;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.4), 0 0 0 1px rgba(99,102,241,0.3) inset;
+      box-shadow: 0 4px 14px rgba(124,58,237,0.35);
     }
     .btn-primary:hover {
-      background: var(--accent-btn-h);
-      box-shadow: 0 4px 14px rgba(91,95,214,0.35), 0 0 0 1px rgba(129,140,248,0.4) inset;
+      box-shadow: 0 6px 20px rgba(124,58,237,0.5);
       transform: translateY(-1px);
     }
-    .btn-primary:active { transform: none; box-shadow: none; }
+    .btn-primary:active { transform: none; }
     .btn-ghost {
-      background: var(--surface-2);
-      color: var(--text);
+      background: var(--surface-2); color: var(--text);
       border: 1px solid var(--border-2);
     }
     .btn-ghost:hover { background: var(--surface-3); border-color: var(--border-3); }
     .btn-danger {
-      background: var(--danger-glow);
-      color: var(--danger);
+      background: var(--danger-glow); color: var(--danger);
       border: 1px solid rgba(248,113,113,0.2);
     }
     .btn-danger:hover { background: rgba(248,113,113,0.2); }
-    .btn-sm { padding: 5px 10px; font-size: 12px; }
+    .btn-sm { padding: 5px 11px; font-size: 12px; }
     .btn-xs { padding: 3px 8px; font-size: 11px; }
 
     /* ═══════════════════════════════════════
@@ -524,91 +508,81 @@
     .table-wrap { overflow-x: auto; border-radius: var(--r); }
     table { width: 100%; border-collapse: collapse; }
     thead th {
-      text-align: left;
-      font-size: 10.5px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: var(--muted);
-      padding: 0 12px 10px;
+      text-align: left; font-size: 10.5px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.6px;
+      color: var(--muted); padding: 0 14px 10px;
       border-bottom: 1px solid var(--border);
     }
     tbody tr { border-bottom: 1px solid var(--border); transition: background var(--dur) var(--ease); }
     tbody tr:last-child { border-bottom: none; }
-    tbody tr:hover { background: var(--surface-hover); }
-    tbody td { padding: 10px 12px; font-size: 13px; color: var(--text); }
+    tbody tr:hover { background: var(--surface-2); }
+    tbody td { padding: 11px 14px; font-size: 13px; color: var(--text); }
     .td-muted { color: var(--muted); }
 
     /* ═══════════════════════════════════════
        BADGES
     ═══════════════════════════════════════ */
     .badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 2px 7px;
-      border-radius: 100px;
-      font-size: 10.5px;
-      font-weight: 600;
-      letter-spacing: 0.2px;
+      display: inline-flex; align-items: center;
+      padding: 2px 8px; border-radius: 100px;
+      font-size: 10.5px; font-weight: 700; letter-spacing: 0.3px;
     }
-    .badge-accent  { background: var(--accent-glow);            color: var(--accent); }
-    .badge-danger  { background: var(--danger-glow);            color: var(--danger); }
-    .badge-success { background: var(--success-glow);           color: var(--success); }
-    .badge-warning { background: rgba(251,191,36,0.10);         color: var(--warning); }
-    .badge-muted   { background: var(--surface-3);              color: var(--muted); }
+    .badge-accent  { background: var(--accent-glow);        color: var(--accent); }
+    .badge-danger  { background: var(--danger-glow);         color: var(--danger); }
+    .badge-success { background: var(--success-glow);        color: var(--success); }
+    .badge-warning { background: rgba(251,191,36,0.12);      color: var(--warning); }
+    .badge-muted   { background: var(--surface-3);           color: var(--muted); }
 
     /* ═══════════════════════════════════════
-       TOGGLE SWITCH
+       TOGGLE
     ═══════════════════════════════════════ */
     .toggle-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 0;
-      border-bottom: 1px solid var(--border);
-      transition: background var(--dur) var(--ease);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 13px 0; border-bottom: 1px solid var(--border);
     }
     .toggle-row:last-child { border-bottom: none; }
-    .toggle-info h4 { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
+    .toggle-info h4 { font-size: 13.5px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
     .toggle-info p  { font-size: 12px; color: var(--muted); }
-    .toggle { position: relative; width: 38px; height: 21px; flex-shrink: 0; }
+    .toggle { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
     .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
     .toggle-track {
-      position: absolute;
-      inset: 0;
-      background: var(--surface-3);
+      position: absolute; inset: 0;
+      background: var(--surface-4);
       border-radius: 100px;
-      border: 1px solid var(--border-2);
+      border: 1px solid var(--border-3);
       cursor: pointer;
-      transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+      transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
     }
     .toggle-track::after {
-      content: '';
-      position: absolute;
+      content: ''; position: absolute;
       top: 2px; left: 2px;
-      width: 15px; height: 15px;
-      border-radius: 50%;
-      background: var(--muted);
+      width: 16px; height: 16px;
+      border-radius: 50%; background: var(--muted);
       transition: transform var(--dur) var(--ease), background var(--dur) var(--ease);
     }
-    .toggle input:checked + .toggle-track { background: var(--accent-btn); border-color: var(--accent-btn); }
-    .toggle input:checked + .toggle-track::after { transform: translateX(17px); background: #fff; }
+    .toggle input:checked + .toggle-track {
+      background: var(--accent-btn);
+      border-color: var(--accent-btn);
+      box-shadow: 0 0 8px rgba(124,58,237,0.4);
+    }
+    .toggle input:checked + .toggle-track::after { transform: translateX(18px); background: #fff; }
+    .toggle-grid { display: flex; flex-direction: column; }
 
     /* ═══════════════════════════════════════
        EMPTY STATE
     ═══════════════════════════════════════ */
-    .empty { text-align: center; padding: 52px 20px; color: var(--muted); }
+    .empty { text-align: center; padding: 56px 20px; color: var(--muted); }
     .empty-icon {
-      width: 44px; height: 44px;
+      width: 48px; height: 48px;
       margin: 0 auto 14px;
-      background: var(--surface-2);
+      background: var(--surface-3);
       border: 1px solid var(--border-2);
-      border-radius: 12px;
+      border-radius: 14px;
       display: flex; align-items: center; justify-content: center;
       color: var(--faint);
     }
-    .empty h3 { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 5px; }
-    .empty p  { font-size: 12.5px; color: var(--muted); margin-bottom: 16px; }
+    .empty h3 { font-size: 14.5px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+    .empty p  { font-size: 13px; color: var(--muted); margin-bottom: 16px; }
 
     /* ═══════════════════════════════════════
        MISC
@@ -616,30 +590,25 @@
     .divider { border: none; border-top: 1px solid var(--border); margin: 18px 0; }
     ::-webkit-scrollbar { width: 4px; height: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb { background: var(--surface-4); border-radius: 10px; }
     ::-webkit-scrollbar-thumb:hover { background: var(--faint); }
     code {
       background: var(--surface-3);
       border: 1px solid var(--border);
-      border-radius: 4px;
-      padding: 1px 6px;
+      border-radius: 5px;
+      padding: 2px 7px;
       font-size: 12px;
       font-family: 'SF Mono', 'Fira Code', monospace;
       color: var(--accent);
     }
-    .toggle-grid { display: flex; flex-direction: column; gap: 0; }
 
-    /* ── Nav progress bar ── */
+    /* Nav progress bar */
     #nav-loader {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      height: 2px;
-      background: var(--accent-btn);
-      transform: scaleX(0);
-      transform-origin: left;
+      position: fixed; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, #7c3aed, #a78bfa);
+      transform: scaleX(0); transform-origin: left;
       transition: transform 300ms var(--ease);
-      z-index: 9999;
-      pointer-events: none;
+      z-index: 9999; pointer-events: none;
     }
     #nav-loader.loading { transform: scaleX(0.8); transition: transform 600ms cubic-bezier(0.1,0.9,0.2,1); }
     #nav-loader.done   { transform: scaleX(1);   transition: transform 100ms ease; }
@@ -649,49 +618,43 @@
 
 <div id="nav-loader"></div>
 
-<!-- ═══════════════════════ SIDEBAR ═══════════════════════ -->
+<!-- ═══════════════ SIDEBAR ═══════════════ -->
 <nav class="sidebar">
 
-  <!-- Logo -->
   <a href="{{ url_for('index') }}" class="sidebar-logo">
     <div class="logo-icon">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
       </svg>
     </div>
     <span class="sidebar-logo-text">ModPanel</span>
+    <span class="sidebar-logo-badge">v2</span>
   </a>
 
-  <!-- Search -->
   <div class="sidebar-search">
     <div class="sidebar-search-inner">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="text" placeholder="Search..." id="sidebar-search-input">
-      <div class="sidebar-search-kbd">
-        <span class="kbd">&#8984;</span>
-        <span class="kbd">F</span>
-      </div>
+      <input type="text" placeholder="Search pages..." id="sidebar-search-input">
+      <span class="kbd">⌘F</span>
     </div>
   </div>
 
-  <!-- Nav -->
   <div class="sidebar-nav" id="sidebar-nav">
-
     <div class="nav-section">
       <a href="{{ url_for('index') }}" class="nav-item {% if request.endpoint=='index' %}active{% endif %}">
-        <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span>
-        Home
+        <span class="icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span>
+        Dashboard
       </a>
       <a href="{{ url_for('logging_page') }}" class="nav-item {% if request.endpoint=='logging_page' %}active{% endif %}">
-        <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg></span>
-        Notifications
+        <span class="icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>
+        Logs
       </a>
       <a href="{{ url_for('moderation') }}" class="nav-item {% if request.endpoint=='moderation' %}active{% endif %}">
-        <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
+        <span class="icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
         Moderation
       </a>
       <a href="{{ url_for('settings') }}" class="nav-item {% if request.endpoint=='settings' %}active{% endif %}">
-        <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
+        <span class="icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
         Settings
       </a>
     </div>
@@ -699,50 +662,49 @@
     <hr class="nav-divider">
 
     <div class="nav-section">
-      <div class="nav-section-label">OTHER</div>
+      <div class="nav-section-label">Features</div>
       <a href="{{ url_for('reaction_roles') }}" class="nav-item {% if request.endpoint=='reaction_roles' %}active{% endif %}">
-        <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></span>
+        <span class="icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></span>
         Reaction Roles
       </a>
       <a href="{{ url_for('autoroles') }}" class="nav-item {% if request.endpoint=='autoroles' %}active{% endif %}">
-        <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+        <span class="icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
         Auto Roles
       </a>
       <a href="{{ url_for('tags') }}" class="nav-item {% if request.endpoint=='tags' %}active{% endif %}">
-        <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg></span>
+        <span class="icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg></span>
         Tags
       </a>
       <a href="{{ url_for('triggers') }}" class="nav-item {% if request.endpoint=='triggers' %}active{% endif %}">
-        <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
+        <span class="icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
         Triggers
       </a>
       <a href="{{ url_for('greetings') }}" class="nav-item {% if request.endpoint=='greetings' %}active{% endif %}">
-        <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+        <span class="icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
         Greetings
       </a>
       <a href="{{ url_for('starboard') }}" class="nav-item {% if request.endpoint=='starboard' %}active{% endif %}">
-        <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
+        <span class="icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
         Starboard
       </a>
       <a href="{{ url_for('suggestions') }}" class="nav-item {% if request.endpoint=='suggestions' %}active{% endif %}">
-        <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
+        <span class="icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
         Suggestions
       </a>
       <a href="{{ url_for('command_settings') }}" class="nav-item {% if request.endpoint=='command_settings' %}active{% endif %}">
-        <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
+        <span class="icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
         Commands
       </a>
       <a href="{{ url_for('user_lookup') }}" class="nav-item {% if request.endpoint in ['user_lookup','user_profile'] %}active{% endif %}">
-        <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+        <span class="icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
         User Lookup
       </a>
     </div>
-
   </div>
 
   <!-- User footer -->
   <a href="{{ url_for('logout') }}" class="sidebar-user">
-    <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#5b5fd6,#818cf8);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+    <div class="sidebar-user-avatar">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
     </div>
     <div class="sidebar-user-info">
@@ -759,12 +721,17 @@
 
 <!-- ═══════════════════════ MAIN ═══════════════════════ -->
 <div class="main">
-
   <div class="topbar">
     <div class="topbar-breadcrumb">
       <a href="{{ url_for('index') }}" class="topbar-breadcrumb-home">ModPanel</a>
       <span class="topbar-breadcrumb-sep">/</span>
       <span class="topbar-breadcrumb-current">{% block page_title %}Dashboard{% endblock %}</span>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-pill" id="bot-status-pill">
+        <div class="topbar-dot" id="bot-status-dot"></div>
+        <span id="bot-status-text">Checking...</span>
+      </div>
     </div>
     {% block topbar_extra %}{% endblock %}
   </div>
@@ -793,6 +760,7 @@
   const loader  = document.getElementById('nav-loader');
   const wrapper = document.getElementById('page-wrapper');
 
+  // Nav transition
   document.querySelectorAll('a.nav-item, a.sidebar-logo, a.topbar-breadcrumb-home').forEach(link => {
     link.addEventListener('click', function(e) {
       const href = this.getAttribute('href');
@@ -801,30 +769,48 @@
       loader.classList.add('loading');
       wrapper.style.transition = 'opacity 160ms ease, transform 160ms ease';
       wrapper.style.opacity = '0';
-      wrapper.style.transform = 'translateY(-6px)';
+      wrapper.style.transform = 'translateY(-8px)';
       setTimeout(() => { loader.classList.add('done'); window.location.href = href; }, 180);
     });
   });
 
+  // Stagger cards
   document.querySelectorAll('.card, .stat-card').forEach((card, i) => {
-    card.style.animationDelay = (i * 45) + 'ms';
+    card.style.animationDelay = (i * 50) + 'ms';
   });
 
+  // Sidebar search
   const searchInput = document.getElementById('sidebar-search-input');
   if (searchInput) {
     searchInput.addEventListener('input', function() {
       const q = this.value.toLowerCase().trim();
       document.querySelectorAll('#sidebar-nav .nav-item').forEach(item => {
-        const text = item.textContent.toLowerCase();
-        item.style.display = (!q || text.includes(q)) ? '' : 'none';
+        item.style.display = (!q || item.textContent.toLowerCase().includes(q)) ? '' : 'none';
       });
     });
     document.addEventListener('keydown', function(e) {
       if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
-        e.preventDefault();
-        searchInput.focus();
+        e.preventDefault(); searchInput.focus();
       }
     });
+  }
+
+  // Bot status pill
+  const dot  = document.getElementById('bot-status-dot');
+  const text = document.getElementById('bot-status-text');
+  if (dot && text) {
+    fetch('/api/status')
+      .then(r => r.json())
+      .then(d => {
+        if (d.online) {
+          dot.classList.remove('offline');
+          text.textContent = d.name ? d.name + ' • Online' : 'Bot Online';
+        } else {
+          dot.classList.add('offline');
+          text.textContent = 'Bot Offline';
+        }
+      })
+      .catch(() => { dot.classList.add('offline'); text.textContent = 'Unreachable'; });
   }
 })();
 </script>
