@@ -23,7 +23,7 @@
           <p>Log when a message is deleted in any channel</p>
         </div>
         <label class="toggle">
-          <input type="checkbox" name="log_message_delete" {% if settings.get('log_message_delete') %}checked{% endif %}>
+          <input type="checkbox" name="log_message_delete" {% if cfg.get('log_message_delete') %}checked{% endif %}>
           <span class="toggle-track"></span>
         </label>
       </div>
@@ -33,7 +33,7 @@
           <p>Log when a message is edited</p>
         </div>
         <label class="toggle">
-          <input type="checkbox" name="log_message_edit" {% if settings.get('log_message_edit') %}checked{% endif %}>
+          <input type="checkbox" name="log_message_edit" {% if cfg.get('log_message_edit') %}checked{% endif %}>
           <span class="toggle-track"></span>
         </label>
       </div>
@@ -43,7 +43,7 @@
           <p>Log when multiple messages are purged at once</p>
         </div>
         <label class="toggle">
-          <input type="checkbox" name="log_bulk_delete" {% if settings.get('log_bulk_delete') %}checked{% endif %}>
+          <input type="checkbox" name="log_bulk_delete" {% if cfg.get('log_bulk_delete') %}checked{% endif %}>
           <span class="toggle-track"></span>
         </label>
       </div>
@@ -63,7 +63,7 @@
           <p>Log when a new member joins the server</p>
         </div>
         <label class="toggle">
-          <input type="checkbox" name="log_member_join" {% if settings.get('log_member_join') %}checked{% endif %}>
+          <input type="checkbox" name="log_member_join" {% if cfg.get('log_member_join') %}checked{% endif %}>
           <span class="toggle-track"></span>
         </label>
       </div>
@@ -73,7 +73,7 @@
           <p>Log when a member leaves or is removed</p>
         </div>
         <label class="toggle">
-          <input type="checkbox" name="log_member_leave" {% if settings.get('log_member_leave') %}checked{% endif %}>
+          <input type="checkbox" name="log_member_leave" {% if cfg.get('log_member_leave') %}checked{% endif %}>
           <span class="toggle-track"></span>
         </label>
       </div>
@@ -83,17 +83,17 @@
           <p>Log when a member changes their nickname</p>
         </div>
         <label class="toggle">
-          <input type="checkbox" name="log_nickname_change" {% if settings.get('log_nickname_change') %}checked{% endif %}>
+          <input type="checkbox" name="log_nickname_change" {% if cfg.get('log_nickname_change') %}checked{% endif %}>
           <span class="toggle-track"></span>
         </label>
       </div>
       <div class="toggle-row">
         <div class="toggle-info">
           <h4>Role Change</h4>
-          <p>Log when a member’s roles are updated</p>
+          <p>Log when a member's roles are updated</p>
         </div>
         <label class="toggle">
-          <input type="checkbox" name="log_role_change" {% if settings.get('log_role_change') %}checked{% endif %}>
+          <input type="checkbox" name="log_role_change" {% if cfg.get('log_role_change') %}checked{% endif %}>
           <span class="toggle-track"></span>
         </label>
       </div>
@@ -113,7 +113,7 @@
           <p>Log when a member is banned or unbanned</p>
         </div>
         <label class="toggle">
-          <input type="checkbox" name="log_ban" {% if settings.get('log_ban') %}checked{% endif %}>
+          <input type="checkbox" name="log_ban" {% if cfg.get('log_ban') %}checked{% endif %}>
           <span class="toggle-track"></span>
         </label>
       </div>
@@ -123,7 +123,7 @@
           <p>Log when a member is kicked from the server</p>
         </div>
         <label class="toggle">
-          <input type="checkbox" name="log_kick" {% if settings.get('log_kick') %}checked{% endif %}>
+          <input type="checkbox" name="log_kick" {% if cfg.get('log_kick') %}checked{% endif %}>
           <span class="toggle-track"></span>
         </label>
       </div>
@@ -133,7 +133,7 @@
           <p>Log when a member is muted or timed out</p>
         </div>
         <label class="toggle">
-          <input type="checkbox" name="log_mute" {% if settings.get('log_mute') %}checked{% endif %}>
+          <input type="checkbox" name="log_mute" {% if cfg.get('log_mute') %}checked{% endif %}>
           <span class="toggle-track"></span>
         </label>
       </div>
@@ -143,7 +143,7 @@
           <p>Log when a member receives a warning</p>
         </div>
         <label class="toggle">
-          <input type="checkbox" name="log_warn" {% if settings.get('log_warn') %}checked{% endif %}>
+          <input type="checkbox" name="log_warn" {% if cfg.get('log_warn') %}checked{% endif %}>
           <span class="toggle-track"></span>
         </label>
       </div>
@@ -163,7 +163,7 @@
           <p>Log channel creation and deletion events</p>
         </div>
         <label class="toggle">
-          <input type="checkbox" name="log_channel_update" {% if settings.get('log_channel_update') %}checked{% endif %}>
+          <input type="checkbox" name="log_channel_update" {% if cfg.get('log_channel_update') %}checked{% endif %}>
           <span class="toggle-track"></span>
         </label>
       </div>
@@ -173,7 +173,7 @@
           <p>Log role creation and deletion events</p>
         </div>
         <label class="toggle">
-          <input type="checkbox" name="log_role_update" {% if settings.get('log_role_update') %}checked{% endif %}>
+          <input type="checkbox" name="log_role_update" {% if cfg.get('log_role_update') %}checked{% endif %}>
           <span class="toggle-track"></span>
         </label>
       </div>
@@ -183,7 +183,7 @@
           <p>Log members joining, leaving, or moving voice channels</p>
         </div>
         <label class="toggle">
-          <input type="checkbox" name="log_voice" {% if settings.get('log_voice') %}checked{% endif %}>
+          <input type="checkbox" name="log_voice" {% if cfg.get('log_voice') %}checked{% endif %}>
           <span class="toggle-track"></span>
         </label>
       </div>
@@ -198,7 +198,7 @@
     </div>
     <div class="form-group" style="margin-bottom:0">
       <label class="form-label">Channel ID</label>
-      <input type="text" name="log_channel_id" class="form-control" placeholder="e.g. 1234567890123456789" value="{{ settings.get('log_channel_id', '') }}">
+      <input type="text" name="log_channel_id" class="form-control" placeholder="e.g. 1234567890123456789" value="{{ cfg.get('log_channel_id', '') }}">
       <p style="font-size:11.5px;color:var(--muted);margin-top:6px">All enabled log events will be sent to this channel.</p>
     </div>
   </div>
