@@ -47,6 +47,9 @@ PERM_ADMINISTRATOR  = 0x8
 PERM_MANAGE_GUILD   = 0x20
 ADMIN_PERMS         = PERM_ADMINISTRATOR | PERM_MANAGE_GUILD
 
+# Common headers — Discord/Cloudflare block requests without a real User-Agent
+_UA = "DiscordBot (https://github.com/zenyell/discord-moderation-bot, 1.0) Python/3 urllib"
+
 print(f"[Dashboard] BOT_TOKEN present={bool(BOT_TOKEN)}  CLIENT_ID={DISCORD_CLIENT_ID!r}", flush=True)
 
 db.init_db_sync()
@@ -113,7 +116,11 @@ h2{{color:#ed4245;margin-bottom:16px}}p{{color:#72767d;margin-bottom:12px;font-s
 # ── Discord Bot API helpers ────────────────────────────────────────────────
 
 def _bot_headers():
-    return {"Authorization": f"Bot {BOT_TOKEN}", "Content-Type": "application/json"}
+    return {
+        "Authorization": f"Bot {BOT_TOKEN}",
+        "Content-Type": "application/json",
+        "User-Agent": _UA,
+    }
 
 
 def _bot_guilds() -> set:
@@ -308,6 +315,7 @@ def guild_required(f):
 # ── OAuth2 helpers ─────────────────────────────────────────────────────────
 
 def _exchange_code(code: str) -> dict:
+    """Exchange OAuth code for access token. Includes User-Agent to avoid CF 1010."""
     data = urllib.parse.urlencode({
         "client_id":     DISCORD_CLIENT_ID,
         "client_secret": DISCORD_CLIENT_SECRET,
@@ -317,7 +325,10 @@ def _exchange_code(code: str) -> dict:
     }).encode()
     req = urllib.request.Request(
         f"{DISCORD_OAUTH}/token", data=data,
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        headers={
+            "Content-Type": "application/x-www-form-urlencoded",
+            "User-Agent":   _UA,
+        },
         method="POST",
     )
     with urllib.request.urlopen(req, timeout=10) as resp:
@@ -327,7 +338,10 @@ def _exchange_code(code: str) -> dict:
 def _fetch_oauth_user(access_token: str) -> dict:
     req = urllib.request.Request(
         f"{DISCORD_API}/users/@me",
-        headers={"Authorization": f"Bearer {access_token}"},
+        headers={
+            "Authorization": f"Bearer {access_token}",
+            "User-Agent":    _UA,
+        },
     )
     with urllib.request.urlopen(req, timeout=10) as resp:
         return json.loads(resp.read())
@@ -337,7 +351,10 @@ def _fetch_oauth_guilds(access_token: str) -> list:
     """Fetch all guilds the user is in via their OAuth token."""
     req = urllib.request.Request(
         f"{DISCORD_API}/users/@me/guilds",
-        headers={"Authorization": f"Bearer {access_token}"},
+        headers={
+            "Authorization": f"Bearer {access_token}",
+            "User-Agent":    _UA,
+        },
     )
     with urllib.request.urlopen(req, timeout=10) as resp:
         return json.loads(resp.read())
