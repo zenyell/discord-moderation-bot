@@ -112,28 +112,28 @@
       --shadow-glass: 0 8px 32px rgba(0,0,0,0.65), inset 0 1.5px 0 rgba(0,220,255,0.18);
     }
 
-    /* ══ SPACE THEME — warm amber/orange nebula ══ */
+    /* ══ SPACE THEME — true deep-space cosmic: void black, nebula purples & magentas ══ */
     [data-theme="space"] {
-      --ios-purple:    #ff9f0a;
-      --ios-purple-2:  #ff7b00;
-      --ios-blue:      #ff6b35;
-      --ios-green:     #34c759;
-      --ios-orange:    #ff9f0a;
+      --ios-purple:    #c77dff;
+      --ios-purple-2:  #9d4edd;
+      --ios-blue:      #48cae4;
+      --ios-green:     #06d6a0;
+      --ios-orange:    #f72585;
       --ios-red:       #ff453a;
-      --ios-pink:      #ff9f0a;
-      --glass-bg:           rgba(20, 8, 0, 0.68);
-      --glass-bg-light:     rgba(255, 140, 0, 0.07);
-      --glass-bg-hover:     rgba(255, 140, 0, 0.14);
-      --glass-border:       rgba(255, 160, 40, 0.18);
-      --glass-border-strong:rgba(255, 160, 40, 0.32);
-      --glass-inset:        inset 0 1.5px 0 rgba(255, 180, 60, 0.22);
-      --text:         rgba(255, 245, 220, 0.95);
-      --text-2:       rgba(220, 180, 120, 0.65);
-      --text-3:       rgba(180, 130, 70, 0.40);
-      --shadow-sm:  0 2px 8px rgba(0,0,0,0.55);
-      --shadow-md:  0 8px 28px rgba(0,0,0,0.60);
-      --shadow-lg:  0 20px 60px rgba(0,0,0,0.70);
-      --shadow-glass: 0 8px 32px rgba(0,0,0,0.60), inset 0 1.5px 0 rgba(255,180,60,0.20);
+      --ios-pink:      #f72585;
+      --glass-bg:           rgba(1, 1, 14, 0.72);
+      --glass-bg-light:     rgba(160, 80, 255, 0.07);
+      --glass-bg-hover:     rgba(160, 80, 255, 0.14);
+      --glass-border:       rgba(180, 100, 255, 0.18);
+      --glass-border-strong:rgba(200, 120, 255, 0.32);
+      --glass-inset:        inset 0 1.5px 0 rgba(200, 160, 255, 0.22);
+      --text:         rgba(230, 220, 255, 0.95);
+      --text-2:       rgba(180, 160, 220, 0.65);
+      --text-3:       rgba(120, 100, 170, 0.42);
+      --shadow-sm:  0 2px 8px rgba(0,0,0,0.70);
+      --shadow-md:  0 8px 28px rgba(0,0,0,0.80);
+      --shadow-lg:  0 20px 60px rgba(0,0,0,0.88);
+      --shadow-glass: 0 8px 32px rgba(0,0,0,0.80), inset 0 1.5px 0 rgba(200,160,255,0.20);
     }
 
     /* ── Reset ── */
@@ -149,7 +149,7 @@
     }
     [data-theme="light"]    body { background: #ede8fa; }
     [data-theme="midnight"] body { background: #00060f; }
-    [data-theme="space"]    body { background: #0e0500; }
+    [data-theme="space"]    body { background: #010108; }
     a { text-decoration: none; color: inherit; }
     button { cursor: pointer; background: none; border: none; font: inherit; color: inherit; }
     img { display: block; max-width: 100%; }
@@ -183,14 +183,16 @@
         radial-gradient(ellipse 35% 35% at 85% 65%, rgba(0,80,160,0.20)  0%, transparent 50%),
         linear-gradient(160deg, #00060f 0%, #000d1e 45%, #001228 100%);
     }
-    /* Space — warm nebula with amber/orange/red glows */
+    /* Space — true cosmic void: pitch black + deep nebula purples, magentas, electric blues */
     [data-theme="space"] body::before {
       background:
-        radial-gradient(ellipse 70% 55% at 12% 18%, rgba(200,80,0,0.42)   0%, transparent 62%),
-        radial-gradient(ellipse 45% 45% at 88% 8%,  rgba(255,140,0,0.28)  0%, transparent 55%),
-        radial-gradient(ellipse 60% 65% at 58% 92%, rgba(180,40,0,0.22)   0%, transparent 58%),
-        radial-gradient(ellipse 38% 38% at 80% 60%, rgba(255,100,20,0.18) 0%, transparent 52%),
-        linear-gradient(160deg, #0e0500 0%, #1a0800 42%, #0f0c00 100%);
+        radial-gradient(ellipse 65% 50% at 8% 12%,  rgba(120,40,220,0.45)  0%, transparent 60%),
+        radial-gradient(ellipse 45% 40% at 92% 6%,  rgba(200,60,255,0.28)  0%, transparent 55%),
+        radial-gradient(ellipse 55% 60% at 52% 94%, rgba(60,20,180,0.30)   0%, transparent 58%),
+        radial-gradient(ellipse 38% 38% at 78% 55%, rgba(247,37,133,0.16)  0%, transparent 52%),
+        radial-gradient(ellipse 30% 30% at 30% 70%, rgba(72,202,228,0.10)  0%, transparent 48%),
+        linear-gradient(180deg, #010108 0%, #03010f 50%, #010212 100%);
+      pointer-events: none;
     }
 
     /* ── Layout ── */
@@ -285,11 +287,11 @@
       box-shadow: var(--glass-inset), 0 4px 16px rgba(0,180,255,0.22);
       border-color: rgba(0,200,255,0.30);
     }
-    /* Space active state — amber glow */
+    /* Space active state — nebula purple/magenta glow */
     [data-theme="space"] .nav-item.active {
-      background: linear-gradient(135deg, rgba(255,140,0,0.24), rgba(200,60,0,0.18));
-      box-shadow: var(--glass-inset), 0 4px 16px rgba(255,140,0,0.24);
-      border-color: rgba(255,160,40,0.34);
+      background: linear-gradient(135deg, rgba(160,60,255,0.28), rgba(247,37,133,0.16));
+      box-shadow: var(--glass-inset), 0 4px 20px rgba(160,60,255,0.30);
+      border-color: rgba(180,100,255,0.38);
     }
     .nav-item-icon {
       width: 26px; height: 26px; border-radius: 7px; flex-shrink: 0;
@@ -304,7 +306,8 @@
       background: rgba(0,180,255,0.20);
     }
     [data-theme="space"] .nav-item.active .nav-item-icon {
-      background: rgba(255,140,0,0.22);
+      background: rgba(160,60,255,0.25);
+      color: var(--ios-purple);
     }
 
     .section-divider {
@@ -437,10 +440,10 @@
       box-shadow: 0 8px 32px rgba(0,180,255,0.55), var(--glass-inset);
     }
     [data-theme="space"] .btn-primary {
-      box-shadow: 0 4px 20px rgba(255,140,0,0.45), var(--glass-inset);
+      box-shadow: 0 4px 20px rgba(160,60,255,0.50), var(--glass-inset);
     }
     [data-theme="space"] .btn-primary:hover {
-      box-shadow: 0 8px 32px rgba(255,140,0,0.60), var(--glass-inset);
+      box-shadow: 0 8px 36px rgba(160,60,255,0.65), var(--glass-inset);
     }
     .btn-glass {
       background: var(--glass-bg-light);
@@ -489,12 +492,13 @@
     [data-theme="space"] .form-input:focus,
     [data-theme="space"] .form-select:focus,
     [data-theme="space"] .form-textarea:focus {
-      box-shadow: 0 0 0 3px rgba(255,140,0,0.22);
+      border-color: var(--ios-purple);
+      box-shadow: 0 0 0 3px rgba(160,60,255,0.25);
     }
     .form-input::placeholder { color: var(--text-3); }
     .form-select option { background: #1a1040; }
     [data-theme="midnight"] .form-select option { background: #000d1e; }
-    [data-theme="space"]    .form-select option { background: #1a0800; }
+    [data-theme="space"]    .form-select option { background: #010108; }
     .form-textarea { resize: vertical; min-height: 90px; }
 
     /* ── Toggle switch ── */
@@ -576,7 +580,7 @@
       background: radial-gradient(circle, rgba(0,180,255,0.09) 0%, transparent 70%);
     }
     [data-theme="space"] #cursor-glow {
-      background: radial-gradient(circle, rgba(255,140,0,0.09) 0%, transparent 70%);
+      background: radial-gradient(circle, rgba(160,60,255,0.12) 0%, transparent 70%);
     }
 
     /* ── Orb particles ── */
@@ -597,6 +601,14 @@
       90%  { opacity: 0.6; }
       100% { transform: translate(0,0) scale(1);    opacity: 0; }
     }
+
+    /* ── Star field canvas (space theme only) ── */
+    #star-canvas {
+      display: none;
+      position: fixed; inset: 0; z-index: 0;
+      pointer-events: none;
+    }
+    [data-theme="space"] #star-canvas { display: block; }
 
     /* ── Animations ── */
     @keyframes page-enter {
@@ -654,7 +666,7 @@
       background: radial-gradient(ellipse at var(--mx,50%) var(--my,50%), rgba(0,180,255,0.16) 0%, transparent 70%);
     }
     [data-theme="space"] .nav-item::before {
-      background: radial-gradient(ellipse at var(--mx,50%) var(--my,50%), rgba(255,140,0,0.16) 0%, transparent 70%);
+      background: radial-gradient(ellipse at var(--mx,50%) var(--my,50%), rgba(160,60,255,0.20) 0%, transparent 70%);
     }
     .nav-item:hover::before { opacity: 1; }
 
@@ -689,6 +701,7 @@
 
 <div id="cursor-glow"></div>
 <div id="orb-layer"></div>
+<canvas id="star-canvas"></canvas>
 
 <div class="layout">
 
@@ -869,11 +882,12 @@ function cycleTheme(){
   if(btn){btn.style.transform='scale(0.88) rotate(30deg)';setTimeout(function(){btn.style.transition='transform 420ms cubic-bezier(0.34,1.56,0.64,1)';btn.style.transform='scale(1) rotate(0deg)';setTimeout(function(){btn.style.transition='';},420);},90);}
   showThemeToast(next);
   respawnOrbs(next);
+  manageStarCanvas(next);
 }
 function showThemeToast(name){
   var el=document.getElementById('theme-toast');
   if(el)el.remove();
-  var labels={dark:'🌙 Dark',light:'☀️ Light',midnight:'🌊 Midnight',space:'🔥 Space'};
+  var labels={dark:'🌙 Dark',light:'☀️ Light',midnight:'🌊 Midnight',space:'🌌 Space'};
   var t=document.createElement('div');
   t.id='theme-toast';
   t.textContent=labels[name]||name;
@@ -972,7 +986,7 @@ var ORB_COLORS = {
   dark:     ['rgba(120,60,255,0.20)','rgba(255,45,150,0.14)','rgba(10,132,255,0.13)','rgba(50,220,180,0.11)','rgba(191,90,242,0.17)','rgba(255,159,10,0.09)'],
   light:    ['rgba(160,100,255,0.14)','rgba(191,90,242,0.10)','rgba(10,132,255,0.09)','rgba(100,180,255,0.08)','rgba(220,160,255,0.12)','rgba(80,160,255,0.07)'],
   midnight: ['rgba(0,100,220,0.22)','rgba(0,180,255,0.18)','rgba(0,60,180,0.16)','rgba(0,220,255,0.12)','rgba(0,140,200,0.20)','rgba(30,100,255,0.14)'],
-  space:    ['rgba(200,80,0,0.22)','rgba(255,140,0,0.18)','rgba(180,40,0,0.16)','rgba(255,100,20,0.14)','rgba(220,120,0,0.20)','rgba(160,60,0,0.13)']
+  space:    ['rgba(100,20,220,0.22)','rgba(180,40,255,0.18)','rgba(247,37,133,0.14)','rgba(60,10,180,0.20)','rgba(130,0,255,0.16)','rgba(72,202,228,0.10)']
 };
 function respawnOrbs(theme){
   var layer=document.getElementById('orb-layer');
@@ -986,10 +1000,66 @@ function respawnOrbs(theme){
     layer.appendChild(orb);
   }
 }
-// Init orbs with current theme
+
+// ── Star field canvas for Space theme ──
+var starAnimId=null;
+function manageStarCanvas(theme){
+  var canvas=document.getElementById('star-canvas');
+  if(theme!=='space'){
+    if(starAnimId){cancelAnimationFrame(starAnimId);starAnimId=null;}
+    canvas.style.display='none';
+    return;
+  }
+  canvas.style.display='block';
+  initStarCanvas(canvas);
+}
+function initStarCanvas(canvas){
+  if(starAnimId){cancelAnimationFrame(starAnimId);starAnimId=null;}
+  var ctx=canvas.getContext('2d');
+  var W,H,stars=[];
+  function resize(){
+    W=canvas.width=window.innerWidth;
+    H=canvas.height=window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize',resize);
+  // Build star layers: tiny dim + small normal + rare bright + rare colored
+  stars=[];
+  for(var i=0;i<320;i++){
+    var tier=Math.random();
+    var r,alpha,twinkleSpeed,color;
+    if(tier<0.65){r=0.4+Math.random()*0.5;alpha=0.25+Math.random()*0.35;twinkleSpeed=0.003+Math.random()*0.004;color='255,255,255';}
+    else if(tier<0.88){r=0.6+Math.random()*0.8;alpha=0.45+Math.random()*0.35;twinkleSpeed=0.002+Math.random()*0.003;color='255,255,255';}
+    else if(tier<0.96){r=0.9+Math.random()*0.7;alpha=0.70+Math.random()*0.28;twinkleSpeed=0.001+Math.random()*0.002;color='255,255,255';}
+    else{r=1.0+Math.random()*0.8;alpha=0.55+Math.random()*0.35;twinkleSpeed=0.0015+Math.random()*0.002;
+      var c=Math.floor(Math.random()*4);
+      color=c===0?'200,170,255':c===1?'170,210,255':c===2?'255,200,200':'200,255,240';}
+    stars.push({x:Math.random()*W,y:Math.random()*H,r:r,baseAlpha:alpha,alpha:alpha,phase:Math.random()*Math.PI*2,twinkleSpeed:twinkleSpeed,color:color});
+  }
+  function draw(){
+    starAnimId=requestAnimationFrame(draw);
+    if(document.documentElement.getAttribute('data-theme')!=='space'){
+      cancelAnimationFrame(starAnimId);starAnimId=null;
+      canvas.style.display='none';return;
+    }
+    ctx.clearRect(0,0,W,H);
+    stars.forEach(function(s){
+      s.phase+=s.twinkleSpeed;
+      s.alpha=s.baseAlpha*(0.55+0.45*Math.sin(s.phase));
+      ctx.beginPath();
+      ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      ctx.fillStyle='rgba('+s.color+','+s.alpha+')';
+      ctx.fill();
+    });
+  }
+  draw();
+}
+
+// Init with current theme
 (function(){
   var t=document.documentElement.getAttribute('data-theme')||'dark';
   respawnOrbs(t);
+  manageStarCanvas(t);
 })();
 
 // Wallpaper parallax
