@@ -202,6 +202,7 @@
 .action-ban   { background: rgba(255,69,58,0.18); color: var(--ios-red); }
 .action-kick  { background: rgba(255,159,10,0.18); color: var(--ios-orange); }
 .action-mute  { background: rgba(10,132,255,0.18); color: var(--ios-blue); }
+.action-timeout { background: rgba(10,132,255,0.18); color: var(--ios-blue); }
 .action-warn  { background: rgba(255,214,10,0.18); color: var(--ios-yellow); }
 .action-unmute{ background: rgba(48,209,88,0.18); color: var(--ios-green); }
 .action-unban { background: rgba(50,173,230,0.18); color: var(--ios-teal); }
@@ -277,37 +278,37 @@
   <div class="stat-card">
     <div class="stat-icon" style="background:rgba(255,69,58,0.16);">🔨</div>
     <div class="stat-label">Total Bans</div>
-    <div class="stat-value">{{ stats.total_bans if stats else 0 }}</div>
+    <div class="stat-value">{{ stats.bans or 0 }}</div>
     <div class="stat-sub">All time</div>
   </div>
   <div class="stat-card">
     <div class="stat-icon" style="background:rgba(255,159,10,0.16);">👢</div>
     <div class="stat-label">Total Kicks</div>
-    <div class="stat-value">{{ stats.total_kicks if stats else 0 }}</div>
+    <div class="stat-value">{{ stats.kicks or 0 }}</div>
     <div class="stat-sub">All time</div>
   </div>
   <div class="stat-card">
-    <div class="stat-icon" style="background:rgba(10,132,255,0.16);">🔇</div>
-    <div class="stat-label">Total Mutes</div>
-    <div class="stat-value">{{ stats.total_mutes if stats else 0 }}</div>
+    <div class="stat-icon" style="background:rgba(10,132,255,0.16);">⏱️</div>
+    <div class="stat-label">Total Timeouts</div>
+    <div class="stat-value">{{ stats.timeouts or 0 }}</div>
     <div class="stat-sub">All time</div>
   </div>
   <div class="stat-card">
     <div class="stat-icon" style="background:rgba(255,214,10,0.16);">⚠️</div>
     <div class="stat-label">Total Warns</div>
-    <div class="stat-value">{{ stats.total_warnings if stats else 0 }}</div>
+    <div class="stat-value">{{ stats.warnings or 0 }}</div>
     <div class="stat-sub">All time</div>
   </div>
   <div class="stat-card">
     <div class="stat-icon" style="background:rgba(48,209,88,0.16);">👥</div>
     <div class="stat-label">Total Members</div>
-    <div class="stat-value">{{ stats.total_members if stats else 0 }}</div>
+    <div class="stat-value">{{ stats.total_members or 0 }}</div>
     <div class="stat-sub">Tracked users</div>
   </div>
   <div class="stat-card">
     <div class="stat-icon" style="background:rgba(191,90,242,0.16);">📋</div>
     <div class="stat-label">Commands Run</div>
-    <div class="stat-value">{{ stats.commands_used if stats else 0 }}</div>
+    <div class="stat-value">{{ stats.commands_used or 0 }}</div>
     <div class="stat-sub">All time</div>
   </div>
 </div>
@@ -356,7 +357,7 @@
 <!-- ═══ RECENT ACTIONS ═══ -->
 <div class="section-heading">Recent Actions</div>
 <div class="card" style="padding:0;overflow:hidden;">
-  {% if recent_actions %}
+  {% if logs %}
   <table class="actions-table">
     <thead>
       <tr>
@@ -368,13 +369,13 @@
       </tr>
     </thead>
     <tbody>
-      {% for action in recent_actions[:10] %}
+      {% for log in logs[:10] %}
       <tr>
-        <td><span class="action-type action-{{ action.action_type|lower }}">{{ action.action_type|upper }}</span></td>
-        <td style="color:var(--text-2);">{{ action.moderator_name or 'Unknown' }}</td>
-        <td>{{ action.target_name or action.target_id }}</td>
-        <td style="color:var(--text-2); max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ action.reason or '—' }}</td>
-        <td style="color:var(--text-3); white-space:nowrap; font-size:12px;">{{ action.created_at.strftime('%b %d, %H:%M') if action.created_at else '—' }}</td>
+        <td><span class="action-type action-{{ log.action_type|lower if log.action_type else 'unknown' }}">{{ log.action_type|upper if log.action_type else '—' }}</span></td>
+        <td style="color:var(--text-2);">{{ log.moderator_name or log.moderator_id or 'Unknown' }}</td>
+        <td>{{ log.target_name or log.target_id or '—' }}</td>
+        <td style="color:var(--text-2); max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ log.reason or '—' }}</td>
+        <td style="color:var(--text-3); white-space:nowrap; font-size:12px;">{{ log.timestamp or '—' }}</td>
       </tr>
       {% endfor %}
     </tbody>
