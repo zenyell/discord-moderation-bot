@@ -96,19 +96,29 @@ def _discord_headers():
     }
 
 
-def _fetch_discord_user(user_id: str) -> dict:
+def _fetch_discord_user(user_id: str) -> tuple[dict, str]:
+    """Returns (data_dict, error_string). error_string is '' on success."""
+    if not BOT_TOKEN:
+        return {}, "DISCORD_BOT_TOKEN is not set in environment"
     try:
         req = urllib.request.Request(
             f"{DISCORD_API}/users/{user_id}",
             headers=_discord_headers()
         )
         with urllib.request.urlopen(req, timeout=5) as resp:
-            return json.loads(resp.read())
-    except Exception:
-        return {}
+            return json.loads(resp.read()), ""
+    except urllib.error.HTTPError as e:
+        body = ""
+        try: body = e.read().decode()
+        except Exception: pass
+        return {}, f"Discord API HTTP {e.code}: {body}"
+    except Exception as e:
+        return {}, f"{type(e).__name__}: {e}"
 
 
 def _fetch_guild_member(user_id: str) -> dict:
+    if not BOT_TOKEN or not GUILD_ID or GUILD_ID == "0":
+        return {}
     try:
         req = urllib.request.Request(
             f"{DISCORD_API}/guilds/{GUILD_ID}/members/{user_id}",
@@ -134,6 +144,8 @@ def _fetch_guild_roles() -> list:
 
 def _search_guild_members(query: str) -> list:
     """Search guild members by username prefix via Discord API (requires GUILD_MEMBERS intent)."""
+    if not BOT_TOKEN or not GUILD_ID or GUILD_ID == "0":
+        return []
     try:
         encoded = urllib.parse.quote(query)
         req = urllib.request.Request(
@@ -538,11 +550,11 @@ def command_settings():
 
 # ── User lookup ──
 
-def _build_lookup_result(user_id: str) -> dict | None:
-    """Fetch Discord user + member data and return a display-ready dict. Returns None if user not found."""
-    user_data   = _fetch_discord_user(user_id)
+def _build_lookup_result(user_id: str) -> tuple[dict | None, str]:
+    """Returns (result_dict_or_None, error_string)."""
+    user_data, err = _fetch_discord_user(user_id)
     if not user_data.get("id"):
-        return None
+        return None, err or "User not found"
     member_data = _fetch_guild_member(user_id)
     av = _avatar_url(user_data, member_data)
     username      = user_data.get("username", user_id)
@@ -554,7 +566,7 @@ def _build_lookup_result(user_id: str) -> dict | None:
         "display_name":  global_name,
         "discriminator": discriminator,
         "avatar_url":    av,
-    }
+    }, ""
 
 
 @app.route("/user-lookup")
@@ -562,29 +574,31 @@ def _build_lookup_result(user_id: str) -> dict | None:
 def user_lookup():
     query   = request.args.get("q", "").strip()
     results = []
+    api_error = ""
 
     if query:
         seen = set()
 
         # 1. If pure numeric — direct Discord user lookup by ID
         if query.isdigit():
-            r = _build_lookup_result(query)
+            r, err = _build_lookup_result(query)
             if r:
                 results.append(r)
                 seen.add(query)
+            elif err:
+                api_error = err
 
-        # 2. Search profile_cache by username / global_name (always runs for text queries)
+        # 2. Search profile_cache by username / global_name
         if not query.isdigit() or not results:
             try:
                 cached = db.search_profile_cache_sync(query)
                 for row in cached:
                     uid = row.get("user_id", "")
                     if uid and uid not in seen:
-                        # Use cached avatar_url, but freshen it if empty
                         av = row.get("avatar_url") or ""
                         if not av:
-                            user_data   = _fetch_discord_user(uid)
-                            member_data = _fetch_guild_member(uid)
+                            user_data, _ = _fetch_discord_user(uid)
+                            member_data  = _fetch_guild_member(uid)
                             av = _avatar_url(user_data, member_data)
                         results.append({
                             "target_id":     uid,
@@ -594,10 +608,11 @@ def user_lookup():
                             "avatar_url":    av,
                         })
                         seen.add(uid)
-            except Exception:
-                pass
+            except Exception as e:
+                if not api_error:
+                    api_error = f"Cache search error: {e}"
 
-        # 3. Try Discord guild member search API (username prefix, requires GUILD_MEMBERS intent)
+        # 3. Try Discord guild member search API
         try:
             members = _search_guild_members(query)
             for m in members:
@@ -619,14 +634,14 @@ def user_lookup():
         except Exception:
             pass
 
-        # 4. Fallback: scan recent mod logs for partial ID match (text queries skip this)
+        # 4. Fallback: scan recent mod logs for partial ID match
         if query.isdigit() and not results:
             try:
                 rows = db.recent_logs_sync(GUILD_ID, 500)
                 for r in rows:
                     tid = r.get("target_id", "")
                     if query in tid and tid not in seen:
-                        result = _build_lookup_result(tid)
+                        result, _ = _build_lookup_result(tid)
                         if result:
                             results.append(result)
                             seen.add(tid)
@@ -635,7 +650,7 @@ def user_lookup():
             except Exception:
                 pass
 
-    return render_template("user_lookup.html", query=query, results=results)
+    return render_template("user_lookup.html", query=query, results=results, api_error=api_error)
 
 
 @app.route("/user-lookup/<user_id>")
@@ -655,7 +670,7 @@ def user_profile(user_id):
     except Exception:
         pass
 
-    user_data   = _fetch_discord_user(user_id)
+    user_data, api_err   = _fetch_discord_user(user_id)
     member_data = _fetch_guild_member(user_id)
     guild_roles = _fetch_guild_roles()
 
@@ -694,6 +709,7 @@ def user_profile(user_id):
         "nick":          member_data.get("nick") or "",
         "joined_at":     member_data.get("joined_at", "")[:10] if member_data.get("joined_at") else "",
         "roles":         member_roles,
+        "api_error":     api_err,
     }
 
     return render_template(
@@ -723,9 +739,14 @@ def api_profile(user_id):
 @app.route("/api/debug/<user_id>")
 @login_required
 def api_debug(user_id):
-    user_data   = _fetch_discord_user(user_id)
-    member_data = _fetch_guild_member(user_id)
+    user_data, err = _fetch_discord_user(user_id)
+    member_data    = _fetch_guild_member(user_id)
     return jsonify({
+        "env": {
+            "bot_token_set": bool(BOT_TOKEN),
+            "guild_id": GUILD_ID,
+        },
+        "api_error": err,
         "user":   user_data,
         "member": member_data,
         "resolved": {
