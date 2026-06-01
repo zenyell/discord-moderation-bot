@@ -112,6 +112,254 @@
     }
 
     /* ═══════════════════════════════════════
+       HUD CORNER BRACKETS
+    ═══════════════════════════════════════ */
+    .hud-corners {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none;
+      z-index: 3;
+    }
+    .hud-corner {
+      position: absolute;
+      width: 28px; height: 28px;
+    }
+    .hud-corner::before, .hud-corner::after {
+      content: '';
+      position: absolute;
+      background: var(--accent);
+      opacity: 0.45;
+    }
+    .hud-corner::before { width: 100%; height: 2px; }
+    .hud-corner::after  { width: 2px; height: 100%; }
+    .hud-corner.tl { top: 14px; left: 14px; }
+    .hud-corner.tl::before { top: 0; left: 0; }
+    .hud-corner.tl::after  { top: 0; left: 0; }
+    .hud-corner.tr { top: 14px; right: 14px; }
+    .hud-corner.tr::before { top: 0; right: 0; left: auto; }
+    .hud-corner.tr::after  { top: 0; right: 0; left: auto; }
+    .hud-corner.bl { bottom: 14px; left: 14px; }
+    .hud-corner.bl::before { bottom: 0; top: auto; left: 0; }
+    .hud-corner.bl::after  { bottom: 0; top: auto; left: 0; }
+    .hud-corner.br { bottom: 14px; right: 14px; }
+    .hud-corner.br::before { bottom: 0; top: auto; right: 0; left: auto; }
+    .hud-corner.br::after  { bottom: 0; top: auto; right: 0; left: auto; }
+    .hud-corner.tl, .hud-corner.bl { animation: cornerPulseL 4s ease-in-out infinite; }
+    .hud-corner.tr, .hud-corner.br { animation: cornerPulseR 4s ease-in-out infinite 0.5s; }
+    @keyframes cornerPulseL {
+      0%, 100% { opacity: 0.35; }
+      50%       { opacity: 0.8; }
+    }
+    @keyframes cornerPulseR {
+      0%, 100% { opacity: 0.25; }
+      50%       { opacity: 0.65; }
+    }
+
+    /* ═══════════════════════════════════════
+       HUD SCAN BEAM (full-screen horizontal sweep)
+    ═══════════════════════════════════════ */
+    .hud-scanbeam {
+      position: fixed;
+      left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent 0%, rgba(167,139,250,0.0) 10%, rgba(167,139,250,0.6) 50%, rgba(167,139,250,0.0) 90%, transparent 100%);
+      pointer-events: none;
+      z-index: 3;
+      animation: scanBeam 9s linear infinite;
+      box-shadow: 0 0 8px rgba(167,139,250,0.3);
+    }
+    @keyframes scanBeam {
+      0%   { top: -2px; opacity: 0; }
+      2%   { opacity: 1; }
+      98%  { opacity: 1; }
+      100% { top: 100vh; opacity: 0; }
+    }
+
+    /* ═══════════════════════════════════════
+       DATA STREAM LINES (background)
+    ═══════════════════════════════════════ */
+    .data-streams {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+      opacity: 0.18;
+    }
+    .data-stream {
+      position: absolute;
+      top: -100%;
+      width: 1px;
+      background: linear-gradient(180deg, transparent, rgba(167,139,250,0.8), transparent);
+      animation: streamFall linear infinite;
+    }
+    @keyframes streamFall {
+      0%   { top: -30%; opacity: 0; }
+      5%   { opacity: 1; }
+      95%  { opacity: 1; }
+      100% { top: 110%; opacity: 0; }
+    }
+
+    /* ═══════════════════════════════════════
+       HUD DATA TICKER (bottom bar)
+    ═══════════════════════════════════════ */
+    .hud-ticker {
+      position: fixed;
+      bottom: 0; left: var(--sidebar-w); right: 0;
+      height: 22px;
+      background: rgba(13,13,16,0.92);
+      border-top: 1px solid rgba(167,139,250,0.1);
+      z-index: 99;
+      overflow: hidden;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+    }
+    .hud-ticker-inner {
+      display: flex;
+      gap: 0;
+      animation: tickerScroll 28s linear infinite;
+      white-space: nowrap;
+    }
+    .hud-ticker-item {
+      font-size: 9px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      color: rgba(167,139,250,0.4);
+      letter-spacing: 0.8px;
+      padding: 0 28px;
+    }
+    .hud-ticker-item span { color: rgba(167,139,250,0.75); }
+    @keyframes tickerScroll {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    /* ═══════════════════════════════════════
+       BOOT SEQUENCE OVERLAY
+    ═══════════════════════════════════════ */
+    #boot-overlay {
+      position: fixed; inset: 0;
+      background: #0d0d10;
+      z-index: 10000;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 14px;
+      pointer-events: none;
+      animation: bootFade 2.8s var(--ease) forwards;
+    }
+    @keyframes bootFade {
+      0%   { opacity: 1; }
+      70%  { opacity: 1; }
+      100% { opacity: 0; visibility: hidden; }
+    }
+    .boot-logo {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, #7c3aed, #a78bfa);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 0 40px rgba(124,58,237,0.6);
+      animation: bootLogoPulse 2.8s ease forwards;
+    }
+    @keyframes bootLogoPulse {
+      0%   { transform: scale(0.8); opacity: 0; }
+      20%  { transform: scale(1.05); opacity: 1; }
+      40%  { transform: scale(1); }
+      80%  { transform: scale(1); opacity: 1; }
+      100% { transform: scale(1.1); opacity: 0; }
+    }
+    .boot-bar-wrap {
+      width: 180px; height: 2px;
+      background: rgba(167,139,250,0.1);
+      border-radius: 2px; overflow: hidden;
+    }
+    .boot-bar {
+      height: 100%; width: 0;
+      background: linear-gradient(90deg, #7c3aed, #a78bfa);
+      box-shadow: 0 0 8px rgba(167,139,250,0.8);
+      animation: bootBarFill 1.6s 0.3s ease forwards;
+    }
+    @keyframes bootBarFill { to { width: 100%; } }
+    .boot-text {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 9px; letter-spacing: 2px;
+      color: rgba(167,139,250,0.5);
+      text-transform: uppercase;
+      animation: bootTextAnim 2.8s ease forwards;
+    }
+    @keyframes bootTextAnim {
+      0%  { opacity: 0; }
+      30% { opacity: 1; }
+      80% { opacity: 1; }
+      100%{ opacity: 0; }
+    }
+
+    /* ═══════════════════════════════════════
+       TOPBAR — HUD readout chip
+    ═══════════════════════════════════════ */
+    .hud-readout {
+      display: flex; align-items: center; gap: 5px;
+      font-family: 'SF Mono','Fira Code',monospace;
+      font-size: 10px; letter-spacing: 0.5px;
+      color: rgba(167,139,250,0.5);
+      padding: 3px 8px;
+      border: 1px solid rgba(167,139,250,0.1);
+      border-radius: 3px;
+      background: rgba(167,139,250,0.04);
+      animation: readoutBlink 4s ease-in-out infinite;
+    }
+    @keyframes readoutBlink {
+      0%,100% { border-color: rgba(167,139,250,0.1); }
+      50%      { border-color: rgba(167,139,250,0.28); }
+    }
+    .hud-readout-dot {
+      width: 4px; height: 4px; border-radius: 50%;
+      background: var(--accent); opacity: 0.7;
+      animation: dotBlink 1.2s ease-in-out infinite;
+    }
+    @keyframes dotBlink {
+      0%,100% { opacity: 0.3; }
+      50%      { opacity: 1; box-shadow: 0 0 5px rgba(167,139,250,0.8); }
+    }
+
+    /* ═══════════════════════════════════════
+       GLITCH TEXT (page titles)
+    ═══════════════════════════════════════ */
+    .glitch-text {
+      position: relative;
+      display: inline-block;
+    }
+    .glitch-text::before,
+    .glitch-text::after {
+      content: attr(data-text);
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+    }
+    .glitch-text::before {
+      color: rgba(96,165,250,0.7);
+      animation: glitchB 5s steps(1) infinite;
+      clip-path: polygon(0 30%, 100% 30%, 100% 50%, 0 50%);
+    }
+    .glitch-text::after {
+      color: rgba(248,113,113,0.7);
+      animation: glitchR 5s steps(1) infinite 0.3s;
+      clip-path: polygon(0 60%, 100% 60%, 100% 72%, 0 72%);
+    }
+    @keyframes glitchB {
+      0%,90%,100% { transform: none; opacity: 0; }
+      92% { transform: translateX(-2px); opacity: 0.8; }
+      94% { transform: translateX(2px);  opacity: 0.5; }
+      96% { transform: none; opacity: 0; }
+    }
+    @keyframes glitchR {
+      0%,92%,100% { transform: none; opacity: 0; }
+      93% { transform: translateX(3px); opacity: 0.6; }
+      95% { transform: translateX(-1px); opacity: 0.4; }
+      97% { transform: none; opacity: 0; }
+    }
+
+    /* ═══════════════════════════════════════
        SIDEBAR
     ═══════════════════════════════════════ */
     .sidebar {
@@ -125,6 +373,22 @@
       top: 0; left: 0;
       z-index: 100;
       overflow: hidden;
+    }
+    /* Animated grid overlay on sidebar */
+    .sidebar::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(167,139,250,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(167,139,250,0.025) 1px, transparent 1px);
+      background-size: 24px 24px;
+      pointer-events: none;
+      animation: gridPulse 6s ease-in-out infinite;
+    }
+    @keyframes gridPulse {
+      0%,100% { opacity: 0.6; }
+      50%      { opacity: 1; }
     }
     .sidebar::before {
       content: '';
@@ -283,6 +547,32 @@
     .nav-item.active .icon { opacity: 1; }
     .nav-divider { border: none; border-top: 1px solid var(--border); margin: 6px 2px; }
 
+    /* HUD Radar widget */
+    .hud-radar {
+      width: 52px; height: 52px;
+      position: relative;
+      flex-shrink: 0;
+      margin: 4px auto 8px;
+    }
+    .hud-radar svg { width: 100%; height: 100%; }
+    .radar-sweep {
+      transform-origin: 26px 26px;
+      animation: radarSpin 3s linear infinite;
+    }
+    @keyframes radarSpin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+    .radar-blip { animation: blipFade 3s ease-out infinite; }
+    .radar-blip:nth-child(2) { animation-delay: 0.8s; }
+    .radar-blip:nth-child(3) { animation-delay: 1.9s; }
+    @keyframes blipFade {
+      0%   { opacity: 0; }
+      10%  { opacity: 1; }
+      60%  { opacity: 0.4; }
+      100% { opacity: 0; }
+    }
+
     /* User footer */
     .sidebar-user {
       margin: 0 10px 12px;
@@ -376,7 +666,7 @@
     /* ═══════════════════════════════════════
        CONTENT
     ═══════════════════════════════════════ */
-    .content { padding: 28px; flex: 1; }
+    .content { padding: 28px 28px 44px; flex: 1; }
 
     /* Page entrance */
     #page-wrapper { animation: pageIn 380ms var(--ease) both; }
@@ -428,7 +718,7 @@
     }
 
     /* ═══════════════════════════════════════
-       CARDS — scroll reveal + shimmer border
+       CARDS — HUD corner marks + shimmer
     ═══════════════════════════════════════ */
     .card {
       background: var(--surface);
@@ -436,162 +726,122 @@
       border-radius: var(--r-lg);
       padding: 22px;
       margin-bottom: 14px;
-      transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+      transition: border-color 300ms var(--ease), box-shadow 300ms var(--ease);
       position: relative;
       overflow: hidden;
       opacity: 0;
       transform: translateY(16px);
     }
-    .card.visible {
-      animation: cardReveal 400ms var(--ease) forwards;
+    /* Top-left HUD corner mark */
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 12px; height: 12px;
+      border-top: 1px solid rgba(167,139,250,0.3);
+      border-left: 1px solid rgba(167,139,250,0.3);
+      pointer-events: none;
+      z-index: 1;
     }
-    @keyframes cardReveal {
-      to { opacity: 1; transform: none; }
-    }
-    /* Shimmer border sweep on hover */
+    /* Shimmer sweep on hover */
     .card::after {
       content: '';
       position: absolute;
       top: 0; left: -100%;
-      width: 50%; height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(167,139,250,0.07), transparent);
-      transition: none;
+      width: 60%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(167,139,250,0.04), transparent);
+      transition: left 0s;
       pointer-events: none;
     }
-    .card:hover::after { left: 160%; transition: left 600ms ease; }
-    .card:hover { border-color: rgba(167,139,250,0.2); box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px rgba(167,139,250,0.06); }
-
-    .card-title {
-      font-size: 13.5px; font-weight: 700;
-      color: var(--text); margin-bottom: 18px;
-      display: flex; align-items: center; gap: 8px;
+    .card:hover::after { left: 150%; transition: left 520ms ease; }
+    .card:hover {
+      border-color: rgba(167,139,250,0.22);
+      box-shadow: 0 0 20px rgba(124,58,237,0.07), 0 4px 20px rgba(0,0,0,0.3);
     }
-    .card-title .icon { color: var(--accent); opacity: 0.9; }
+    .card.visible { animation: cardReveal 400ms var(--ease) forwards; }
+    @keyframes cardReveal { to { opacity: 1; transform: none; } }
+
+    .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+    .card-title { font-size: 14px; font-weight: 700; color: var(--text); }
+    .card-subtitle { font-size: 12px; color: var(--muted); margin-top: 3px; }
 
     /* ═══════════════════════════════════════
-       GRIDS
-    ═══════════════════════════════════════ */
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-    .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
-    .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; }
-    @media(max-width:900px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr}}
-
-    /* ═══════════════════════════════════════
-       STAT CARDS — gradient + counter anim
+       STAT CARDS — HUD corner marks
     ═══════════════════════════════════════ */
     .stat-card {
-      border-radius: var(--r-xl);
-      padding: 22px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 20px;
       position: relative;
       overflow: hidden;
-      opacity: 0;
-      transform: translateY(16px) scale(0.97);
-      transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+      transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease);
       cursor: default;
+      opacity: 0;
+      transform: translateY(16px);
     }
-    .stat-card.visible {
-      animation: statReveal 450ms var(--ease) forwards;
+    /* Top-left corner */
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 10px; height: 10px;
+      border-top: 1px solid rgba(167,139,250,0.35);
+      border-left: 1px solid rgba(167,139,250,0.35);
+      pointer-events: none;
+      z-index: 2;
     }
-    @keyframes statReveal {
-      to { opacity: 1; transform: none; }
+    /* Bottom-right corner */
+    .stat-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0; right: 0;
+      width: 10px; height: 10px;
+      border-bottom: 1px solid rgba(167,139,250,0.2);
+      border-right: 1px solid rgba(167,139,250,0.2);
+      pointer-events: none;
+      z-index: 2;
     }
-    .stat-card:hover { transform: translateY(-4px) scale(1.01); box-shadow: 0 20px 50px rgba(0,0,0,0.4); }
+    .stat-card:hover { border-color: rgba(167,139,250,0.18); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.25); }
+    .stat-card.visible { animation: cardReveal 400ms var(--ease) forwards; }
 
-    .stat-card-red    { background: linear-gradient(135deg, #2d1a1a 0%, #1a0d0d 100%); border: 1px solid rgba(248,113,113,0.2); }
-    .stat-card-orange { background: linear-gradient(135deg, #2d2010 0%, #1a1308 100%); border: 1px solid rgba(251,191,36,0.2); }
-    .stat-card-purple { background: linear-gradient(135deg, #1e1530 0%, #120d1f 100%); border: 1px solid rgba(167,139,250,0.2); }
-    .stat-card-yellow { background: linear-gradient(135deg, #2a2310 0%, #181508 100%); border: 1px solid rgba(251,191,36,0.18); }
-
-    .stat-card-icon {
-      width: 38px; height: 38px;
-      border-radius: 10px;
+    .stat-icon {
+      width: 38px; height: 38px; border-radius: var(--r-sm);
       display: flex; align-items: center; justify-content: center;
       margin-bottom: 14px; flex-shrink: 0;
     }
-    .stat-card-icon-red    { background: rgba(248,113,113,0.15); color: var(--danger); }
-    .stat-card-icon-orange { background: rgba(251,191,36,0.15);  color: var(--warning); }
-    .stat-card-icon-purple { background: rgba(167,139,250,0.15); color: var(--accent); }
-    .stat-card-icon-yellow { background: rgba(251,191,36,0.12);  color: #e0a800; }
-
-    .stat-card-glow {
-      position: absolute;
-      bottom: -30px; right: -30px;
-      width: 120px; height: 120px;
-      border-radius: 50%;
-      filter: blur(40px);
-      pointer-events: none;
-      animation: glowBreath 3s ease-in-out infinite alternate;
-    }
-    @keyframes glowBreath {
-      from { opacity: 0.4; transform: scale(0.9); }
-      to   { opacity: 0.7; transform: scale(1.15); }
-    }
-    .stat-card-glow-red    { background: rgba(248,113,113,0.35); }
-    .stat-card-glow-orange { background: rgba(251,191,36,0.35); }
-    .stat-card-glow-purple { background: rgba(167,139,250,0.35); }
-    .stat-card-glow-yellow { background: rgba(251,191,36,0.25); }
-
-    .stat-label {
-      font-size: 11px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.7px;
-      margin-bottom: 6px;
-    }
-    .stat-value {
-      font-size: 30px; font-weight: 800;
-      font-variant-numeric: tabular-nums;
-      letter-spacing: -1px; line-height: 1;
-    }
-    .stat-sub { font-size: 11.5px; color: var(--muted); margin-top: 6px; }
+    .stat-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.7px; color: var(--muted); margin-bottom: 6px; }
+    .stat-value { font-size: 28px; font-weight: 800; color: var(--text); letter-spacing: -1px; line-height: 1; margin-bottom: 6px; font-variant-numeric: tabular-nums; }
+    .stat-delta { font-size: 12px; font-weight: 500; display: flex; align-items: center; gap: 4px; }
+    .stat-delta.up   { color: var(--success); }
+    .stat-delta.down { color: var(--danger); }
+    .stat-delta.neutral { color: var(--muted); }
 
     /* ═══════════════════════════════════════
-       FORMS
+       GRID HELPERS
     ═══════════════════════════════════════ */
-    .form-group { margin-bottom: 16px; }
-    .form-label {
-      display: block; font-size: 11.5px; font-weight: 600;
-      color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;
-      margin-bottom: 6px;
-    }
-    .form-control {
-      width: 100%;
-      background: var(--surface-2);
-      border: 1px solid var(--border-2);
-      border-radius: var(--r-sm);
-      padding: 9px 12px;
-      font-size: 13px; color: var(--text);
-      font-family: inherit; outline: none;
-      transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
-    }
-    .form-control:hover { border-color: var(--border-3); }
-    .form-control:focus {
-      border-color: rgba(124,58,237,0.5);
-      box-shadow: 0 0 0 3px rgba(124,58,237,0.1), 0 0 12px rgba(124,58,237,0.08);
-    }
-    .form-control::placeholder { color: var(--faint); }
-    textarea.form-control { resize: vertical; min-height: 90px; line-height: 1.5; }
-    select.form-control { cursor: pointer; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    @media (max-width: 1100px) { .grid-4 { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 800px)  { .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; } }
 
     /* ═══════════════════════════════════════
-       BUTTONS — ripple effect
+       BUTTONS
     ═══════════════════════════════════════ */
     .btn {
-      display: inline-flex; align-items: center; justify-content: center;
-      gap: 6px; padding: 8px 16px;
-      border-radius: var(--r-sm);
-      font-size: 13px; font-weight: 600;
-      font-family: inherit; border: none; cursor: pointer;
-      text-decoration: none;
+      display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+      padding: 8px 16px; border-radius: var(--r);
+      font-family: inherit; font-size: 13px; font-weight: 600;
+      cursor: pointer; border: none; text-decoration: none;
       transition: all var(--dur) var(--ease);
-      white-space: nowrap; position: relative; overflow: hidden;
+      position: relative; overflow: hidden;
+      white-space: nowrap;
     }
-    /* Ripple span injected by JS */
-    .btn .ripple {
-      position: absolute;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.25);
-      transform: scale(0);
-      animation: rippleAnim 500ms linear;
-      pointer-events: none;
+    .ripple {
+      position: absolute; border-radius: 50%;
+      transform: scale(0); animation: rippleAnim 600ms ease-out;
+      background: rgba(255,255,255,0.15); pointer-events: none;
     }
     @keyframes rippleAnim {
       to { transform: scale(4); opacity: 0; }
@@ -746,6 +996,46 @@
 </head>
 <body>
 
+<!-- ═══════════════ HUD OVERLAYS ═══════════════ -->
+<div id="boot-overlay">
+  <div class="boot-logo">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    </svg>
+  </div>
+  <div class="boot-bar-wrap"><div class="boot-bar"></div></div>
+  <div class="boot-text">MODPANEL v2 · INITIALIZING</div>
+</div>
+
+<div class="hud-corners">
+  <div class="hud-corner tl"></div>
+  <div class="hud-corner tr"></div>
+  <div class="hud-corner bl"></div>
+  <div class="hud-corner br"></div>
+</div>
+<div class="hud-scanbeam"></div>
+<div class="data-streams" id="data-streams"></div>
+<div class="hud-ticker">
+  <div class="hud-ticker-inner" id="ticker-inner">
+    <span class="hud-ticker-item">SYS·STATUS <span>ONLINE</span></span>
+    <span class="hud-ticker-item">MODPANEL <span>v2.0</span></span>
+    <span class="hud-ticker-item">UPTIME <span id="hud-uptime">00:00:00</span></span>
+    <span class="hud-ticker-item">DISCORD·API <span>CONNECTED</span></span>
+    <span class="hud-ticker-item">ENCRYPTION <span>AES-256</span></span>
+    <span class="hud-ticker-item">NODES <span>3/3</span></span>
+    <span class="hud-ticker-item">LATENCY <span id="hud-latency">--ms</span></span>
+    <span class="hud-ticker-item">AUTH <span>OK</span></span>
+    <span class="hud-ticker-item">SYS·STATUS <span>ONLINE</span></span>
+    <span class="hud-ticker-item">MODPANEL <span>v2.0</span></span>
+    <span class="hud-ticker-item">UPTIME <span>00:00:00</span></span>
+    <span class="hud-ticker-item">DISCORD·API <span>CONNECTED</span></span>
+    <span class="hud-ticker-item">ENCRYPTION <span>AES-256</span></span>
+    <span class="hud-ticker-item">NODES <span>3/3</span></span>
+    <span class="hud-ticker-item">LATENCY <span>--ms</span></span>
+    <span class="hud-ticker-item">AUTH <span>OK</span></span>
+  </div>
+</div>
+
 <canvas id="particle-canvas"></canvas>
 <div id="scanlines"></div>
 <div id="nav-loader"></div>
@@ -827,6 +1117,12 @@
         <span class="icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
         Commands
       </a>
+    </div>
+
+    <hr class="nav-divider">
+
+    <div class="nav-section">
+      <div class="nav-section-label">Users</div>
       <a href="{{ url_for('user_lookup') }}" class="nav-item {% if request.endpoint in ['user_lookup','user_profile'] %}active{% endif %}">
         <span class="icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
         User Lookup
@@ -834,53 +1130,94 @@
     </div>
   </div>
 
+  <!-- HUD Radar widget -->
+  <div class="hud-radar" title="System Active">
+    <svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="26" cy="26" r="24" stroke="rgba(167,139,250,0.12)" stroke-width="1"/>
+      <circle cx="26" cy="26" r="16" stroke="rgba(167,139,250,0.1)" stroke-width="1"/>
+      <circle cx="26" cy="26" r="8"  stroke="rgba(167,139,250,0.1)" stroke-width="1"/>
+      <line x1="26" y1="2"  x2="26" y2="50" stroke="rgba(167,139,250,0.08)" stroke-width="0.5"/>
+      <line x1="2"  y1="26" x2="50" y2="26" stroke="rgba(167,139,250,0.08)" stroke-width="0.5"/>
+      <g class="radar-sweep">
+        <path d="M26 26 L26 2 A24 24 0 0 1 48 34 Z" fill="url(#sweep-grad)" opacity="0.5"/>
+      </g>
+      <circle class="radar-blip" cx="34" cy="18" r="1.5" fill="rgba(167,139,250,0.9)"/>
+      <circle class="radar-blip" cx="19" cy="32" r="1.5" fill="rgba(96,165,250,0.9)"/>
+      <circle class="radar-blip" cx="38" cy="30" r="1.5" fill="rgba(52,211,153,0.9)"/>
+      <circle cx="26" cy="26" r="2" fill="rgba(167,139,250,0.7)"/>
+      <defs>
+        <radialGradient id="sweep-grad" cx="26" cy="26" r="24" gradientUnits="userSpaceOnUse">
+          <stop offset="0%"   stop-color="rgba(167,139,250,0.6)"/>
+          <stop offset="100%" stop-color="rgba(167,139,250,0)"/>
+        </radialGradient>
+      </defs>
+    </svg>
+  </div>
+
   <a href="{{ url_for('logout') }}" class="sidebar-user">
-    <div class="sidebar-user-avatar">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-    </div>
+    {% if current_user.avatar %}
+      <img src="https://cdn.discordapp.com/avatars/{{ current_user.id }}/{{ current_user.avatar }}.png?size=64"
+           alt="{{ current_user.username }}"
+           style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+    {% else %}
+      <div class="sidebar-user-avatar">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div>
+    {% endif %}
     <div class="sidebar-user-info">
-      <div class="sidebar-user-name">{{ session.get('username', 'Admin') }}</div>
-      <div class="sidebar-user-email">Click to sign out</div>
+      <div class="sidebar-user-name">{{ current_user.username }}</div>
+      <div class="sidebar-user-email">Click to log out</div>
     </div>
     <div class="sidebar-user-chevrons">
-      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
-      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
     </div>
   </a>
 
 </nav>
 
-<!-- ═══════════════════════ MAIN ═══════════════════════ -->
+<!-- ═══════════════ MAIN ═══════════════ -->
 <div class="main">
-  <div class="topbar">
+
+  <!-- Topbar -->
+  <header class="topbar">
     <div class="topbar-breadcrumb">
       <a href="{{ url_for('index') }}" class="topbar-breadcrumb-home">ModPanel</a>
       <span class="topbar-breadcrumb-sep">/</span>
       <span class="topbar-breadcrumb-current">{% block page_title %}Dashboard{% endblock %}</span>
     </div>
     <div class="topbar-right">
+      <div class="hud-readout"><div class="hud-readout-dot"></div><span id="hud-clock">00:00:00</span></div>
+      {% block topbar_extra %}{% endblock %}
       <div class="topbar-pill" id="bot-status-pill">
-        <div class="topbar-dot" id="bot-status-dot"></div>
-        <span id="bot-status-text">Checking...</span>
+        <span class="topbar-dot" id="bot-status-dot"></span>
+        <span id="bot-status-text">Checking…</span>
       </div>
     </div>
-    {% block topbar_extra %}{% endblock %}
-  </div>
+  </header>
 
+  <!-- Content -->
   <div class="content">
     <div id="page-wrapper">
-      {% with messages = get_flashed_messages() %}
+      {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
           <div class="flash-list">
-            {% for msg in messages %}
-              <div class="flash flash-success">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            {% for cat, msg in messages %}
+              <div class="flash flash-{{ cat }}">
+                {% if cat == 'success' %}
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                {% elif cat == 'error' %}
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                {% else %}
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                {% endif %}
                 {{ msg }}
               </div>
             {% endfor %}
           </div>
         {% endif %}
       {% endwith %}
+
       {% block content %}{% endblock %}
     </div>
   </div>
@@ -938,9 +1275,63 @@
   }
   animParticles();
 
+  /* ── Data streams ── */
+  const streamsContainer = document.getElementById('data-streams');
+  if (streamsContainer) {
+    for (let i = 0; i < 14; i++) {
+      const s = document.createElement('div');
+      s.className = 'data-stream';
+      const left   = Math.random() * 100;
+      const height = 60 + Math.random() * 160;
+      const delay  = Math.random() * 12;
+      const dur    = 6 + Math.random() * 10;
+      s.style.cssText = `left:${left}%;height:${height}px;animation-duration:${dur}s;animation-delay:${delay}s;`;
+      streamsContainer.appendChild(s);
+    }
+  }
+
+  /* ── HUD uptime clock ── */
+  const hudStart = Date.now();
+  const uptimeEl = document.getElementById('hud-uptime');
+  const clockEl  = document.getElementById('hud-clock');
+  function pad(n) { return String(n).padStart(2,'0'); }
+  function updateHUD() {
+    const now = new Date();
+    if (clockEl)  clockEl.textContent  = pad(now.getHours())+':'+pad(now.getMinutes())+':'+pad(now.getSeconds());
+    if (uptimeEl) {
+      const s = Math.floor((Date.now()-hudStart)/1000);
+      uptimeEl.textContent = pad(Math.floor(s/3600))+':'+pad(Math.floor((s%3600)/60))+':'+pad(s%60);
+    }
+  }
+  setInterval(updateHUD, 1000);
+  updateHUD();
+
+  /* ── Glitch page titles ── */
+  document.querySelectorAll('.page-header h1').forEach(el => {
+    el.classList.add('glitch-text');
+    el.dataset.text = el.textContent;
+  });
+
+  /* ── Boot overlay ── */
+  const bootEl = document.getElementById('boot-overlay');
+  if (bootEl) setTimeout(() => { bootEl.style.display='none'; }, 3000);
+
+  /* ── HUD latency ping ── */
+  const latencyEl = document.getElementById('hud-latency');
+  if (latencyEl) {
+    function pingLatency() {
+      const t0 = performance.now();
+      fetch('/api/status').then(() => {
+        latencyEl.textContent = Math.round(performance.now()-t0)+'ms';
+      }).catch(()=>{ latencyEl.textContent='--ms'; });
+    }
+    setTimeout(pingLatency, 2500);
+    setInterval(pingLatency, 30000);
+  }
+
   /* ── Scroll reveal for cards & stat-cards ── */
   const revealObserver = new IntersectionObserver((entries) => {
-    entries.forEach((entry, i) => {
+    entries.forEach((entry) => {
       if (entry.isIntersecting) {
         const el = entry.target;
         const delay = parseInt(el.dataset.delay || 0);
