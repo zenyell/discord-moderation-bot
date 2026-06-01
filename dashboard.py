@@ -28,7 +28,7 @@ print(f"[Dashboard] GUILD_ID={GUILD_ID!r}  BOT_TOKEN present={bool(BOT_TOKEN)}",
 
 db.init_db_sync()
 
-# All log toggle keys — must match the name= attributes in logging.html exactly
+# All log toggle keys — must match name= attributes in logging.html exactly
 LOG_TOGGLE_KEYS = [
     "log_message_delete",
     "log_message_edit",
@@ -46,8 +46,12 @@ LOG_TOGGLE_KEYS = [
     "log_voice",
 ]
 
+# Helper: prefix a settings key with the guild so it's scoped per-server
+def _gkey(key):
+    return f"{GUILD_ID}:{key}"
 
-# ── Context processor ──
+
+# ── Context processor ──────────────────────────────────────────────────────
 
 @app.context_processor
 def inject_user():
@@ -62,7 +66,7 @@ def inject_user():
     return {"current_user": current_user}
 
 
-# ── Error handlers ──
+# ── Error handlers ─────────────────────────────────────────────────────────
 
 @app.errorhandler(500)
 def internal_error(e):
@@ -104,7 +108,7 @@ def unhandled_exception(e):
     )
 
 
-# ── Discord API helpers ──
+# ── Discord API helpers ────────────────────────────────────────────────────
 
 def _discord_headers():
     return {
@@ -241,7 +245,7 @@ def login_required(f):
     return decorated
 
 
-# ── Core routes ──
+# ── Core routes ────────────────────────────────────────────────────────────
 
 @app.route("/", methods=["GET"])
 @login_required
@@ -294,32 +298,32 @@ def api_status():
         return jsonify({"online": False, "reason": str(e)})
 
 
-# ── Settings ──
+# ── Settings ───────────────────────────────────────────────────────────────
 
 @app.route("/settings", methods=["GET", "POST"])
 @login_required
 def settings():
     if request.method == "POST":
-        db.set_setting_sync("auto_role_id", request.form.get("auto_role_id", ""))
-        db.set_setting_sync("bad_words",    request.form.get("bad_words", ""))
-        db.set_setting_sync("spam_limit",   request.form.get("spam_limit", ""))
-        db.set_setting_sync("spam_window",  request.form.get("spam_window", ""))
-        db.set_setting_sync("spam_timeout", request.form.get("spam_timeout", ""))
+        db.set_setting_sync(_gkey("auto_role_id"), request.form.get("auto_role_id", ""))
+        db.set_setting_sync(_gkey("bad_words"),    request.form.get("bad_words", ""))
+        db.set_setting_sync(_gkey("spam_limit"),   request.form.get("spam_limit", ""))
+        db.set_setting_sync(_gkey("spam_window"),  request.form.get("spam_window", ""))
+        db.set_setting_sync(_gkey("spam_timeout"), request.form.get("spam_timeout", ""))
         flash("Settings saved.")
         return redirect(url_for("settings"))
     cfg = {
-        "auto_role_id": db.get_setting_sync("auto_role_id", ""),
-        "bad_words":    db.get_setting_sync("bad_words", os.getenv("BAD_WORDS", "")),
-        "spam_limit":   db.get_setting_sync("spam_limit",  os.getenv("SPAM_MESSAGE_LIMIT", "6")),
-        "spam_window":  db.get_setting_sync("spam_window", os.getenv("SPAM_WINDOW_SECONDS", "8")),
-        "spam_timeout": db.get_setting_sync("spam_timeout", os.getenv("SPAM_TIMEOUT_MINUTES", "5")),
+        "auto_role_id": db.get_setting_sync(_gkey("auto_role_id"), ""),
+        "bad_words":    db.get_setting_sync(_gkey("bad_words"), os.getenv("BAD_WORDS", "")),
+        "spam_limit":   db.get_setting_sync(_gkey("spam_limit"),  os.getenv("SPAM_MESSAGE_LIMIT", "6")),
+        "spam_window":  db.get_setting_sync(_gkey("spam_window"), os.getenv("SPAM_WINDOW_SECONDS", "8")),
+        "spam_timeout": db.get_setting_sync(_gkey("spam_timeout"), os.getenv("SPAM_TIMEOUT_MINUTES", "5")),
         "client_id":    os.getenv("DISCORD_CLIENT_ID", ""),
         "redirect_uri": os.getenv("DISCORD_REDIRECT_URI", ""),
     }
     return render_template("settings.html", cfg=cfg)
 
 
-# ── Moderation ──
+# ── Moderation ─────────────────────────────────────────────────────────────
 
 @app.route("/moderation", methods=["GET", "POST"])
 @login_required
@@ -351,29 +355,31 @@ def moderation():
     return render_template("moderation.html", words=words, users=users)
 
 
-# ── Logging ──
+# ── Logging ────────────────────────────────────────────────────────────────
 
 @app.route("/logging", methods=["GET", "POST"])
 @login_required
 def logging_page():
     if request.method == "POST":
-        # Save log channel ID
-        db.set_setting_sync("log_channel_id", request.form.get("log_channel_id", ""))
-        # Save every toggle — unchecked boxes send nothing, so default to "0"
+        # Save channel ID scoped to this guild
+        db.set_setting_sync(_gkey("log_channel_id"), request.form.get("log_channel_id", ""))
+        # Save every toggle — unchecked boxes send nothing so we default to "0"
         for key in LOG_TOGGLE_KEYS:
             val = "1" if request.form.get(key) else "0"
-            db.set_setting_sync(key, val)
+            db.set_setting_sync(_gkey(key), val)
         flash("Log settings saved.")
         return redirect(url_for("logging_page"))
 
-    # Build cfg dict with current values from DB
-    cfg = {"log_channel_id": db.get_setting_sync("log_channel_id", "")}
+    # Load — use None as sentinel so we can tell "never saved" from "saved as 0"
+    cfg = {"log_channel_id": db.get_setting_sync(_gkey("log_channel_id"), "")}
     for key in LOG_TOGGLE_KEYS:
-        cfg[key] = db.get_setting_sync(key, "1")  # default ON
+        raw = db.get_setting_sync(_gkey(key), None)  # None = not yet saved
+        # Default to True only if never saved before
+        cfg[key] = (raw == "1") if raw is not None else True
     return render_template("logging.html", cfg=cfg)
 
 
-# ── Reaction Roles ──
+# ── Reaction Roles ─────────────────────────────────────────────────────────
 
 @app.route("/reaction-roles", methods=["GET", "POST"])
 @login_required
@@ -396,7 +402,7 @@ def reaction_roles():
     return render_template("reaction_roles.html", rr_list=db.get_reaction_roles_sync(GUILD_ID))
 
 
-# ── Autoroles ──
+# ── Autoroles ──────────────────────────────────────────────────────────────
 
 @app.route("/autoroles", methods=["GET", "POST"])
 @login_required
@@ -415,7 +421,7 @@ def autoroles():
     return render_template("autoroles.html", autoroles=db.get_autoroles_sync(GUILD_ID))
 
 
-# ── Tags ──
+# ── Tags ───────────────────────────────────────────────────────────────────
 
 @app.route("/tags", methods=["GET", "POST"])
 @login_required
@@ -435,7 +441,7 @@ def tags():
     return render_template("tags.html", tags=db.get_tags_sync(GUILD_ID))
 
 
-# ── Triggers ──
+# ── Triggers ───────────────────────────────────────────────────────────────
 
 @app.route("/triggers", methods=["GET", "POST"])
 @login_required
@@ -455,7 +461,7 @@ def triggers():
     return render_template("triggers.html", triggers=db.get_triggers_sync(GUILD_ID))
 
 
-# ── Greetings ──
+# ── Greetings ──────────────────────────────────────────────────────────────
 
 _GREETING_KEYS = [
     "welcome_enabled", "welcome_channel", "welcome_message",
@@ -469,9 +475,9 @@ def greetings():
     if request.method == "POST":
         for k in _GREETING_KEYS:
             if k.endswith("_enabled"):
-                db.set_setting_sync(k, "1" if request.form.get(k) else "0")
+                db.set_setting_sync(_gkey(k), "1" if request.form.get(k) else "0")
             else:
-                db.set_setting_sync(k, request.form.get(k, ""))
+                db.set_setting_sync(_gkey(k), request.form.get(k, ""))
         flash("Greetings saved.")
         return redirect(url_for("greetings"))
 
@@ -479,11 +485,11 @@ def greetings():
         pass
     cfg = Cfg()
     for k in _GREETING_KEYS:
-        setattr(cfg, k, db.get_setting_sync(k, ""))
+        setattr(cfg, k, db.get_setting_sync(_gkey(k), ""))
     return render_template("greetings.html", cfg=cfg)
 
 
-# ── Starboard ──
+# ── Starboard ──────────────────────────────────────────────────────────────
 
 _STARBOARD_KEYS = ["starboard_enabled", "starboard_channel", "starboard_min", "starboard_emoji"]
 
@@ -494,9 +500,9 @@ def starboard():
     if request.method == "POST":
         for k in _STARBOARD_KEYS:
             if k == "starboard_enabled":
-                db.set_setting_sync(k, "1" if request.form.get(k) else "0")
+                db.set_setting_sync(_gkey(k), "1" if request.form.get(k) else "0")
             else:
-                db.set_setting_sync(k, request.form.get(k, ""))
+                db.set_setting_sync(_gkey(k), request.form.get(k, ""))
         flash("Starboard settings saved.")
         return redirect(url_for("starboard"))
 
@@ -504,30 +510,30 @@ def starboard():
         pass
     cfg = Cfg()
     for k in _STARBOARD_KEYS:
-        setattr(cfg, k, db.get_setting_sync(k, ""))
+        setattr(cfg, k, db.get_setting_sync(_gkey(k), ""))
     return render_template("starboard.html", cfg=cfg)
 
 
-# ── Suggestions ──
+# ── Suggestions ────────────────────────────────────────────────────────────
 
 @app.route("/suggestions", methods=["GET", "POST"])
 @login_required
 def suggestions():
     if request.method == "POST":
-        db.set_setting_sync("suggestions_enabled", "1" if request.form.get("suggestions_enabled") else "0")
-        db.set_setting_sync("suggestions_channel", request.form.get("suggestions_channel", ""))
+        db.set_setting_sync(_gkey("suggestions_enabled"), "1" if request.form.get("suggestions_enabled") else "0")
+        db.set_setting_sync(_gkey("suggestions_channel"), request.form.get("suggestions_channel", ""))
         flash("Suggestions settings saved.")
         return redirect(url_for("suggestions"))
 
     class Cfg:
         pass
     cfg = Cfg()
-    cfg.suggestions_enabled = db.get_setting_sync("suggestions_enabled", "0")
-    cfg.suggestions_channel = db.get_setting_sync("suggestions_channel", "")
+    cfg.suggestions_enabled = db.get_setting_sync(_gkey("suggestions_enabled"), "0")
+    cfg.suggestions_channel = db.get_setting_sync(_gkey("suggestions_channel"), "")
     return render_template("suggestions.html", cfg=cfg, suggestions=db.get_suggestions_sync(GUILD_ID))
 
 
-# ── Command settings ──
+# ── Command settings ───────────────────────────────────────────────────────
 
 @app.route("/command-settings", methods=["GET", "POST"])
 @login_required
@@ -553,7 +559,7 @@ def command_settings():
     return render_template("command_settings.html", commands=db.ALL_COMMANDS, cmd_settings=cmd_settings)
 
 
-# ── User lookup ──
+# ── User lookup ────────────────────────────────────────────────────────────
 
 def _build_lookup_result(user_id: str) -> tuple[dict | None, str]:
     user_data, err = _fetch_discord_user(user_id)
@@ -704,7 +710,7 @@ def user_profile(user_id):
                            warns=warns, logs=logs, blacklisted=bl)
 
 
-# ── API ──
+# ── API ────────────────────────────────────────────────────────────────────
 
 @app.route("/api/profile/<user_id>")
 @login_required
