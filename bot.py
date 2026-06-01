@@ -346,6 +346,25 @@ async def on_member_join(member: discord.Member):
                 if role:
                     await member.add_roles(role, reason="Auto-role on join")
 
+        # ── Welcome greeting ──────────────────────────────────────────────────
+        if await db.get_setting("welcome_enabled", "0") == "1":
+            welcome_channel_id = await db.get_setting("welcome_channel", "")
+            welcome_message    = await db.get_setting("welcome_message", "")
+            if welcome_channel_id and welcome_message:
+                w_channel = member.guild.get_channel(int(welcome_channel_id))
+                if w_channel:
+                    msg = (
+                        welcome_message
+                        .replace("{user}", member.name)
+                        .replace("{mention}", member.mention)
+                        .replace("{server}", member.guild.name)
+                        .replace("{count}", str(member.guild.member_count))
+                    )
+                    try:
+                        await w_channel.send(msg)
+                    except Exception as e:
+                        print(f"[Bot] welcome send error: {e}", flush=True)
+
         if await db.get_setting("log_join", "1") == "1":
             embed = _build_log_embed(
                 "join",
@@ -363,6 +382,25 @@ async def on_member_join(member: discord.Member):
 @bot.event
 async def on_member_remove(member: discord.Member):
     try:
+        # ── Farewell greeting ─────────────────────────────────────────────────
+        if await db.get_setting("farewell_enabled", "0") == "1":
+            farewell_channel_id = await db.get_setting("farewell_channel", "")
+            farewell_message    = await db.get_setting("farewell_message", "")
+            if farewell_channel_id and farewell_message:
+                f_channel = member.guild.get_channel(int(farewell_channel_id))
+                if f_channel:
+                    msg = (
+                        farewell_message
+                        .replace("{user}", member.name)
+                        .replace("{mention}", member.mention)
+                        .replace("{server}", member.guild.name)
+                        .replace("{count}", str(member.guild.member_count))
+                    )
+                    try:
+                        await f_channel.send(msg)
+                    except Exception as e:
+                        print(f"[Bot] farewell send error: {e}", flush=True)
+
         if await db.get_setting("log_leave", "1") == "1":
             roles = [r.mention for r in reversed(member.roles) if r.name != "@everyone"]
             embed = _build_log_embed(
