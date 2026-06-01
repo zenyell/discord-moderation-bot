@@ -119,7 +119,7 @@
       --ios-blue:      #7ec8ff;
       --ios-teal:      #5de8d8;
       --ios-green:     #44e88a;
-      --ios-orange:    #ffd580;   /* warm star colour — only used for orange-specific UI */
+      --ios-orange:    #ffd580;
       --ios-red:       #ff6b6b;
       --ios-pink:      #e08aff;
       --ios-yellow:    #ffe588;
@@ -176,7 +176,6 @@
         radial-gradient(ellipse 60% 70% at 60% 90%, rgba(10,132,255,0.10) 0%, transparent 60%),
         linear-gradient(160deg, #ede8fa 0%, #e0d8f8 100%);
     }
-    /* Midnight — deep navy with cyan glows */
     [data-theme="midnight"] body::before {
       background:
         radial-gradient(ellipse 65% 55% at 10% 15%, rgba(0,100,200,0.45) 0%, transparent 60%),
@@ -185,7 +184,6 @@
         radial-gradient(ellipse 35% 35% at 85% 65%, rgba(0,80,160,0.20)  0%, transparent 50%),
         linear-gradient(160deg, #00060f 0%, #000d1e 45%, #001228 100%);
     }
-    /* Space — pure void black with distant, very subtle nebula dust */
     [data-theme="space"] body::before {
       background:
         radial-gradient(ellipse 55% 40% at 12% 18%,  rgba(80,30,160,0.18)  0%, transparent 60%),
@@ -282,13 +280,11 @@
       box-shadow: var(--glass-inset), 0 4px 16px rgba(191,90,242,0.20);
       border: 1px solid rgba(191,90,242,0.30);
     }
-    /* Midnight active state — cyan glow */
     [data-theme="midnight"] .nav-item.active {
       background: linear-gradient(135deg, rgba(0,180,255,0.22), rgba(0,80,160,0.18));
       box-shadow: var(--glass-inset), 0 4px 16px rgba(0,180,255,0.22);
       border-color: rgba(0,200,255,0.30);
     }
-    /* Space active state — cool stellar blue-white glow */
     [data-theme="space"] .nav-item.active {
       background: linear-gradient(135deg, rgba(140,110,255,0.22), rgba(100,180,255,0.14));
       box-shadow: var(--glass-inset), 0 4px 20px rgba(160,140,255,0.25);
@@ -416,57 +412,386 @@
       margin-bottom: 16px;
     }
 
-    /* ── Buttons ── */
-    .btn {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 9px 18px; border-radius: var(--r-xl);
-      font-size: 13px; font-weight: 600;
-      transition: all var(--t-spring);
-      border: 1px solid transparent;
-      cursor: pointer;
+    /* ═══════════════════════════════════════════════════════
+       APPLE iOS 26 LIQUID GLASS BUTTONS
+       Authentic frosted glass with refraction, shimmer,
+       inset top-light, depth shadow & ripple on click.
+    ═══════════════════════════════════════════════════════ */
+
+    /* -- Shimmer keyframe -- */
+    @keyframes lg-shimmer {
+      0%   { transform: translateX(-100%) skewX(-12deg); opacity: 0; }
+      18%  { opacity: 1; }
+      60%  { opacity: 0.6; }
+      100% { transform: translateX(280%) skewX(-12deg); opacity: 0; }
     }
+
+    /* -- Ripple keyframe -- */
+    @keyframes lg-ripple {
+      from { transform: scale(0); opacity: 0.45; }
+      to   { transform: scale(5); opacity: 0; }
+    }
+
+    /* -- Base liquid glass button -- */
+    .btn {
+      /* Layout */
+      position: relative;
+      overflow: hidden;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 9px 20px;
+      border-radius: 980px; /* pill */
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 650;
+      letter-spacing: -0.1px;
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+      text-decoration: none;
+
+      /* Glass core */
+      background: rgba(255, 255, 255, 0.10);
+      backdrop-filter: blur(28px) saturate(180%);
+      -webkit-backdrop-filter: blur(28px) saturate(180%);
+
+      /* Border — subtle frosted rim */
+      border: 1px solid rgba(255, 255, 255, 0.22);
+
+      /* Depth & top-light inset */
+      box-shadow:
+        /* top highlight — mimics the refraction light strip */
+        inset 0 1.5px 0 rgba(255, 255, 255, 0.38),
+        /* bottom inner shadow — depth separation */
+        inset 0 -1.2px 0 rgba(0, 0, 0, 0.22),
+        /* outer ambient drop shadow */
+        0 2px 10px rgba(0, 0, 0, 0.30),
+        0 6px 24px rgba(0, 0, 0, 0.22);
+
+      /* Frosted surface gradient — the "refractive" tint */
+      background-image: linear-gradient(
+        158deg,
+        rgba(255, 255, 255, 0.22) 0%,
+        rgba(255, 255, 255, 0.06) 38%,
+        rgba(255, 255, 255, 0.00) 55%,
+        rgba(0, 0, 0, 0.06) 100%
+      );
+
+      color: rgba(255, 255, 255, 0.92);
+      text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
+
+      transition:
+        transform 320ms cubic-bezier(0.34, 1.36, 0.64, 1),
+        box-shadow 280ms cubic-bezier(0.16, 1, 0.3, 1),
+        background-color 240ms ease,
+        border-color 240ms ease,
+        backdrop-filter 240ms ease;
+
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* -- Refraction highlight strip (pseudo-element) -- */
+    .btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      /* Curved highlight that looks like light bending through glass */
+      background: radial-gradient(
+        ellipse 80% 50% at 50% -10%,
+        rgba(255, 255, 255, 0.30) 0%,
+        rgba(255, 255, 255, 0.08) 50%,
+        transparent 100%
+      );
+      pointer-events: none;
+      transition: opacity 280ms ease;
+    }
+
+    /* -- Shimmer sweep (pseudo-element) -- */
+    .btn::after {
+      content: '';
+      position: absolute;
+      top: 0; bottom: 0;
+      left: -60%;
+      width: 40%;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.18) 40%,
+        rgba(255, 255, 255, 0.28) 50%,
+        rgba(255, 255, 255, 0.18) 60%,
+        transparent 100%
+      );
+      pointer-events: none;
+      opacity: 0;
+      transition: none;
+    }
+
+    /* Shimmer fires on hover */
+    .btn:hover::after {
+      animation: lg-shimmer 650ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* -- Hover state — glass "lifts" -- */
+    .btn:hover {
+      transform: translateY(-2px) scale(1.015);
+      border-color: rgba(255, 255, 255, 0.34);
+      background-color: rgba(255, 255, 255, 0.16);
+      box-shadow:
+        inset 0 1.8px 0 rgba(255, 255, 255, 0.50),
+        inset 0 -1.2px 0 rgba(0, 0, 0, 0.24),
+        0 6px 24px rgba(0, 0, 0, 0.38),
+        0 14px 48px rgba(0, 0, 0, 0.28);
+    }
+
+    /* -- Active / pressed — glass "squishes" -- */
+    .btn:active {
+      transform: translateY(0px) scale(0.975);
+      transition-duration: 100ms;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.28),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.20),
+        0 1px 6px rgba(0, 0, 0, 0.30);
+    }
+
+    /* -- Ripple wave element -- */
+    .btn .lg-ripple {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.28);
+      pointer-events: none;
+      width: 80px; height: 80px;
+      margin-top: -40px; margin-left: -40px;
+      animation: lg-ripple 520ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* ─────────────────────────────────────
+       VARIANT: Primary — purple-blue tint
+    ───────────────────────────────────── */
     .btn-primary {
-      background: linear-gradient(135deg, var(--ios-purple), var(--ios-blue));
+      background-color: rgba(191, 90, 242, 0.30);
+      background-image: linear-gradient(
+        150deg,
+        rgba(191, 90, 242, 0.55) 0%,
+        rgba(100, 100, 255, 0.35) 40%,
+        rgba(10, 132, 255, 0.35) 100%
+      );
+      border-color: rgba(191, 90, 242, 0.45);
+      box-shadow:
+        inset 0 1.5px 0 rgba(255, 255, 255, 0.40),
+        inset 0 -1.2px 0 rgba(0, 0, 0, 0.25),
+        0 4px 20px rgba(191, 90, 242, 0.40),
+        0 8px 36px rgba(10, 132, 255, 0.20);
       color: #fff;
-      box-shadow: 0 4px 20px rgba(191,90,242,0.45), var(--glass-inset);
     }
     .btn-primary:hover {
-      box-shadow: 0 8px 32px rgba(191,90,242,0.60), var(--glass-inset);
-      transform: translateY(-1px);
+      background-color: rgba(191, 90, 242, 0.45);
+      border-color: rgba(191, 90, 242, 0.60);
+      box-shadow:
+        inset 0 1.8px 0 rgba(255, 255, 255, 0.50),
+        inset 0 -1.2px 0 rgba(0, 0, 0, 0.28),
+        0 6px 28px rgba(191, 90, 242, 0.58),
+        0 12px 48px rgba(10, 132, 255, 0.28);
     }
+
+    /* Midnight theme variant */
     [data-theme="midnight"] .btn-primary {
-      box-shadow: 0 4px 20px rgba(0,180,255,0.40), var(--glass-inset);
+      background-image: linear-gradient(150deg,
+        rgba(0, 180, 255, 0.45) 0%,
+        rgba(0, 100, 200, 0.35) 100%);
+      border-color: rgba(0, 200, 255, 0.40);
+      box-shadow:
+        inset 0 1.5px 0 rgba(255, 255, 255, 0.35),
+        inset 0 -1.2px 0 rgba(0, 0, 0, 0.25),
+        0 4px 22px rgba(0, 180, 255, 0.45),
+        0 8px 36px rgba(0, 100, 200, 0.25);
     }
     [data-theme="midnight"] .btn-primary:hover {
-      box-shadow: 0 8px 32px rgba(0,180,255,0.55), var(--glass-inset);
+      box-shadow:
+        inset 0 1.8px 0 rgba(255, 255, 255, 0.48),
+        inset 0 -1.2px 0 rgba(0, 0, 0, 0.28),
+        0 6px 30px rgba(0, 180, 255, 0.62),
+        0 12px 50px rgba(0, 100, 200, 0.35);
     }
+
+    /* Space theme variant */
     [data-theme="space"] .btn-primary {
-      background: linear-gradient(135deg, #c8aaff, #7ec8ff);
-      color: #05000f;
-      box-shadow: 0 4px 22px rgba(180,160,255,0.40), var(--glass-inset);
+      background-image: linear-gradient(150deg,
+        rgba(180, 150, 255, 0.45) 0%,
+        rgba(100, 170, 255, 0.35) 100%);
+      border-color: rgba(180, 160, 255, 0.40);
+      color: rgba(240, 235, 255, 1);
+      box-shadow:
+        inset 0 1.5px 0 rgba(255, 255, 255, 0.35),
+        inset 0 -1.2px 0 rgba(0, 0, 0, 0.30),
+        0 4px 22px rgba(160, 140, 255, 0.40),
+        0 8px 36px rgba(100, 160, 255, 0.22);
     }
     [data-theme="space"] .btn-primary:hover {
-      box-shadow: 0 8px 36px rgba(180,160,255,0.58), var(--glass-inset);
+      box-shadow:
+        inset 0 1.8px 0 rgba(255, 255, 255, 0.46),
+        inset 0 -1.2px 0 rgba(0, 0, 0, 0.32),
+        0 6px 30px rgba(160, 140, 255, 0.58),
+        0 14px 52px rgba(100, 160, 255, 0.30);
     }
+
+    /* Light theme variant */
+    [data-theme="light"] .btn-primary {
+      background-image: linear-gradient(150deg,
+        rgba(191, 90, 242, 0.70) 0%,
+        rgba(10, 132, 255, 0.60) 100%);
+      border-color: rgba(191, 90, 242, 0.50);
+      color: #fff;
+      text-shadow: 0 1px 6px rgba(80, 0, 160, 0.40);
+      box-shadow:
+        inset 0 1.5px 0 rgba(255, 255, 255, 0.55),
+        inset 0 -1.2px 0 rgba(0, 0, 0, 0.18),
+        0 4px 18px rgba(191, 90, 242, 0.40),
+        0 8px 32px rgba(10, 132, 255, 0.22);
+    }
+
+    /* ─────────────────────────────────────
+       VARIANT: Glass (neutral)
+    ───────────────────────────────────── */
     .btn-glass {
-      background: var(--glass-bg-light);
-      backdrop-filter: var(--glass-blur);
-      -webkit-backdrop-filter: var(--glass-blur);
-      border: 1px solid var(--glass-border);
+      background-color: rgba(255, 255, 255, 0.08);
+      background-image: linear-gradient(
+        158deg,
+        rgba(255, 255, 255, 0.18) 0%,
+        rgba(255, 255, 255, 0.04) 50%,
+        rgba(0, 0, 0, 0.04) 100%
+      );
+      border-color: rgba(255, 255, 255, 0.18);
       color: var(--text);
-      box-shadow: var(--glass-inset);
     }
     .btn-glass:hover {
-      background: var(--glass-bg-hover);
-      box-shadow: var(--shadow-md), var(--glass-inset);
-      transform: translateY(-1px);
+      background-color: rgba(255, 255, 255, 0.14);
+      border-color: rgba(255, 255, 255, 0.30);
     }
+
+    /* ─────────────────────────────────────
+       VARIANT: Danger — red tint
+    ───────────────────────────────────── */
     .btn-danger {
-      background: rgba(255,69,58,0.18);
-      border: 1px solid rgba(255,69,58,0.35);
-      color: var(--ios-red);
+      background-color: rgba(255, 69, 58, 0.18);
+      background-image: linear-gradient(
+        150deg,
+        rgba(255, 100, 80, 0.32) 0%,
+        rgba(255, 50, 50, 0.18) 100%
+      );
+      border-color: rgba(255, 69, 58, 0.38);
+      color: #ff6b5b;
+      text-shadow: 0 1px 6px rgba(255, 50, 30, 0.35);
+      box-shadow:
+        inset 0 1.5px 0 rgba(255, 200, 180, 0.30),
+        inset 0 -1.2px 0 rgba(0, 0, 0, 0.22),
+        0 3px 14px rgba(255, 69, 58, 0.25),
+        0 6px 24px rgba(0, 0, 0, 0.20);
     }
-    .btn-danger:hover { background: rgba(255,69,58,0.28); }
+    .btn-danger:hover {
+      background-color: rgba(255, 69, 58, 0.28);
+      border-color: rgba(255, 69, 58, 0.55);
+      color: #ff8070;
+      box-shadow:
+        inset 0 1.8px 0 rgba(255, 200, 180, 0.40),
+        inset 0 -1.2px 0 rgba(0, 0, 0, 0.25),
+        0 5px 20px rgba(255, 69, 58, 0.45),
+        0 10px 36px rgba(0, 0, 0, 0.28);
+    }
+
+    /* ─────────────────────────────────────
+       VARIANT: Success — green tint
+    ───────────────────────────────────── */
+    .btn-success {
+      background-color: rgba(48, 209, 88, 0.18);
+      background-image: linear-gradient(
+        150deg,
+        rgba(60, 230, 100, 0.32) 0%,
+        rgba(30, 180, 70, 0.18) 100%
+      );
+      border-color: rgba(48, 209, 88, 0.35);
+      color: #50e080;
+      box-shadow:
+        inset 0 1.5px 0 rgba(180, 255, 200, 0.30),
+        inset 0 -1.2px 0 rgba(0, 0, 0, 0.22),
+        0 3px 14px rgba(48, 209, 88, 0.22),
+        0 6px 24px rgba(0, 0, 0, 0.20);
+    }
+    .btn-success:hover {
+      background-color: rgba(48, 209, 88, 0.28);
+      border-color: rgba(48, 209, 88, 0.52);
+      box-shadow:
+        inset 0 1.8px 0 rgba(200, 255, 220, 0.40),
+        inset 0 -1.2px 0 rgba(0, 0, 0, 0.25),
+        0 5px 20px rgba(48, 209, 88, 0.42),
+        0 10px 36px rgba(0, 0, 0, 0.28);
+    }
+
+    /* ─────────────────────────────────────
+       VARIANT: Warning — orange tint
+    ───────────────────────────────────── */
+    .btn-warning {
+      background-color: rgba(255, 159, 10, 0.18);
+      background-image: linear-gradient(
+        150deg,
+        rgba(255, 180, 40, 0.32) 0%,
+        rgba(255, 120, 10, 0.18) 100%
+      );
+      border-color: rgba(255, 159, 10, 0.35);
+      color: #ffb830;
+      box-shadow:
+        inset 0 1.5px 0 rgba(255, 230, 160, 0.30),
+        inset 0 -1.2px 0 rgba(0, 0, 0, 0.22),
+        0 3px 14px rgba(255, 159, 10, 0.22),
+        0 6px 24px rgba(0, 0, 0, 0.20);
+    }
+    .btn-warning:hover {
+      background-color: rgba(255, 159, 10, 0.28);
+      border-color: rgba(255, 159, 10, 0.52);
+      box-shadow:
+        inset 0 1.8px 0 rgba(255, 230, 160, 0.40),
+        inset 0 -1.2px 0 rgba(0, 0, 0, 0.25),
+        0 5px 20px rgba(255, 159, 10, 0.42),
+        0 10px 36px rgba(0, 0, 0, 0.28);
+    }
+
+    /* -- Light theme neutral glass buttons -- */
+    [data-theme="light"] .btn {
+      background-color: rgba(255, 255, 255, 0.55);
+      background-image: linear-gradient(
+        158deg,
+        rgba(255, 255, 255, 0.85) 0%,
+        rgba(255, 255, 255, 0.40) 50%,
+        rgba(220, 210, 250, 0.20) 100%
+      );
+      border-color: rgba(160, 120, 220, 0.25);
+      color: rgba(30, 15, 60, 0.90);
+      text-shadow: none;
+      box-shadow:
+        inset 0 1.5px 0 rgba(255, 255, 255, 0.95),
+        inset 0 -1.2px 0 rgba(100, 60, 180, 0.10),
+        0 2px 10px rgba(100, 60, 180, 0.12),
+        0 6px 24px rgba(100, 60, 180, 0.08);
+    }
+    [data-theme="light"] .btn:hover {
+      background-color: rgba(255, 255, 255, 0.78);
+      border-color: rgba(160, 120, 220, 0.38);
+      box-shadow:
+        inset 0 1.8px 0 rgba(255, 255, 255, 0.98),
+        inset 0 -1.2px 0 rgba(100, 60, 180, 0.12),
+        0 6px 24px rgba(100, 60, 180, 0.18),
+        0 14px 44px rgba(100, 60, 180, 0.12);
+    }
+    [data-theme="light"] .btn-danger {
+      color: #c0251a;
+      text-shadow: none;
+    }
+    [data-theme="light"] .btn-success {
+      color: #1a7a30;
+      text-shadow: none;
+    }
 
     /* ── Form inputs ── */
     .form-group { display: flex; flex-direction: column; gap: 6px; }
@@ -628,10 +953,6 @@
       65%  { transform: scale(1.02) translateY(2px); }
       100% { opacity: 1; transform: scale(1) translateY(0); }
     }
-    @keyframes ripple-spread {
-      from { transform: scale(0); opacity: 0.40; }
-      to   { transform: scale(4); opacity: 0; }
-    }
     @keyframes brand-drop {
       from { opacity: 0; transform: translateY(-8px); }
       to   { opacity: 1; transform: translateY(0); }
@@ -648,16 +969,6 @@
     .sidebar-brand  { animation: brand-drop 380ms cubic-bezier(0.34,1.56,0.64,1) 80ms both; }
     .nav-item       { opacity: 0; animation: nav-slide 340ms cubic-bezier(0.34,1.46,0.64,1) forwards; }
     .topbar         { animation: topbar-enter 360ms cubic-bezier(0.34,1.30,0.64,1) 60ms both; }
-
-    .ripple-host { position: relative; overflow: hidden; }
-    .ripple-wave {
-      position: absolute; border-radius: 50%;
-      background: rgba(255,255,255,0.30);
-      pointer-events: none;
-      width: 80px; height: 80px;
-      margin-top: -40px; margin-left: -40px;
-      animation: ripple-spread 520ms cubic-bezier(0.16,1,0.3,1) forwards;
-    }
 
     .nav-item::before {
       content: '';
@@ -931,255 +1242,111 @@ document.querySelectorAll('.stat-value').forEach(function(el,idx){
   el.style.animationDelay=(200+idx*80)+'ms';
   var start=null,dur=900;
   var ease=function(t){return 1-Math.pow(2,-10*t)*Math.cos(20*t);};
-  var tick=function(ts){if(!start)start=ts;var p=Math.min((ts-start)/dur,1);el.textContent=Math.round(ease(p)*target).toLocaleString();if(p<1)requestAnimationFrame(tick);else el.textContent=target.toLocaleString();};
-  setTimeout(function(){requestAnimationFrame(tick);},250+idx*80);
+  var tick=function(ts){
+    if(!start)start=ts;
+    var p=Math.min((ts-start)/dur,1);
+    el.textContent=Math.round(ease(p)*target).toLocaleString();
+    if(p<1)requestAnimationFrame(tick);
+  };
+  setTimeout(function(){requestAnimationFrame(tick);},200+idx*80);
 });
 
-// Ripple
-document.addEventListener('pointerdown',function(e){
-  var btn=e.target.closest('.btn,.nav-item,.topbar-btn');
-  if(!btn)return;
-  btn.classList.add('ripple-host');
-  var r=document.createElement('span');
-  r.className='ripple-wave';
-  var rect=btn.getBoundingClientRect();
-  r.style.left=(e.clientX-rect.left)+'px';r.style.top=(e.clientY-rect.top)+'px';
-  btn.appendChild(r);
-  setTimeout(function(){r.remove();},580);
-});
+/* ══ LIQUID GLASS RIPPLE — injected on every .btn click ══ */
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest('.btn');
+  if (!btn) return;
+  var rect = btn.getBoundingClientRect();
+  var ripple = document.createElement('span');
+  ripple.className = 'lg-ripple';
+  ripple.style.left = (e.clientX - rect.left) + 'px';
+  ripple.style.top  = (e.clientY - rect.top)  + 'px';
+  btn.appendChild(ripple);
+  ripple.addEventListener('animationend', function(){ ripple.remove(); });
+}, true);
 
-// Magnetic nav glow
+// Nav item mouse-position glow
 document.querySelectorAll('.nav-item').forEach(function(item){
   item.addEventListener('mousemove',function(e){
-    var rect=item.getBoundingClientRect();
-    item.style.setProperty('--mx',((e.clientX-rect.left)/rect.width*100).toFixed(1)+'%');
-    item.style.setProperty('--my',((e.clientY-rect.top)/rect.height*100).toFixed(1)+'%');
+    var r=item.getBoundingClientRect();
+    var x=((e.clientX-r.left)/r.width*100).toFixed(1)+'%';
+    var y=((e.clientY-r.top)/r.height*100).toFixed(1)+'%';
+    item.style.setProperty('--mx',x);
+    item.style.setProperty('--my',y);
   });
 });
 
-// Card tilt
-document.querySelectorAll('.card,.stat-card').forEach(function(card){
-  card.addEventListener('mousemove',function(e){
-    var rect=card.getBoundingClientRect();
-    var cx=(e.clientX-rect.left)/rect.width-0.5;
-    var cy=(e.clientY-rect.top)/rect.height-0.5;
-    card.style.transform='perspective(600px) rotateY('+(cx*5)+'deg) rotateX('+(-cy*5)+'deg) translateY(-3px) scale(1.010)';
-  });
-  card.addEventListener('mouseleave',function(){
-    card.style.transition='transform 480ms cubic-bezier(0.34,1.46,0.64,1)';
-    card.style.transform='';
-    setTimeout(function(){card.style.transition='';},480);
-  });
-});
-
-// Page leave
-document.querySelectorAll('a[href]').forEach(function(link){
-  var href=link.getAttribute('href');
-  if(!href||href.startsWith('#')||href.startsWith('javascript')||link.target==='_blank')return;
-  link.addEventListener('click',function(e){
-    if(link.href===window.location.href)return;
-    e.preventDefault();
-    document.body.classList.add('leaving');
-    setTimeout(function(){window.location.href=link.href;},190);
-  });
-});
-
-// Orb particles — space theme uses ONLY very dim cool nebula purples (no orange/pink/green)
-var ORB_COLORS = {
-  dark:     ['rgba(120,60,255,0.20)','rgba(255,45,150,0.14)','rgba(10,132,255,0.13)','rgba(50,220,180,0.11)','rgba(191,90,242,0.17)','rgba(255,159,10,0.09)'],
-  light:    ['rgba(160,100,255,0.14)','rgba(191,90,242,0.10)','rgba(10,132,255,0.09)','rgba(100,180,255,0.08)','rgba(220,160,255,0.12)','rgba(80,160,255,0.07)'],
-  midnight: ['rgba(0,100,220,0.22)','rgba(0,180,255,0.18)','rgba(0,60,180,0.16)','rgba(0,220,255,0.12)','rgba(0,140,200,0.20)','rgba(30,100,255,0.14)'],
-  space:    ['rgba(60,20,120,0.12)','rgba(80,40,160,0.10)','rgba(40,10,100,0.10)','rgba(100,60,180,0.08)','rgba(50,20,130,0.09)','rgba(70,30,150,0.07)']
+/* Orb particles */
+var ORB_COLORS={
+  dark:    ['rgba(191,90,242,0.55)','rgba(10,132,255,0.45)','rgba(50,173,230,0.40)','rgba(120,50,255,0.50)'],
+  light:   ['rgba(160,100,255,0.30)','rgba(10,132,255,0.25)','rgba(191,90,242,0.25)','rgba(80,40,200,0.22)'],
+  midnight:['rgba(0,180,255,0.55)','rgba(0,80,200,0.50)','rgba(0,220,255,0.40)','rgba(0,120,220,0.45)'],
+  space:   ['rgba(100,70,200,0.30)','rgba(140,100,255,0.25)','rgba(60,40,160,0.22)','rgba(100,80,220,0.20)']
 };
 function respawnOrbs(theme){
   var layer=document.getElementById('orb-layer');
   layer.innerHTML='';
   var colors=ORB_COLORS[theme]||ORB_COLORS.dark;
   for(var i=0;i<6;i++){
-    var orb=document.createElement('div');
-    orb.className='orb-particle';
-    var sz=170+Math.random()*220;
-    orb.style.cssText='width:'+sz+'px;height:'+sz+'px;left:'+(Math.random()*100)+'%;top:'+(Math.random()*100)+'%;background:'+colors[i%colors.length]+';--tx:'+((Math.random()-0.5)*150)+'px;--ty:'+((Math.random()-0.5)*150)+'px;animation-duration:'+(14+Math.random()*18)+'s;animation-delay:'+(Math.random()*-22)+'s';
-    layer.appendChild(orb);
+    var o=document.createElement('div');
+    o.className='orb-particle';
+    var sz=80+Math.random()*140;
+    o.style.cssText=[
+      'width:'+sz+'px','height:'+sz+'px',
+      'left:'+(Math.random()*100)+'%','top:'+(Math.random()*100)+'%',
+      'background:'+colors[i%colors.length],
+      '--tx:'+((Math.random()-0.5)*120)+'px',
+      '--ty:'+((Math.random()-0.5)*120)+'px',
+      'animation-duration:'+(14+Math.random()*18)+'s',
+      'animation-delay:'+(-Math.random()*16)+'s'
+    ].join(';');
+    layer.appendChild(o);
   }
 }
 
-/* ════════════════════════════════════════
-   STAR FIELD — dense, realistic, layered
-   ~800 stars: tiny dim background field +
-   medium field + bright foreground +
-   rare coloured stellar giants +
-   shooting stars
-════════════════════════════════════════ */
-var starAnimId=null;
+/* Star canvas (space theme) */
+var starCtx=null,starAnim=null;
 function manageStarCanvas(theme){
   var canvas=document.getElementById('star-canvas');
-  if(theme!=='space'){
-    if(starAnimId){cancelAnimationFrame(starAnimId);starAnimId=null;}
-    canvas.style.display='none';
-    return;
-  }
-  canvas.style.display='block';
-  initStarCanvas(canvas);
-}
-function initStarCanvas(canvas){
-  if(starAnimId){cancelAnimationFrame(starAnimId);starAnimId=null;}
-  var ctx=canvas.getContext('2d');
-  var W,H,stars=[],shooters=[];
-
-  function resize(){
-    W=canvas.width=window.innerWidth;
-    H=canvas.height=window.innerHeight;
-  }
-  resize();
-  window.addEventListener('resize',resize);
-
-  /* Build star catalogue */
-  stars=[];
-  var total=Math.round((window.innerWidth*window.innerHeight)/1400); // density-based count
-  total=Math.max(500,Math.min(total,1200));
-
-  for(var i=0;i<total;i++){
-    var roll=Math.random();
-    var r,baseAlpha,twinkleAmp,twinkleSpeed,color;
-
-    if(roll<0.55){
-      /* Tier 1: faint background dust */
-      r=0.3+Math.random()*0.4;
-      baseAlpha=0.18+Math.random()*0.18;
-      twinkleAmp=0.06; twinkleSpeed=0.006+Math.random()*0.006;
-      color='255,255,255';
-    } else if(roll<0.82){
-      /* Tier 2: normal stars */
-      r=0.5+Math.random()*0.6;
-      baseAlpha=0.38+Math.random()*0.28;
-      twinkleAmp=0.18; twinkleSpeed=0.004+Math.random()*0.004;
-      color='255,255,255';
-    } else if(roll<0.94){
-      /* Tier 3: brighter stars */
-      r=0.8+Math.random()*0.7;
-      baseAlpha=0.60+Math.random()*0.28;
-      twinkleAmp=0.28; twinkleSpeed=0.002+Math.random()*0.003;
-      color='255,255,255';
-    } else if(roll<0.985){
-      /* Tier 4: bright stellar whites */
-      r=1.1+Math.random()*0.8;
-      baseAlpha=0.75+Math.random()*0.22;
-      twinkleAmp=0.35; twinkleSpeed=0.0015+Math.random()*0.002;
-      color='255,255,255';
-    } else {
-      /* Tier 5: rare coloured stars — blue giants, orange dwarfs, red giants */
-      r=1.2+Math.random()*1.0;
-      baseAlpha=0.55+Math.random()*0.30;
-      twinkleAmp=0.40; twinkleSpeed=0.001+Math.random()*0.0015;
-      var sc=Math.floor(Math.random()*5);
-      if(sc===0)color='180,210,255';       /* blue-white */
-      else if(sc===1)color='210,230,255';  /* cool blue */
-      else if(sc===2)color='255,230,190';  /* warm yellow-white */
-      else if(sc===3)color='255,200,160';  /* orange dwarf */
-      else color='255,175,175';            /* red giant */
-    }
-
-    stars.push({
-      x:Math.random()*W, y:Math.random()*H,
-      r:r, baseAlpha:baseAlpha, alpha:baseAlpha,
-      phase:Math.random()*Math.PI*2,
-      twinkleSpeed:twinkleSpeed, twinkleAmp:twinkleAmp,
-      color:color
-    });
-  }
-
-  /* Shooting star factory */
-  function spawnShooter(){
-    var angle=-0.4+Math.random()*0.5; /* mostly left-to-right, slight downward */
-    var speed=6+Math.random()*10;
-    var len=80+Math.random()*180;
-    shooters.push({
-      x:Math.random()*W*1.2, y:Math.random()*H*0.6,
-      vx:Math.cos(angle)*speed, vy:Math.sin(angle)*speed,
-      len:len, alpha:0.9, fade:0.018+Math.random()*0.012,
-      width:0.6+Math.random()*0.8
-    });
-  }
-  /* Schedule shooters randomly */
-  function scheduleShooter(){
-    setTimeout(function(){
-      if(document.documentElement.getAttribute('data-theme')==='space') spawnShooter();
-      scheduleShooter();
-    },3000+Math.random()*9000);
-  }
-  scheduleShooter();
-
+  if(theme!=='space'){cancelAnimationFrame(starAnim);return;}
+  canvas.width=window.innerWidth;canvas.height=window.innerHeight;
+  starCtx=canvas.getContext('2d');
+  var stars=[];
+  for(var i=0;i<200;i++)stars.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,r:Math.random()*1.2+0.2,a:Math.random(),s:0.001+Math.random()*0.003,d:Math.random()>0.5?1:-1});
   function draw(){
-    starAnimId=requestAnimationFrame(draw);
-    if(document.documentElement.getAttribute('data-theme')!=='space'){
-      cancelAnimationFrame(starAnimId); starAnimId=null;
-      canvas.style.display='none'; return;
-    }
-    ctx.clearRect(0,0,W,H);
-
-    /* Draw stars */
+    starCtx.clearRect(0,0,canvas.width,canvas.height);
     stars.forEach(function(s){
-      s.phase+=s.twinkleSpeed;
-      s.alpha=Math.max(0.04, s.baseAlpha*(1-s.twinkleAmp)+s.baseAlpha*s.twinkleAmp*Math.sin(s.phase));
-
-      /* Subtle glow for bright stars */
-      if(s.r>1.0){
-        var grad=ctx.createRadialGradient(s.x,s.y,0,s.x,s.y,s.r*3.5);
-        grad.addColorStop(0,'rgba('+s.color+','+(s.alpha*0.6)+')');
-        grad.addColorStop(1,'rgba('+s.color+',0)');
-        ctx.beginPath();
-        ctx.arc(s.x,s.y,s.r*3.5,0,Math.PI*2);
-        ctx.fillStyle=grad;
-        ctx.fill();
-      }
-
-      ctx.beginPath();
-      ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
-      ctx.fillStyle='rgba('+s.color+','+s.alpha+')';
-      ctx.fill();
+      s.a+=s.s*s.d;
+      if(s.a>=1||s.a<=0)s.d*=-1;
+      starCtx.beginPath();
+      starCtx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      starCtx.fillStyle='rgba(220,215,255,'+s.a.toFixed(3)+')';
+      starCtx.fill();
     });
-
-    /* Draw shooting stars */
-    for(var i=shooters.length-1;i>=0;i--){
-      var s=shooters[i];
-      s.x+=s.vx; s.y+=s.vy; s.alpha-=s.fade;
-      if(s.alpha<=0||s.x>W+200||s.y>H+200){shooters.splice(i,1);continue;}
-      var tx=s.x-s.vx*(s.len/Math.hypot(s.vx,s.vy));
-      var ty=s.y-s.vy*(s.len/Math.hypot(s.vx,s.vy));
-      var grad=ctx.createLinearGradient(tx,ty,s.x,s.y);
-      grad.addColorStop(0,'rgba(255,255,255,0)');
-      grad.addColorStop(0.7,'rgba(255,255,255,'+(s.alpha*0.5)+')');
-      grad.addColorStop(1,'rgba(255,255,255,'+s.alpha+')');
-      ctx.beginPath();
-      ctx.moveTo(tx,ty);
-      ctx.lineTo(s.x,s.y);
-      ctx.strokeStyle=grad;
-      ctx.lineWidth=s.width;
-      ctx.stroke();
-    }
+    starAnim=requestAnimationFrame(draw);
   }
   draw();
 }
 
-// Init with current theme
-(function(){
-  var t=document.documentElement.getAttribute('data-theme')||'dark';
-  respawnOrbs(t);
-  manageStarCanvas(t);
-})();
+// Init
+var initTheme=document.documentElement.getAttribute('data-theme')||'dark';
+respawnOrbs(initTheme);
+manageStarCanvas(initTheme);
+window.addEventListener('resize',function(){
+  var c=document.getElementById('star-canvas');
+  if(c){c.width=window.innerWidth;c.height=window.innerHeight;}
+});
 
-// Wallpaper parallax
-(function(){
-  var rx=0,ry=0;
-  document.addEventListener('mousemove',function(e){
-    var tx=(e.clientX/window.innerWidth-0.5)*20,ty=(e.clientY/window.innerHeight-0.5)*20;
-    rx+=(tx-rx)*0.06;ry+=(ty-ry)*0.06;
-    var layer=document.getElementById('orb-layer');
-    if(layer)layer.style.transform='translate('+(rx*0.35)+'px,'+(ry*0.35)+'px)';
+/* Smooth page transitions */
+document.querySelectorAll('a[href]').forEach(function(a){
+  if(a.hostname!==location.hostname||a.getAttribute('href').startsWith('#'))return;
+  a.addEventListener('click',function(e){
+    e.preventDefault();
+    var href=a.href;
+    document.body.classList.add('leaving');
+    setTimeout(function(){location.href=href;},190);
   });
-})();
+});
 </script>
-{% block scripts %}{% endblock %}
+
 </body>
 </html>
