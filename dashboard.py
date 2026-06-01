@@ -132,6 +132,20 @@ def _fetch_guild_roles() -> list:
         return []
 
 
+def _search_guild_members(query: str) -> list:
+    """Search guild members by username prefix via Discord API."""
+    try:
+        encoded = urllib.parse.quote(query)
+        req = urllib.request.Request(
+            f"{DISCORD_API}/guilds/{GUILD_ID}/members/search?query={encoded}&limit=10",
+            headers=_discord_headers()
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            return json.loads(resp.read())
+    except Exception:
+        return []
+
+
 def _avatar_url(user_data: dict, member_data: dict) -> str:
     uid = user_data.get("id", "")
     guild_av = member_data.get("avatar", "")
@@ -524,24 +538,75 @@ def command_settings():
 
 # ── User lookup ──────────────────────────────────────────────────
 
+import urllib.parse
+
+def _build_lookup_result(user_id: str) -> dict:
+    """Fetch Discord user + member data and return a display-ready dict."""
+    user_data   = _fetch_discord_user(user_id)
+    member_data = _fetch_guild_member(user_id)
+    av = _avatar_url(user_data, member_data)
+    username      = user_data.get("username", user_id)
+    global_name   = user_data.get("global_name") or username
+    discriminator = user_data.get("discriminator", "0")
+    return {
+        "target_id":     user_id,
+        "username":      username,
+        "display_name":  global_name,
+        "discriminator": discriminator,
+        "avatar_url":    av,
+    }
+
+
 @app.route("/user-lookup")
 @login_required
 def user_lookup():
     query   = request.args.get("q", "").strip()
     results = []
+
     if query:
-        try:
-            rows = db.recent_logs_sync(GUILD_ID, 200)
-            seen = set()
-            for r in rows:
-                tid = r.get("target_id", "")
-                if query in tid and tid not in seen:
-                    results.append({"target_id": tid})
-                    seen.add(tid)
-                    if len(results) >= 20:
-                        break
-        except Exception:
-            results = []
+        seen = set()
+
+        # 1. If pure numeric — try direct Discord API lookup first
+        if query.isdigit():
+            user_data = _fetch_discord_user(query)
+            if user_data.get("id"):
+                results.append(_build_lookup_result(query))
+                seen.add(query)
+
+        # 2. Search guild members by username via Discord API
+        members = _search_guild_members(query)
+        for m in members:
+            u = m.get("user", {})
+            uid = u.get("id", "")
+            if uid and uid not in seen:
+                member_data = m  # already have member object
+                av = _avatar_url(u, m)
+                username      = u.get("username", uid)
+                global_name   = u.get("global_name") or username
+                discriminator = u.get("discriminator", "0")
+                results.append({
+                    "target_id":     uid,
+                    "username":      username,
+                    "display_name":  global_name,
+                    "discriminator": discriminator,
+                    "avatar_url":    av,
+                })
+                seen.add(uid)
+
+        # 3. Fall back to scanning mod logs for partial ID match
+        if not results or query.isdigit():
+            try:
+                rows = db.recent_logs_sync(GUILD_ID, 500)
+                for r in rows:
+                    tid = r.get("target_id", "")
+                    if query in tid and tid not in seen:
+                        results.append(_build_lookup_result(tid))
+                        seen.add(tid)
+                        if len(results) >= 20:
+                            break
+            except Exception:
+                pass
+
     return render_template("user_lookup.html", query=query, results=results)
 
 
