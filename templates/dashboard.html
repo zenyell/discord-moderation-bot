@@ -5,7 +5,7 @@
 {% block content %}
 <div class="page-header">
   <h1>Welcome back, {{ session.get('username', 'Admin') }} 👋</h1>
-  <p>Here’s a quick overview of your server’s moderation activity.</p>
+  <p>Here's a quick overview of your server's moderation activity.</p>
 </div>
 
 <!-- Action Counter Stats -->
@@ -18,7 +18,7 @@
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline;vertical-align:middle;margin-right:4px"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
       BANS
     </div>
-    <div class="stat-value" style="color:var(--danger)">{{ action_counts.ban or 0 }}</div>
+    <div class="stat-value" style="color:var(--danger)">{{ stats.bans or 0 }}</div>
     <div class="stat-sub">Total bans issued</div>
   </div>
 
@@ -29,19 +29,19 @@
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline;vertical-align:middle;margin-right:4px"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
       KICKS
     </div>
-    <div class="stat-value" style="color:var(--warning)">{{ action_counts.kick or 0 }}</div>
+    <div class="stat-value" style="color:var(--warning)">{{ stats.kicks or 0 }}</div>
     <div class="stat-sub">Total kicks issued</div>
   </div>
 
-  <!-- Mutes — purple/accent -->
+  <!-- Timeouts — purple/accent -->
   <div class="stat-card">
     <div style="position:absolute;top:0;right:0;width:70px;height:70px;border-radius:50%;background:rgba(129,140,248,0.10);filter:blur(20px);pointer-events:none"></div>
     <div class="stat-label" style="color:var(--accent)">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline;vertical-align:middle;margin-right:4px"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-      MUTES
+      TIMEOUTS
     </div>
-    <div class="stat-value" style="color:var(--accent)">{{ action_counts.mute or 0 }}</div>
-    <div class="stat-sub">Total mutes issued</div>
+    <div class="stat-value" style="color:var(--accent)">{{ stats.timeouts or 0 }}</div>
+    <div class="stat-sub">Total timeouts issued</div>
   </div>
 
   <!-- Warns — yellow/gold -->
@@ -51,96 +51,64 @@
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline;vertical-align:middle;margin-right:4px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
       WARNS
     </div>
-    <div class="stat-value" style="color:#e0a800">{{ action_counts.warn or 0 }}</div>
+    <div class="stat-value" style="color:#e0a800">{{ stats.warnings or 0 }}</div>
     <div class="stat-sub">Total warnings issued</div>
   </div>
 
 </div>
 
-<!-- Recent Activity + Quick Stats -->
-<div class="grid-2">
-
-  <div class="card">
-    <div class="card-title">
-      <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
-      Recent Actions
-    </div>
-    {% if recent_actions %}
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Action</th>
-            <th>Target</th>
-            <th>Moderator</th>
-            <th>Reason</th>
-            <th>When</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for action in recent_actions[:8] %}
-          <tr>
-            <td>
-              {% if action.action_type == 'ban' %}
-                <span class="badge badge-danger">Ban</span>
-              {% elif action.action_type == 'kick' %}
-                <span class="badge badge-warning">Kick</span>
-              {% elif action.action_type in ['mute','timeout'] %}
-                <span class="badge badge-accent">Mute</span>
-              {% elif action.action_type == 'warn' %}
-                <span class="badge" style="background:rgba(224,168,0,0.12);color:#e0a800">Warn</span>
-              {% elif action.action_type == 'unban' %}
-                <span class="badge badge-success">Unban</span>
-              {% else %}
-                <span class="badge badge-muted">{{ action.action_type|title }}</span>
-              {% endif %}
-            </td>
-            <td>{{ action.target_name or action.target_id }}</td>
-            <td class="td-muted">{{ action.moderator_name or action.moderator_id }}</td>
-            <td class="td-muted" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ action.reason or '—' }}</td>
-            <td class="td-muted">{{ action.timestamp|ago if action.timestamp else '—' }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% else %}
-    <div class="empty">
-      <div class="empty-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-      <h3>No actions yet</h3>
-      <p>Moderation actions will appear here.</p>
-    </div>
-    {% endif %}
+<!-- Recent Activity -->
+<div class="card">
+  <div class="card-title">
+    <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+    Recent Actions
   </div>
-
-  <div class="card">
-    <div class="card-title">
-      <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>
-      Server Overview
-    </div>
-    <div style="display:flex;flex-direction:column;gap:10px">
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
-        <span style="font-size:12.5px;color:var(--muted)">Guild Name</span>
-        <span style="font-size:13px;font-weight:600">{{ guild_name or '—' }}</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
-        <span style="font-size:12.5px;color:var(--muted)">Total Members</span>
-        <span style="font-size:13px;font-weight:600">{{ member_count or '—' }}</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
-        <span style="font-size:12.5px;color:var(--muted)">Active Channels</span>
-        <span style="font-size:13px;font-weight:600">{{ channel_count or '—' }}</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
-        <span style="font-size:12.5px;color:var(--muted)">Total Roles</span>
-        <span style="font-size:13px;font-weight:600">{{ role_count or '—' }}</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0">
-        <span style="font-size:12.5px;color:var(--muted)">Bot Prefix</span>
-        <code>{{ prefix or '!' }}</code>
-      </div>
-    </div>
+  {% if logs %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Action</th>
+          <th>Target</th>
+          <th>Moderator</th>
+          <th>Reason</th>
+          <th>When</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in logs %}
+        <tr>
+          <td>
+            {% set at = log.action_type|lower if log.action_type else '' %}
+            {% if at == 'ban' %}
+              <span class="badge badge-danger">Ban</span>
+            {% elif at == 'kick' %}
+              <span class="badge badge-warning">Kick</span>
+            {% elif at in ['timeout','mute'] %}
+              <span class="badge badge-accent">Timeout</span>
+            {% elif at == 'warn' %}
+              <span class="badge" style="background:rgba(224,168,0,0.12);color:#e0a800">Warn</span>
+            {% elif at == 'unban' %}
+              <span class="badge badge-success">Unban</span>
+            {% else %}
+              <span class="badge badge-muted">{{ log.action_type|title if log.action_type else '—' }}</span>
+            {% endif %}
+          </td>
+          <td>{{ log.target_name or log.target_id or '—' }}</td>
+          <td class="td-muted">{{ log.moderator_name or log.moderator_id or '—' }}</td>
+          <td class="td-muted" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ log.reason or '—' }}</td>
+          <td class="td-muted">{{ log.timestamp or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
-
+  {% else %}
+  <div class="empty">
+    <div class="empty-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+    <h3>No actions yet</h3>
+    <p>Moderation actions will appear here.</p>
+  </div>
+  {% endif %}
 </div>
 {% endblock %}
