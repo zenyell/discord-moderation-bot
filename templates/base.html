@@ -112,28 +112,30 @@
       --shadow-glass: 0 8px 32px rgba(0,0,0,0.65), inset 0 1.5px 0 rgba(0,220,255,0.18);
     }
 
-    /* ══ SPACE THEME — true deep-space cosmic: void black, nebula purples & magentas ══ */
+    /* ══ SPACE THEME — true deep-space: void black, cool stellar whites & soft nebula purples ══ */
     [data-theme="space"] {
-      --ios-purple:    #c77dff;
-      --ios-purple-2:  #9d4edd;
-      --ios-blue:      #48cae4;
-      --ios-green:     #06d6a0;
-      --ios-orange:    #f72585;
-      --ios-red:       #ff453a;
-      --ios-pink:      #f72585;
-      --glass-bg:           rgba(1, 1, 14, 0.72);
-      --glass-bg-light:     rgba(160, 80, 255, 0.07);
-      --glass-bg-hover:     rgba(160, 80, 255, 0.14);
-      --glass-border:       rgba(180, 100, 255, 0.18);
-      --glass-border-strong:rgba(200, 120, 255, 0.32);
-      --glass-inset:        inset 0 1.5px 0 rgba(200, 160, 255, 0.22);
-      --text:         rgba(230, 220, 255, 0.95);
-      --text-2:       rgba(180, 160, 220, 0.65);
-      --text-3:       rgba(120, 100, 170, 0.42);
-      --shadow-sm:  0 2px 8px rgba(0,0,0,0.70);
-      --shadow-md:  0 8px 28px rgba(0,0,0,0.80);
-      --shadow-lg:  0 20px 60px rgba(0,0,0,0.88);
-      --shadow-glass: 0 8px 32px rgba(0,0,0,0.80), inset 0 1.5px 0 rgba(200,160,255,0.20);
+      --ios-purple:    #c8aaff;
+      --ios-purple-2:  #a07aee;
+      --ios-blue:      #7ec8ff;
+      --ios-teal:      #5de8d8;
+      --ios-green:     #44e88a;
+      --ios-orange:    #ffd580;   /* warm star colour — only used for orange-specific UI */
+      --ios-red:       #ff6b6b;
+      --ios-pink:      #e08aff;
+      --ios-yellow:    #ffe588;
+      --glass-bg:           rgba(0, 0, 8, 0.75);
+      --glass-bg-light:     rgba(180, 160, 255, 0.06);
+      --glass-bg-hover:     rgba(180, 160, 255, 0.12);
+      --glass-border:       rgba(160, 140, 255, 0.14);
+      --glass-border-strong:rgba(200, 180, 255, 0.26);
+      --glass-inset:        inset 0 1.5px 0 rgba(220, 210, 255, 0.18);
+      --text:         rgba(235, 230, 255, 0.96);
+      --text-2:       rgba(180, 170, 220, 0.65);
+      --text-3:       rgba(120, 110, 170, 0.40);
+      --shadow-sm:  0 2px 8px rgba(0,0,0,0.75);
+      --shadow-md:  0 8px 28px rgba(0,0,0,0.85);
+      --shadow-lg:  0 20px 60px rgba(0,0,0,0.92);
+      --shadow-glass: 0 8px 32px rgba(0,0,0,0.85), inset 0 1.5px 0 rgba(200,190,255,0.16);
     }
 
     /* ── Reset ── */
@@ -149,7 +151,7 @@
     }
     [data-theme="light"]    body { background: #ede8fa; }
     [data-theme="midnight"] body { background: #00060f; }
-    [data-theme="space"]    body { background: #010108; }
+    [data-theme="space"]    body { background: #000008; }
     a { text-decoration: none; color: inherit; }
     button { cursor: pointer; background: none; border: none; font: inherit; color: inherit; }
     img { display: block; max-width: 100%; }
@@ -183,15 +185,14 @@
         radial-gradient(ellipse 35% 35% at 85% 65%, rgba(0,80,160,0.20)  0%, transparent 50%),
         linear-gradient(160deg, #00060f 0%, #000d1e 45%, #001228 100%);
     }
-    /* Space — true cosmic void: pitch black + deep nebula purples, magentas, electric blues */
+    /* Space — pure void black with distant, very subtle nebula dust */
     [data-theme="space"] body::before {
       background:
-        radial-gradient(ellipse 65% 50% at 8% 12%,  rgba(120,40,220,0.45)  0%, transparent 60%),
-        radial-gradient(ellipse 45% 40% at 92% 6%,  rgba(200,60,255,0.28)  0%, transparent 55%),
-        radial-gradient(ellipse 55% 60% at 52% 94%, rgba(60,20,180,0.30)   0%, transparent 58%),
-        radial-gradient(ellipse 38% 38% at 78% 55%, rgba(247,37,133,0.16)  0%, transparent 52%),
-        radial-gradient(ellipse 30% 30% at 30% 70%, rgba(72,202,228,0.10)  0%, transparent 48%),
-        linear-gradient(180deg, #010108 0%, #03010f 50%, #010212 100%);
+        radial-gradient(ellipse 55% 40% at 12% 18%,  rgba(80,30,160,0.18)  0%, transparent 60%),
+        radial-gradient(ellipse 40% 35% at 88% 8%,   rgba(100,50,200,0.12) 0%, transparent 55%),
+        radial-gradient(ellipse 50% 45% at 50% 92%,  rgba(40,20,120,0.14)  0%, transparent 58%),
+        radial-gradient(ellipse 30% 30% at 75% 55%,  rgba(60,20,140,0.08)  0%, transparent 50%),
+        linear-gradient(180deg, #000008 0%, #00000e 50%, #000008 100%);
       pointer-events: none;
     }
 
@@ -287,11 +288,11 @@
       box-shadow: var(--glass-inset), 0 4px 16px rgba(0,180,255,0.22);
       border-color: rgba(0,200,255,0.30);
     }
-    /* Space active state — nebula purple/magenta glow */
+    /* Space active state — cool stellar blue-white glow */
     [data-theme="space"] .nav-item.active {
-      background: linear-gradient(135deg, rgba(160,60,255,0.28), rgba(247,37,133,0.16));
-      box-shadow: var(--glass-inset), 0 4px 20px rgba(160,60,255,0.30);
-      border-color: rgba(180,100,255,0.38);
+      background: linear-gradient(135deg, rgba(140,110,255,0.22), rgba(100,180,255,0.14));
+      box-shadow: var(--glass-inset), 0 4px 20px rgba(160,140,255,0.25);
+      border-color: rgba(180,160,255,0.28);
     }
     .nav-item-icon {
       width: 26px; height: 26px; border-radius: 7px; flex-shrink: 0;
@@ -306,7 +307,7 @@
       background: rgba(0,180,255,0.20);
     }
     [data-theme="space"] .nav-item.active .nav-item-icon {
-      background: rgba(160,60,255,0.25);
+      background: rgba(160,140,255,0.18);
       color: var(--ios-purple);
     }
 
@@ -440,10 +441,12 @@
       box-shadow: 0 8px 32px rgba(0,180,255,0.55), var(--glass-inset);
     }
     [data-theme="space"] .btn-primary {
-      box-shadow: 0 4px 20px rgba(160,60,255,0.50), var(--glass-inset);
+      background: linear-gradient(135deg, #c8aaff, #7ec8ff);
+      color: #05000f;
+      box-shadow: 0 4px 22px rgba(180,160,255,0.40), var(--glass-inset);
     }
     [data-theme="space"] .btn-primary:hover {
-      box-shadow: 0 8px 36px rgba(160,60,255,0.65), var(--glass-inset);
+      box-shadow: 0 8px 36px rgba(180,160,255,0.58), var(--glass-inset);
     }
     .btn-glass {
       background: var(--glass-bg-light);
@@ -492,13 +495,13 @@
     [data-theme="space"] .form-input:focus,
     [data-theme="space"] .form-select:focus,
     [data-theme="space"] .form-textarea:focus {
-      border-color: var(--ios-purple);
-      box-shadow: 0 0 0 3px rgba(160,60,255,0.25);
+      border-color: #c8aaff;
+      box-shadow: 0 0 0 3px rgba(180,160,255,0.20);
     }
     .form-input::placeholder { color: var(--text-3); }
     .form-select option { background: #1a1040; }
     [data-theme="midnight"] .form-select option { background: #000d1e; }
-    [data-theme="space"]    .form-select option { background: #010108; }
+    [data-theme="space"]    .form-select option { background: #000008; }
     .form-textarea { resize: vertical; min-height: 90px; }
 
     /* ── Toggle switch ── */
@@ -580,7 +583,7 @@
       background: radial-gradient(circle, rgba(0,180,255,0.09) 0%, transparent 70%);
     }
     [data-theme="space"] #cursor-glow {
-      background: radial-gradient(circle, rgba(160,60,255,0.12) 0%, transparent 70%);
+      background: radial-gradient(circle, rgba(180,160,255,0.07) 0%, transparent 70%);
     }
 
     /* ── Orb particles ── */
@@ -666,7 +669,7 @@
       background: radial-gradient(ellipse at var(--mx,50%) var(--my,50%), rgba(0,180,255,0.16) 0%, transparent 70%);
     }
     [data-theme="space"] .nav-item::before {
-      background: radial-gradient(ellipse at var(--mx,50%) var(--my,50%), rgba(160,60,255,0.20) 0%, transparent 70%);
+      background: radial-gradient(ellipse at var(--mx,50%) var(--my,50%), rgba(180,160,255,0.14) 0%, transparent 70%);
     }
     .nav-item:hover::before { opacity: 1; }
 
@@ -981,12 +984,12 @@ document.querySelectorAll('a[href]').forEach(function(link){
   });
 });
 
-// Orb particles — theme-aware colors
+// Orb particles — space theme uses ONLY very dim cool nebula purples (no orange/pink/green)
 var ORB_COLORS = {
   dark:     ['rgba(120,60,255,0.20)','rgba(255,45,150,0.14)','rgba(10,132,255,0.13)','rgba(50,220,180,0.11)','rgba(191,90,242,0.17)','rgba(255,159,10,0.09)'],
   light:    ['rgba(160,100,255,0.14)','rgba(191,90,242,0.10)','rgba(10,132,255,0.09)','rgba(100,180,255,0.08)','rgba(220,160,255,0.12)','rgba(80,160,255,0.07)'],
   midnight: ['rgba(0,100,220,0.22)','rgba(0,180,255,0.18)','rgba(0,60,180,0.16)','rgba(0,220,255,0.12)','rgba(0,140,200,0.20)','rgba(30,100,255,0.14)'],
-  space:    ['rgba(100,20,220,0.22)','rgba(180,40,255,0.18)','rgba(247,37,133,0.14)','rgba(60,10,180,0.20)','rgba(130,0,255,0.16)','rgba(72,202,228,0.10)']
+  space:    ['rgba(60,20,120,0.12)','rgba(80,40,160,0.10)','rgba(40,10,100,0.10)','rgba(100,60,180,0.08)','rgba(50,20,130,0.09)','rgba(70,30,150,0.07)']
 };
 function respawnOrbs(theme){
   var layer=document.getElementById('orb-layer');
@@ -1001,7 +1004,13 @@ function respawnOrbs(theme){
   }
 }
 
-// ── Star field canvas for Space theme ──
+/* ════════════════════════════════════════
+   STAR FIELD — dense, realistic, layered
+   ~800 stars: tiny dim background field +
+   medium field + bright foreground +
+   rare coloured stellar giants +
+   shooting stars
+════════════════════════════════════════ */
 var starAnimId=null;
 function manageStarCanvas(theme){
   var canvas=document.getElementById('star-canvas');
@@ -1016,41 +1025,139 @@ function manageStarCanvas(theme){
 function initStarCanvas(canvas){
   if(starAnimId){cancelAnimationFrame(starAnimId);starAnimId=null;}
   var ctx=canvas.getContext('2d');
-  var W,H,stars=[];
+  var W,H,stars=[],shooters=[];
+
   function resize(){
     W=canvas.width=window.innerWidth;
     H=canvas.height=window.innerHeight;
   }
   resize();
   window.addEventListener('resize',resize);
-  // Build star layers: tiny dim + small normal + rare bright + rare colored
+
+  /* Build star catalogue */
   stars=[];
-  for(var i=0;i<320;i++){
-    var tier=Math.random();
-    var r,alpha,twinkleSpeed,color;
-    if(tier<0.65){r=0.4+Math.random()*0.5;alpha=0.25+Math.random()*0.35;twinkleSpeed=0.003+Math.random()*0.004;color='255,255,255';}
-    else if(tier<0.88){r=0.6+Math.random()*0.8;alpha=0.45+Math.random()*0.35;twinkleSpeed=0.002+Math.random()*0.003;color='255,255,255';}
-    else if(tier<0.96){r=0.9+Math.random()*0.7;alpha=0.70+Math.random()*0.28;twinkleSpeed=0.001+Math.random()*0.002;color='255,255,255';}
-    else{r=1.0+Math.random()*0.8;alpha=0.55+Math.random()*0.35;twinkleSpeed=0.0015+Math.random()*0.002;
-      var c=Math.floor(Math.random()*4);
-      color=c===0?'200,170,255':c===1?'170,210,255':c===2?'255,200,200':'200,255,240';}
-    stars.push({x:Math.random()*W,y:Math.random()*H,r:r,baseAlpha:alpha,alpha:alpha,phase:Math.random()*Math.PI*2,twinkleSpeed:twinkleSpeed,color:color});
+  var total=Math.round((window.innerWidth*window.innerHeight)/1400); // density-based count
+  total=Math.max(500,Math.min(total,1200));
+
+  for(var i=0;i<total;i++){
+    var roll=Math.random();
+    var r,baseAlpha,twinkleAmp,twinkleSpeed,color;
+
+    if(roll<0.55){
+      /* Tier 1: faint background dust */
+      r=0.3+Math.random()*0.4;
+      baseAlpha=0.18+Math.random()*0.18;
+      twinkleAmp=0.06; twinkleSpeed=0.006+Math.random()*0.006;
+      color='255,255,255';
+    } else if(roll<0.82){
+      /* Tier 2: normal stars */
+      r=0.5+Math.random()*0.6;
+      baseAlpha=0.38+Math.random()*0.28;
+      twinkleAmp=0.18; twinkleSpeed=0.004+Math.random()*0.004;
+      color='255,255,255';
+    } else if(roll<0.94){
+      /* Tier 3: brighter stars */
+      r=0.8+Math.random()*0.7;
+      baseAlpha=0.60+Math.random()*0.28;
+      twinkleAmp=0.28; twinkleSpeed=0.002+Math.random()*0.003;
+      color='255,255,255';
+    } else if(roll<0.985){
+      /* Tier 4: bright stellar whites */
+      r=1.1+Math.random()*0.8;
+      baseAlpha=0.75+Math.random()*0.22;
+      twinkleAmp=0.35; twinkleSpeed=0.0015+Math.random()*0.002;
+      color='255,255,255';
+    } else {
+      /* Tier 5: rare coloured stars — blue giants, orange dwarfs, red giants */
+      r=1.2+Math.random()*1.0;
+      baseAlpha=0.55+Math.random()*0.30;
+      twinkleAmp=0.40; twinkleSpeed=0.001+Math.random()*0.0015;
+      var sc=Math.floor(Math.random()*5);
+      if(sc===0)color='180,210,255';       /* blue-white */
+      else if(sc===1)color='210,230,255';  /* cool blue */
+      else if(sc===2)color='255,230,190';  /* warm yellow-white */
+      else if(sc===3)color='255,200,160';  /* orange dwarf */
+      else color='255,175,175';            /* red giant */
+    }
+
+    stars.push({
+      x:Math.random()*W, y:Math.random()*H,
+      r:r, baseAlpha:baseAlpha, alpha:baseAlpha,
+      phase:Math.random()*Math.PI*2,
+      twinkleSpeed:twinkleSpeed, twinkleAmp:twinkleAmp,
+      color:color
+    });
   }
+
+  /* Shooting star factory */
+  function spawnShooter(){
+    var angle=-0.4+Math.random()*0.5; /* mostly left-to-right, slight downward */
+    var speed=6+Math.random()*10;
+    var len=80+Math.random()*180;
+    shooters.push({
+      x:Math.random()*W*1.2, y:Math.random()*H*0.6,
+      vx:Math.cos(angle)*speed, vy:Math.sin(angle)*speed,
+      len:len, alpha:0.9, fade:0.018+Math.random()*0.012,
+      width:0.6+Math.random()*0.8
+    });
+  }
+  /* Schedule shooters randomly */
+  function scheduleShooter(){
+    setTimeout(function(){
+      if(document.documentElement.getAttribute('data-theme')==='space') spawnShooter();
+      scheduleShooter();
+    },3000+Math.random()*9000);
+  }
+  scheduleShooter();
+
   function draw(){
     starAnimId=requestAnimationFrame(draw);
     if(document.documentElement.getAttribute('data-theme')!=='space'){
-      cancelAnimationFrame(starAnimId);starAnimId=null;
-      canvas.style.display='none';return;
+      cancelAnimationFrame(starAnimId); starAnimId=null;
+      canvas.style.display='none'; return;
     }
     ctx.clearRect(0,0,W,H);
+
+    /* Draw stars */
     stars.forEach(function(s){
       s.phase+=s.twinkleSpeed;
-      s.alpha=s.baseAlpha*(0.55+0.45*Math.sin(s.phase));
+      s.alpha=Math.max(0.04, s.baseAlpha*(1-s.twinkleAmp)+s.baseAlpha*s.twinkleAmp*Math.sin(s.phase));
+
+      /* Subtle glow for bright stars */
+      if(s.r>1.0){
+        var grad=ctx.createRadialGradient(s.x,s.y,0,s.x,s.y,s.r*3.5);
+        grad.addColorStop(0,'rgba('+s.color+','+(s.alpha*0.6)+')');
+        grad.addColorStop(1,'rgba('+s.color+',0)');
+        ctx.beginPath();
+        ctx.arc(s.x,s.y,s.r*3.5,0,Math.PI*2);
+        ctx.fillStyle=grad;
+        ctx.fill();
+      }
+
       ctx.beginPath();
       ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
       ctx.fillStyle='rgba('+s.color+','+s.alpha+')';
       ctx.fill();
     });
+
+    /* Draw shooting stars */
+    for(var i=shooters.length-1;i>=0;i--){
+      var s=shooters[i];
+      s.x+=s.vx; s.y+=s.vy; s.alpha-=s.fade;
+      if(s.alpha<=0||s.x>W+200||s.y>H+200){shooters.splice(i,1);continue;}
+      var tx=s.x-s.vx*(s.len/Math.hypot(s.vx,s.vy));
+      var ty=s.y-s.vy*(s.len/Math.hypot(s.vx,s.vy));
+      var grad=ctx.createLinearGradient(tx,ty,s.x,s.y);
+      grad.addColorStop(0,'rgba(255,255,255,0)');
+      grad.addColorStop(0.7,'rgba(255,255,255,'+(s.alpha*0.5)+')');
+      grad.addColorStop(1,'rgba(255,255,255,'+s.alpha+')');
+      ctx.beginPath();
+      ctx.moveTo(tx,ty);
+      ctx.lineTo(s.x,s.y);
+      ctx.strokeStyle=grad;
+      ctx.lineWidth=s.width;
+      ctx.stroke();
+    }
   }
   draw();
 }
