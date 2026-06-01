@@ -1,224 +1,371 @@
 {% extends "base.html" %}
 {% block title %}Select Server{% endblock %}
+{% block page_title %}Select a Server{% endblock %}
 {% block content %}
 <style>
+  /* ── Page layout ── */
   .servers-page {
-    max-width: 900px;
+    max-width: 960px;
     margin: 0 auto;
-    padding: var(--space-8, 2rem) var(--space-4, 1rem);
   }
+
+  /* ── Header ── */
   .servers-header {
     margin-bottom: 2rem;
+    animation: page-enter 420ms cubic-bezier(0.34,1.20,0.64,1) both;
   }
   .servers-header h1 {
-    font-size: 1.75rem;
+    font-size: 1.5rem;
     font-weight: 700;
-    color: var(--text, #f0f0f5);
+    letter-spacing: -0.4px;
+    color: var(--text);
     margin-bottom: 0.375rem;
   }
   .servers-header p {
-    color: var(--text-muted, rgba(240,240,245,0.55));
-    font-size: 0.9375rem;
+    font-size: 0.875rem;
+    color: var(--text-2);
   }
-  .section-label {
-    font-size: 0.75rem;
+
+  /* ── Permission notice badge ── */
+  .perm-notice {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: var(--r-xl);
+    background: var(--glass-bg-light);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-inset);
+    font-size: 11px;
     font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--text-muted, rgba(240,240,245,0.45));
-    margin-bottom: 0.875rem;
-    margin-top: 2rem;
+    color: var(--text-2);
+    letter-spacing: 0.2px;
+    margin-bottom: 1.75rem;
   }
+  .perm-notice svg { color: var(--ios-yellow); }
+
+  /* ── Section label ── */
+  .section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.9px;
+    text-transform: uppercase;
+    color: var(--text-3);
+    margin-bottom: 0.875rem;
+    margin-top: 0.25rem;
+    padding-left: 2px;
+  }
+
+  /* ── Guild grid ── */
   .guild-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 14px;
+    margin-bottom: 2rem;
   }
+
+  /* ── Guild card ── */
   .guild-card {
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 1rem;
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    padding: 1.25rem;
+    position: relative;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.75rem;
+    gap: 10px;
+    padding: 1.375rem 1rem 1.125rem;
     text-align: center;
-    transition: all 0.2s cubic-bezier(0.16,1,0.3,1);
-    cursor: pointer;
+    border-radius: var(--r-lg);
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-glass);
     text-decoration: none;
     color: inherit;
-    position: relative;
-    overflow: hidden;
+    cursor: pointer;
+    opacity: 0;
+    animation: card-spring 500ms cubic-bezier(0.34,1.46,0.64,1) forwards;
+    transition:
+      border-color var(--t-ease),
+      box-shadow var(--t-ease),
+      transform var(--t-ease);
   }
   .guild-card::before {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.07) 0%, transparent 60%);
     border-radius: inherit;
+    background: linear-gradient(
+      135deg,
+      rgba(255,255,255,0.10) 0%,
+      rgba(255,255,255,0.03) 50%,
+      transparent 100%
+    );
     opacity: 0;
-    transition: opacity 0.2s;
+    transition: opacity var(--t-ease);
+    pointer-events: none;
   }
   .guild-card:hover {
-    border-color: rgba(88,101,242,0.5);
-    box-shadow: 0 8px 32px rgba(88,101,242,0.2), 0 2px 8px rgba(0,0,0,0.3);
-    transform: translateY(-2px);
+    border-color: rgba(191,90,242,0.40);
+    box-shadow:
+      0 12px 40px rgba(191,90,242,0.22),
+      0 4px 16px rgba(0,0,0,0.40),
+      inset 0 1.5px 0 rgba(255,255,255,0.26);
+    transform: translateY(-3px);
   }
   .guild-card:hover::before { opacity: 1; }
-  .guild-card:active { transform: translateY(0) scale(0.98); }
+  .guild-card:active { transform: translateY(0) scale(0.97); }
+
+  [data-theme="midnight"] .guild-card:hover {
+    border-color: rgba(0,180,255,0.35);
+    box-shadow:
+      0 12px 40px rgba(0,180,255,0.22),
+      0 4px 16px rgba(0,0,0,0.50),
+      inset 0 1.5px 0 rgba(0,220,255,0.18);
+  }
+  [data-theme="space"] .guild-card:hover {
+    border-color: rgba(180,160,255,0.32);
+    box-shadow:
+      0 12px 40px rgba(160,140,255,0.20),
+      0 4px 16px rgba(0,0,0,0.55),
+      inset 0 1.5px 0 rgba(220,210,255,0.16);
+  }
+
+  /* disabled state for no-bot */
+  .guild-card.no-bot {
+    opacity: 0 !important; /* overridden by animation below */
+    cursor: default;
+  }
+  .guild-card.no-bot {
+    border-style: dashed;
+    border-color: var(--glass-border);
+  }
+  .guild-card.no-bot:hover {
+    transform: none;
+    border-color: rgba(191,90,242,0.28);
+    box-shadow: var(--shadow-glass);
+  }
+
+  /* ── Avatar ── */
   .guild-avatar {
-    width: 64px; height: 64px;
+    width: 60px; height: 60px;
     border-radius: 50%;
     object-fit: cover;
-    border: 2px solid rgba(255,255,255,0.12);
+    border: 2px solid var(--glass-border);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.35);
     flex-shrink: 0;
   }
   .guild-avatar-placeholder {
-    width: 64px; height: 64px;
+    width: 60px; height: 60px;
     border-radius: 50%;
-    background: rgba(88,101,242,0.2);
-    border: 2px solid rgba(88,101,242,0.35);
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.375rem;
-    font-weight: 700;
-    color: rgba(255,255,255,0.7);
+    font-size: 1.25rem; font-weight: 700;
+    background: linear-gradient(135deg, rgba(191,90,242,0.28), rgba(10,132,255,0.22));
+    border: 2px solid rgba(191,90,242,0.30);
+    color: rgba(255,255,255,0.75);
     flex-shrink: 0;
   }
+  [data-theme="midnight"] .guild-avatar-placeholder {
+    background: linear-gradient(135deg, rgba(0,180,255,0.28), rgba(0,80,200,0.22));
+    border-color: rgba(0,200,255,0.30);
+  }
+  [data-theme="space"] .guild-avatar-placeholder {
+    background: linear-gradient(135deg, rgba(160,140,255,0.26), rgba(100,170,255,0.18));
+    border-color: rgba(180,160,255,0.28);
+  }
+
+  /* ── Guild name ── */
   .guild-name {
-    font-size: 0.9375rem;
+    font-size: 0.875rem;
     font-weight: 600;
-    color: rgba(255,255,255,0.9);
-    line-height: 1.3;
+    color: var(--text);
+    line-height: 1.35;
     word-break: break-word;
   }
+
+  /* ── Badges ── */
   .guild-badge {
-    font-size: 0.6875rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    padding: 0.2rem 0.5rem;
-    border-radius: 9999px;
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    padding: 3px 9px;
+    border-radius: var(--r-xl);
     text-transform: uppercase;
   }
   .badge-owner {
-    background: rgba(255,184,0,0.15);
-    color: #ffd060;
-    border: 1px solid rgba(255,184,0,0.25);
+    background: rgba(255,214,10,0.14);
+    color: var(--ios-yellow);
+    border: 1px solid rgba(255,214,10,0.25);
   }
   .badge-admin {
-    background: rgba(88,101,242,0.15);
-    color: #8b9cff;
-    border: 1px solid rgba(88,101,242,0.25);
+    background: rgba(191,90,242,0.16);
+    color: var(--ios-purple);
+    border: 1px solid rgba(191,90,242,0.28);
+  }
+  .badge-manage {
+    background: rgba(10,132,255,0.14);
+    color: var(--ios-blue);
+    border: 1px solid rgba(10,132,255,0.26);
+  }
+  [data-theme="midnight"] .badge-admin,
+  [data-theme="midnight"] .badge-manage {
+    color: var(--ios-blue);
+    background: rgba(0,180,255,0.14);
+    border-color: rgba(0,200,255,0.26);
   }
 
-  /* No-bot card */
-  .guild-card.no-bot {
-    opacity: 0.65;
-    border-style: dashed;
-  }
-  .guild-card.no-bot:hover {
-    opacity: 1;
-    border-color: rgba(88,101,242,0.45);
-  }
+  /* ── No-bot overlay label ── */
   .no-bot-label {
-    font-size: 0.75rem;
-    color: rgba(255,255,255,0.4);
+    font-size: 0.7rem;
+    color: var(--text-3);
+    display: flex; align-items: center; gap: 4px;
   }
-  .add-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.375rem;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    color: #8b9cff;
-    padding: 0.3rem 0.75rem;
-    border-radius: 9999px;
-    background: rgba(88,101,242,0.15);
-    border: 1px solid rgba(88,101,242,0.3);
+
+  /* ── Add-bot button inside card ── */
+  .add-bot-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 0.75rem; font-weight: 700;
+    padding: 5px 14px;
+    border-radius: var(--r-xl);
+    background: rgba(191,90,242,0.18);
+    border: 1px solid rgba(191,90,242,0.32);
+    color: var(--ios-purple);
     text-decoration: none;
-    transition: all 0.2s;
+    transition: all var(--t-ease);
+    cursor: pointer;
   }
-  .add-btn:hover {
-    background: rgba(88,101,242,0.28);
-    border-color: rgba(88,101,242,0.55);
+  .add-bot-btn:hover {
+    background: rgba(191,90,242,0.30);
+    border-color: rgba(191,90,242,0.52);
+    color: #fff;
+    transform: translateY(-1px);
+  }
+  [data-theme="midnight"] .add-bot-btn {
+    background: rgba(0,180,255,0.14);
+    border-color: rgba(0,200,255,0.28);
+    color: var(--ios-blue);
+  }
+  [data-theme="midnight"] .add-bot-btn:hover {
+    background: rgba(0,180,255,0.28);
+    border-color: rgba(0,200,255,0.50);
     color: #fff;
   }
+  [data-theme="space"] .add-bot-btn {
+    background: rgba(160,140,255,0.14);
+    border-color: rgba(180,160,255,0.28);
+    color: var(--ios-purple);
+  }
 
-  /* Refresh hint */
-  .refresh-hint {
-    margin-top: 2.5rem;
+  /* ── Empty state ── */
+  .empty-state {
     text-align: center;
-    font-size: 0.8125rem;
-    color: rgba(255,255,255,0.25);
+    padding: 3.5rem 1rem;
+    color: var(--text-2);
+  }
+  .empty-state-icon {
+    width: 52px; height: 52px;
+    border-radius: var(--r-lg);
+    background: var(--glass-bg-light);
+    border: 1px solid var(--glass-border);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 1.25rem;
+    color: var(--text-3);
+  }
+  .empty-state h3 { font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+  .empty-state p  { font-size: 0.875rem; color: var(--text-2); max-width: 34ch; margin: 0 auto 1.25rem; }
+
+  /* ── Refresh hint ── */
+  .refresh-hint {
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--text-3);
+    margin-top: 1.25rem;
   }
   .refresh-hint a {
-    color: rgba(255,255,255,0.4);
+    color: var(--text-2);
     text-decoration: underline;
     text-underline-offset: 2px;
   }
-  .refresh-hint a:hover { color: rgba(255,255,255,0.7); }
+  .refresh-hint a:hover { color: var(--text); }
 
-  /* Empty state */
-  .empty-state {
-    text-align: center;
-    padding: 3rem 1rem;
-    color: rgba(255,255,255,0.35);
-  }
-  .empty-state svg { margin: 0 auto 1rem; opacity: 0.4; }
-  .empty-state p { font-size: 0.9375rem; }
+  /* ── Stagger delays ── */
+  {% for i in range(20) %}
+  .guild-grid .guild-card:nth-child({{ i + 1 }}) { animation-delay: {{ 60 + i * 45 }}ms; }
+  {% endfor %}
 </style>
 
 <div class="servers-page">
+
   <div class="servers-header">
     <h1>Select a Server</h1>
     <p>Choose a server you manage to configure its moderation settings.</p>
   </div>
 
+  <!-- Permission notice -->
+  <div class="perm-notice">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+    Only servers where you have <strong style="color:var(--text);margin:0 2px;">Administrator</strong> or <strong style="color:var(--text);margin:0 2px;">Manage Server</strong> are shown
+  </div>
+
   {% with messages = get_flashed_messages() %}
     {% if messages %}
       {% for msg in messages %}
-        <div style="background:rgba(237,66,69,0.12);border:1px solid rgba(237,66,69,0.3);border-radius:0.75rem;padding:0.75rem 1rem;margin-bottom:1rem;color:#ff8a8c;font-size:0.875rem;">{{ msg }}</div>
+        <div class="flash flash-error">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          {{ msg }}
+        </div>
       {% endfor %}
     {% endif %}
   {% endwith %}
 
+  {# ── Servers WITH bot ── #}
   {% if guilds_with_bot %}
-    <div class="section-label">Bot Active In</div>
+    <div class="section-label">Bot Active</div>
     <div class="guild-grid">
       {% for g in guilds_with_bot %}
         <a href="{{ url_for('select_guild', guild_id=g.id) }}" class="guild-card">
           {% if g.icon_url %}
-            <img src="{{ g.icon_url }}" alt="{{ g.name }}" class="guild-avatar" loading="lazy" width="64" height="64">
+            <img src="{{ g.icon_url }}" alt="{{ g.name }}" class="guild-avatar" loading="lazy" width="60" height="60">
           {% else %}
             <div class="guild-avatar-placeholder">{{ g.name[0]|upper }}</div>
           {% endif %}
           <span class="guild-name">{{ g.name }}</span>
-          {% if g.owner %}
-            <span class="guild-badge badge-owner">Owner</span>
-          {% else %}
-            <span class="guild-badge badge-admin">Admin</span>
-          {% endif %}
+          <span class="guild-badge {% if g.owner %}badge-owner{% elif g.permissions | int & 8 %}badge-admin{% else %}badge-manage{% endif %}">
+            {% if g.owner %}
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              Owner
+            {% elif g.permissions | int & 8 %}
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              Admin
+            {% else %}
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              Manage Server
+            {% endif %}
+          </span>
         </a>
       {% endfor %}
     </div>
   {% endif %}
 
+  {# ── Servers WITHOUT bot ── #}
   {% if guilds_without_bot %}
-    <div class="section-label">Add Bot To</div>
+    <div class="section-label" style="margin-top:{% if guilds_with_bot %}0.5rem{% else %}0{% endif %}">Add Bot To</div>
     <div class="guild-grid">
       {% for g in guilds_without_bot %}
         <div class="guild-card no-bot">
           {% if g.icon_url %}
-            <img src="{{ g.icon_url }}" alt="{{ g.name }}" class="guild-avatar" loading="lazy" width="64" height="64">
+            <img src="{{ g.icon_url }}" alt="{{ g.name }}" class="guild-avatar" loading="lazy" width="60" height="60">
           {% else %}
             <div class="guild-avatar-placeholder">{{ g.name[0]|upper }}</div>
           {% endif %}
           <span class="guild-name">{{ g.name }}</span>
-          <span class="no-bot-label">Bot not in server</span>
-          <a href="{{ bot_invite_url }}&guild_id={{ g.id }}" target="_blank" rel="noopener noreferrer" class="add-btn">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          <span class="no-bot-label">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Bot not in server
+          </span>
+          <a href="{{ bot_invite_url }}&guild_id={{ g.id }}" target="_blank" rel="noopener noreferrer" class="add-bot-btn">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add Bot
           </a>
         </div>
@@ -226,20 +373,25 @@
     </div>
   {% endif %}
 
+  {# ── Empty state ── #}
   {% if not guilds_with_bot and not guilds_without_bot %}
     <div class="empty-state">
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-        <circle cx="9" cy="7" r="4"/>
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-      </svg>
-      <p>No servers found where you have Administrator or Manage Server permission.</p>
+      <div class="empty-state-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <h3>No servers found</h3>
+      <p>You need <strong>Administrator</strong> or <strong>Manage Server</strong> permission in at least one Discord server.</p>
+      <a href="{{ url_for('logout') }}" class="btn btn-glass">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Sign in with a different account
+      </a>
     </div>
   {% endif %}
 
   <p class="refresh-hint">
-    Don't see your server? <a href="{{ url_for('login') }}">Re-authenticate</a> to refresh the server list.
+    Don't see your server?
+    <a href="{{ url_for('logout') }}">Sign out</a> and back in to refresh the list.
   </p>
+
 </div>
 {% endblock %}
