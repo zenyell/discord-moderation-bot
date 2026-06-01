@@ -1,5 +1,6 @@
 import os
 import sys
+import datetime
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -59,6 +60,123 @@ BADGE_FLAGS = {
     discord.PublicUserFlags.active_developer:         "\u2699\ufe0f Active Dev",
 }
 
+# ─────────────────────── log embed helpers ────────────────────────────────────
+
+# Maps action type → (color, emoji, label)
+LOG_STYLES: dict[str, tuple[int, str, str]] = {
+    "kick":        (0xF4A300, "\U0001f462", "Member Kicked"),
+    "ban":         (0xED4245, "\U0001f528", "Member Banned"),
+    "unban":       (0x57F287, "\u2705",     "Member Unbanned"),
+    "softban":     (0xFEE75C, "\U0001f9fc", "Member Softbanned"),
+    "timeout":     (0xEB459E, "\u23f1\ufe0f","Member Timed Out"),
+    "untimeout":   (0x57F287, "\u23f0",     "Timeout Removed"),
+    "warn":        (0xFEE75C, "\u26a0\ufe0f","Member Warned"),
+    "clearwarnings":(0x57F287,"\U0001f9f9", "Warnings Cleared"),
+    "purge":       (0x5865F2, "\U0001f5d1\ufe0f","Messages Purged"),
+    "filter":      (0xED4245, "\U0001f6ab", "Word Filter Triggered"),
+    "blacklist":   (0xED4245, "\U0001f6ab", "User Blacklisted"),
+    "unblacklist": (0x57F287, "\u2705",     "User Unblacklisted"),
+    "auto-ban":    (0xED4245, "\U0001f528", "Auto-Ban (Blacklist)"),
+    "lock":        (0xF4A300, "\U0001f512", "Channel Locked"),
+    "unlock":      (0x57F287, "\U0001f513", "Channel Unlocked"),
+    "slowmode":    (0x5865F2, "\u23f1\ufe0f","Slowmode Changed"),
+    "nick":        (0x5865F2, "\u270f\ufe0f","Nickname Changed"),
+    "role-add":    (0x57F287, "\u2705",     "Role Added"),
+    "role-remove": (0xED4245, "\u274c",     "Role Removed"),
+    "join":        (0x57F287, "\U0001f7e2", "Member Joined"),
+    "leave":       (0x747F8D, "\U0001f534", "Member Left"),
+    "edit":        (0x5865F2, "\u270f\ufe0f","Message Edited"),
+    "delete":      (0xF4A300, "\U0001f5d1\ufe0f","Message Deleted"),
+    "spam":        (0xEB459E, "\U0001f4e8", "Spam Detected"),
+    "announce":    (0x5865F2, "\U0001f4e3", "Announcement Sent"),
+}
+
+
+def _build_log_embed(
+    action: str,
+    *,
+    target: discord.Member | discord.User | str | None = None,
+    moderator: discord.Member | discord.User | None = None,
+    reason: str | None = None,
+    channel: discord.abc.GuildChannel | None = None,
+    extra_fields: list[tuple[str, str, bool]] | None = None,
+    thumbnail_url: str | None = None,
+) -> discord.Embed:
+    style = LOG_STYLES.get(action, (0x5865F2, "\U0001f4cb", action.title()))
+    color, emoji, label = style
+
+    embed = discord.Embed(
+        title=f"{emoji}  {label}",
+        color=color,
+        timestamp=datetime.datetime.now(datetime.timezone.utc),
+    )
+
+    # Target field
+    if target is not None:
+        if isinstance(target, (discord.Member, discord.User)):
+            val = f"{target.mention}\n`{target}` (ID: `{target.id}`)"
+            if thumbnail_url is None:
+                thumbnail_url = target.display_avatar.url
+        else:
+            val = str(target)
+        embed.add_field(name="\U0001f465 Target", value=val, inline=True)
+
+    # Moderator field
+    if moderator is not None:
+        embed.add_field(
+            name="\U0001f6e1\ufe0f Moderator",
+            value=f"{moderator.mention}\n`{moderator}` (ID: `{moderator.id}`)",
+            inline=True,
+        )
+
+    # Channel field
+    if channel is not None:
+        embed.add_field(name="\U0001f4ac Channel", value=channel.mention, inline=True)
+
+    # Reason field
+    embed.add_field(
+        name="\U0001f4dd Reason",
+        value=reason or "No reason provided",
+        inline=False,
+    )
+
+    # Optional extra fields
+    if extra_fields:
+        for name, value, inline in extra_fields:
+            embed.add_field(name=name, value=value, inline=inline)
+
+    if thumbnail_url:
+        embed.set_thumbnail(url=thumbnail_url)
+
+    embed.set_footer(text=f"Action: {action.upper()}")
+    return embed
+
+
+async def _send_log_embed(guild: discord.Guild, embed: discord.Embed):
+    """Send a pre-built embed to the configured log channel."""
+    try:
+        ch_id = await db.get_setting("log_channel_id")
+        if not ch_id:
+            return
+        channel = guild.get_channel(int(ch_id))
+        if channel:
+            await channel.send(embed=embed)
+    except Exception:
+        pass
+
+
+# Legacy plain-text helper kept for any callers not yet migrated (should be none after this update)
+async def _send_log(guild: discord.Guild, message: str):
+    try:
+        ch_id = await db.get_setting("log_channel_id")
+        if not ch_id:
+            return
+        channel = guild.get_channel(int(ch_id))
+        if channel:
+            await channel.send(message)
+    except Exception:
+        pass
+
 
 def _get_guild_id(interaction):
     return str(interaction.guild_id)
@@ -78,26 +196,8 @@ async def _spam_settings():
     return limit, window, timeout
 
 
-async def _send_log(guild: discord.Guild, message: str):
-    try:
-        ch_id = await db.get_setting("log_channel_id")
-        if not ch_id:
-            return
-        channel = guild.get_channel(int(ch_id))
-        if channel:
-            await channel.send(message)
-    except Exception:
-        pass
-
-
 async def _check_command(interaction: discord.Interaction, command_name: str) -> bool:
-    """
-    Must be called AFTER interaction.response.defer() so Discord doesn't time out
-    while we wait for the Turso DB round-trip.
-    Returns True if allowed, False if blocked (sends followup message itself).
-    """
     guild_id = _get_guild_id(interaction)
-
     try:
         cs = await db.get_command_setting(guild_id, command_name)
     except Exception as e:
@@ -171,7 +271,6 @@ async def on_ready():
 
 @bot.tree.error
 async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
-    """Catch-all so Discord never gets silence from the bot."""
     if isinstance(error, app_commands.MissingPermissions):
         msg = "\u274c You don't have permission to use this command."
     elif isinstance(error, app_commands.BotMissingPermissions):
@@ -197,7 +296,15 @@ async def on_member_join(member: discord.Member):
         if await db.is_user_blacklisted(guild_id, str(member.id)):
             await member.ban(reason="User is blacklisted")
             await db.log_action(guild_id, "auto-ban", str(member.id), str(bot.user.id), "Blacklisted user rejoined")
+            embed = _build_log_embed(
+                "auto-ban",
+                target=member,
+                reason="Blacklisted user rejoined the server",
+                extra_fields=[("\U0001f4c5 Joined At", discord.utils.format_dt(member.joined_at or datetime.datetime.now(datetime.timezone.utc), style="F"), False)],
+            )
+            await _send_log_embed(member.guild, embed)
             return
+
         autoroles = await db.get_autoroles(guild_id)
         for row in autoroles:
             role = member.guild.get_role(int(row["role_id"]))
@@ -212,8 +319,17 @@ async def on_member_join(member: discord.Member):
                 role = member.guild.get_role(int(role_id))
                 if role:
                     await member.add_roles(role, reason="Auto-role on join")
+
         if await db.get_setting("log_join", "1") == "1":
-            await _send_log(member.guild, f"\U0001f7e2 **{member}** joined the server.")
+            embed = _build_log_embed(
+                "join",
+                target=member,
+                extra_fields=[
+                    ("\U0001f4c5 Account Created", discord.utils.format_dt(member.created_at, style="R"), True),
+                    ("\U0001f522 Member Count", str(member.guild.member_count), True),
+                ],
+            )
+            await _send_log_embed(member.guild, embed)
     except Exception as e:
         print(f"[Bot] on_member_join error: {e}", flush=True)
 
@@ -222,7 +338,16 @@ async def on_member_join(member: discord.Member):
 async def on_member_remove(member: discord.Member):
     try:
         if await db.get_setting("log_leave", "1") == "1":
-            await _send_log(member.guild, f"\U0001f534 **{member}** left the server.")
+            roles = [r.mention for r in reversed(member.roles) if r.name != "@everyone"]
+            embed = _build_log_embed(
+                "leave",
+                target=member,
+                extra_fields=[
+                    ("\U0001f4c5 Joined At", discord.utils.format_dt(member.joined_at, style="R") if member.joined_at else "Unknown", True),
+                    (f"\U0001f3f7\ufe0f Roles [{len(roles)}]", " ".join(roles[:10]) or "None", False),
+                ],
+            )
+            await _send_log_embed(member.guild, embed)
     except Exception as e:
         print(f"[Bot] on_member_remove error: {e}", flush=True)
 
@@ -233,11 +358,17 @@ async def on_message_edit(before: discord.Message, after: discord.Message):
         return
     try:
         if await db.get_setting("log_edit", "1") == "1":
-            await _send_log(
-                before.guild,
-                f"\u270f\ufe0f **{before.author}** edited in {before.channel.mention}\n"
-                f"**Before:** {before.content[:200]}\n**After:** {after.content[:200]}"
+            embed = _build_log_embed(
+                "edit",
+                target=before.author,
+                channel=before.channel,
+                extra_fields=[
+                    ("\U0001f4e4 Before", before.content[:400] or "*empty*", False),
+                    ("\U0001f4e5 After",  after.content[:400]  or "*empty*", False),
+                    ("\U0001f517 Jump to Message", f"[Click here]({after.jump_url})", False),
+                ],
             )
+            await _send_log_embed(before.guild, embed)
     except Exception as e:
         print(f"[Bot] on_message_edit error: {e}", flush=True)
 
@@ -248,11 +379,17 @@ async def on_message_delete(message: discord.Message):
         return
     try:
         if await db.get_setting("log_delete", "1") == "1":
-            await _send_log(
-                message.guild,
-                f"\U0001f5d1\ufe0f **{message.author}** deleted in {message.channel.mention}\n"
-                f"**Content:** {message.content[:300]}"
+            attachments = ", ".join(a.url for a in message.attachments) if message.attachments else None
+            extra = [("\U0001f4ac Content", message.content[:800] or "*empty*", False)]
+            if attachments:
+                extra.append(("\U0001f4ce Attachments", attachments[:400], False))
+            embed = _build_log_embed(
+                "delete",
+                target=message.author,
+                channel=message.channel,
+                extra_fields=extra,
             )
+            await _send_log_embed(message.guild, embed)
     except Exception as e:
         print(f"[Bot] on_message_delete error: {e}", flush=True)
 
@@ -269,12 +406,22 @@ async def on_message(message: discord.Message):
             await message.delete()
             await message.channel.send(f"{message.author.mention} That word is not allowed!", delete_after=5)
             await db.log_action(guild_id, "filter", str(message.author.id), str(bot.user.id), "Blacklisted word")
+            embed = _build_log_embed(
+                "filter",
+                target=message.author,
+                channel=message.channel,
+                reason="Message contained a blacklisted word",
+                extra_fields=[("\U0001f4ac Message Preview", message.content[:300], False)],
+            )
+            await _send_log_embed(message.guild, embed)
             return
+
         triggers = await db.get_all_triggers(guild_id)
         for t in triggers:
             if t["phrase"] in content_low:
                 await message.channel.send(t["response"])
                 break
+
         spam_limit, spam_window, spam_timeout = await _spam_settings()
         uid = message.author.id
         now = time.monotonic()
@@ -290,6 +437,17 @@ async def on_message(message: discord.Message):
                     f"{message.author.mention} Spam detected {DASH} timed out for {spam_timeout}m.", delete_after=10
                 )
                 await db.log_action(guild_id, "timeout", str(message.author.id), str(bot.user.id), "Spam")
+                embed = _build_log_embed(
+                    "spam",
+                    target=message.author,
+                    channel=message.channel,
+                    reason="Automatic spam detection",
+                    extra_fields=[
+                        ("\u23f1\ufe0f Duration", f"{spam_timeout} minute(s)", True),
+                        ("\U0001f4e8 Messages", f"{spam_limit} in {spam_window}s", True),
+                    ],
+                )
+                await _send_log_embed(message.guild, embed)
             except discord.Forbidden:
                 pass
     except Exception as e:
@@ -301,8 +459,6 @@ tree = bot.tree
 
 
 # ─────────────────────────────── moderation commands ─────────────────────────
-# IMPORTANT: Every command defers FIRST, then checks permissions/DB.
-# This beats Discord's 3-second response deadline regardless of DB latency.
 
 @tree.command(name="kick", description="Kick a member", guild=TEST_GUILD)
 @app_commands.describe(member="Member to kick", reason="Reason")
@@ -313,7 +469,8 @@ async def kick(interaction: discord.Interaction, member: discord.Member, reason:
         await member.kick(reason=reason)
         await db.log_action(_get_guild_id(interaction), "kick", str(member.id), str(interaction.user.id), reason)
         if await db.get_setting("log_kick", "1") == "1":
-            await _send_log(interaction.guild, f"\U0001f462 **{member}** was kicked by {interaction.user.mention}. Reason: {reason}")
+            embed = _build_log_embed("kick", target=member, moderator=interaction.user, reason=reason)
+            await _send_log_embed(interaction.guild, embed)
         await interaction.followup.send(f"\U0001f462 **{member}** was kicked. Reason: {reason}")
     except discord.Forbidden:
         await interaction.followup.send("\u274c I don't have permission to kick that member.", ephemeral=True)
@@ -330,7 +487,8 @@ async def ban(interaction: discord.Interaction, member: discord.Member, reason: 
         await member.ban(reason=reason)
         await db.log_action(_get_guild_id(interaction), "ban", str(member.id), str(interaction.user.id), reason)
         if await db.get_setting("log_ban", "1") == "1":
-            await _send_log(interaction.guild, f"\U0001f528 **{member}** was banned by {interaction.user.mention}. Reason: {reason}")
+            embed = _build_log_embed("ban", target=member, moderator=interaction.user, reason=reason)
+            await _send_log_embed(interaction.guild, embed)
         await interaction.followup.send(f"\U0001f528 **{member}** was banned. Reason: {reason}")
     except discord.Forbidden:
         await interaction.followup.send("\u274c I don't have permission to ban that member.", ephemeral=True)
@@ -348,7 +506,8 @@ async def unban(interaction: discord.Interaction, user_id: str, reason: str = "N
         await interaction.guild.unban(user, reason=reason)
         await db.log_action(_get_guild_id(interaction), "unban", user_id, str(interaction.user.id), reason)
         if await db.get_setting("log_unban", "1") == "1":
-            await _send_log(interaction.guild, f"\u2705 **{user}** was unbanned by {interaction.user.mention}. Reason: {reason}")
+            embed = _build_log_embed("unban", target=user, moderator=interaction.user, reason=reason)
+            await _send_log_embed(interaction.guild, embed)
         await interaction.followup.send(f"\u2705 **{user}** was unbanned.")
     except discord.NotFound:
         await interaction.followup.send("\u274c User not found or not banned.", ephemeral=True)
@@ -367,7 +526,18 @@ async def timeout_cmd(interaction: discord.Interaction, member: discord.Member, 
         await member.timeout(timedelta(minutes=minutes), reason=reason)
         await db.log_action(_get_guild_id(interaction), "timeout", str(member.id), str(interaction.user.id), reason)
         if await db.get_setting("log_timeout", "1") == "1":
-            await _send_log(interaction.guild, f"\u23f1\ufe0f **{member}** timed out for {minutes}m by {interaction.user.mention}. Reason: {reason}")
+            until = datetime.datetime.now(datetime.timezone.utc) + timedelta(minutes=minutes)
+            embed = _build_log_embed(
+                "timeout",
+                target=member,
+                moderator=interaction.user,
+                reason=reason,
+                extra_fields=[
+                    ("\u23f1\ufe0f Duration", f"{minutes} minute(s)", True),
+                    ("\U0001f4c5 Expires", discord.utils.format_dt(until, style="R"), True),
+                ],
+            )
+            await _send_log_embed(interaction.guild, embed)
         await interaction.followup.send(f"\u23f1\ufe0f **{member}** timed out for {minutes}m. Reason: {reason}")
     except discord.Forbidden:
         await interaction.followup.send("\u274c I don't have permission to timeout that member.", ephemeral=True)
@@ -383,7 +553,8 @@ async def untimeout_cmd(interaction: discord.Interaction, member: discord.Member
     try:
         await member.timeout(None, reason=reason)
         await db.log_action(_get_guild_id(interaction), "untimeout", str(member.id), str(interaction.user.id), reason)
-        await _send_log(interaction.guild, f"\u23f1\ufe0f Timeout removed from **{member}** by {interaction.user.mention}. Reason: {reason}")
+        embed = _build_log_embed("untimeout", target=member, moderator=interaction.user, reason=reason)
+        await _send_log_embed(interaction.guild, embed)
         await interaction.followup.send(f"\u2705 Timeout removed from **{member}**.")
     except discord.Forbidden:
         await interaction.followup.send("\u274c I don't have permission to modify that member.", ephemeral=True)
@@ -401,7 +572,14 @@ async def purge(interaction: discord.Interaction, amount: int):
         deleted = await interaction.channel.purge(limit=amount)
         await db.log_action(_get_guild_id(interaction), "purge", str(interaction.channel.id), str(interaction.user.id), f"Deleted {len(deleted)}")
         if await db.get_setting("log_purge", "1") == "1":
-            await _send_log(interaction.guild, f"\U0001f5d1\ufe0f **{interaction.user}** purged {len(deleted)} messages in {interaction.channel.mention}.")
+            embed = _build_log_embed(
+                "purge",
+                moderator=interaction.user,
+                channel=interaction.channel,
+                reason=f"Bulk delete requested",
+                extra_fields=[("\U0001f5d1\ufe0f Messages Deleted", str(len(deleted)), True)],
+            )
+            await _send_log_embed(interaction.guild, embed)
         await interaction.followup.send(f"\U0001f5d1\ufe0f Deleted {len(deleted)} messages.", ephemeral=True)
     except discord.Forbidden:
         await interaction.followup.send("\u274c I don't have permission to delete messages here.", ephemeral=True)
@@ -418,7 +596,15 @@ async def warn(interaction: discord.Interaction, member: discord.Member, reason:
         await db.add_warning(_get_guild_id(interaction), str(member.id), str(interaction.user.id), reason)
         await db.log_action(_get_guild_id(interaction), "warn", str(member.id), str(interaction.user.id), reason)
         if await db.get_setting("log_warn", "1") == "1":
-            await _send_log(interaction.guild, f"\u26a0\ufe0f **{member}** was warned by {interaction.user.mention}. Reason: {reason}")
+            warns = await db.get_warnings(_get_guild_id(interaction), str(member.id))
+            embed = _build_log_embed(
+                "warn",
+                target=member,
+                moderator=interaction.user,
+                reason=reason,
+                extra_fields=[("\u26a0\ufe0f Total Warnings", str(len(warns)), True)],
+            )
+            await _send_log_embed(interaction.guild, embed)
         await interaction.followup.send(f"\u26a0\ufe0f **{member}** has been warned. Reason: {reason}")
     except Exception as e:
         await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
@@ -449,9 +635,16 @@ async def clearwarnings_cmd(interaction: discord.Interaction, member: discord.Me
     await interaction.response.defer()
     if not await _check_command(interaction, "clearwarnings"): return
     try:
+        old_count = len(await db.get_warnings(_get_guild_id(interaction), str(member.id)))
         await db.clear_warnings(_get_guild_id(interaction), str(member.id))
         await db.log_action(_get_guild_id(interaction), "clearwarnings", str(member.id), str(interaction.user.id))
-        await _send_log(interaction.guild, f"\U0001f9f9 All warnings cleared for **{member}** by {interaction.user.mention}.")
+        embed = _build_log_embed(
+            "clearwarnings",
+            target=member,
+            moderator=interaction.user,
+            extra_fields=[("\u26a0\ufe0f Warnings Cleared", str(old_count), True)],
+        )
+        await _send_log_embed(interaction.guild, embed)
         await interaction.followup.send(f"\u2705 All warnings for **{member}** have been cleared.")
     except Exception as e:
         await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
@@ -484,6 +677,8 @@ async def blacklist_cmd(interaction: discord.Interaction, member: discord.Member
     try:
         await db.add_blacklisted_user(_get_guild_id(interaction), str(member.id), reason, str(interaction.user.id))
         await db.log_action(_get_guild_id(interaction), "blacklist", str(member.id), str(interaction.user.id), reason)
+        embed = _build_log_embed("blacklist", target=member, moderator=interaction.user, reason=reason)
+        await _send_log_embed(interaction.guild, embed)
         await interaction.followup.send(f"\U0001f6ab **{member}** has been blacklisted. Reason: {reason}")
     except Exception as e:
         await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
@@ -497,6 +692,13 @@ async def unblacklist_cmd(interaction: discord.Interaction, user_id: str):
     try:
         await db.remove_blacklisted_user(_get_guild_id(interaction), user_id)
         await db.log_action(_get_guild_id(interaction), "unblacklist", user_id, str(interaction.user.id))
+        embed = _build_log_embed(
+            "unblacklist",
+            moderator=interaction.user,
+            reason="Removed from blacklist",
+            extra_fields=[("\U0001f194 User ID", f"`{user_id}`", True)],
+        )
+        await _send_log_embed(interaction.guild, embed)
         await interaction.followup.send(f"\u2705 User `{user_id}` removed from blacklist.")
     except Exception as e:
         await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
@@ -538,6 +740,14 @@ async def slowmode_cmd(interaction: discord.Interaction, seconds: int, channel: 
         seconds = max(0, min(seconds, 21600))
         await target.edit(slowmode_delay=seconds)
         await db.log_action(_get_guild_id(interaction), "slowmode", str(target.id), str(interaction.user.id), f"{seconds}s")
+        embed = _build_log_embed(
+            "slowmode",
+            moderator=interaction.user,
+            channel=target,
+            reason="Slowmode updated",
+            extra_fields=[("\u23f1\ufe0f New Delay", "Disabled" if seconds == 0 else f"{seconds}s", True)],
+        )
+        await _send_log_embed(interaction.guild, embed)
         if seconds == 0:
             await interaction.followup.send(f"\u23f1\ufe0f Slowmode **disabled** in {target.mention}.")
         else:
@@ -559,7 +769,8 @@ async def lock_cmd(interaction: discord.Interaction, channel: discord.TextChanne
         overwrite.send_messages = False
         await target.set_permissions(interaction.guild.default_role, overwrite=overwrite, reason=reason)
         await db.log_action(_get_guild_id(interaction), "lock", str(target.id), str(interaction.user.id), reason)
-        await _send_log(interaction.guild, f"\U0001f512 {target.mention} locked by {interaction.user.mention}. Reason: {reason}")
+        embed = _build_log_embed("lock", moderator=interaction.user, channel=target, reason=reason)
+        await _send_log_embed(interaction.guild, embed)
         await interaction.followup.send(f"\U0001f512 {target.mention} has been **locked**. Reason: {reason}")
     except discord.Forbidden:
         await interaction.followup.send("\u274c I don't have permission to edit that channel.", ephemeral=True)
@@ -578,7 +789,8 @@ async def unlock_cmd(interaction: discord.Interaction, channel: discord.TextChan
         overwrite.send_messages = None
         await target.set_permissions(interaction.guild.default_role, overwrite=overwrite, reason=reason)
         await db.log_action(_get_guild_id(interaction), "unlock", str(target.id), str(interaction.user.id), reason)
-        await _send_log(interaction.guild, f"\U0001f513 {target.mention} unlocked by {interaction.user.mention}. Reason: {reason}")
+        embed = _build_log_embed("unlock", moderator=interaction.user, channel=target, reason=reason)
+        await _send_log_embed(interaction.guild, embed)
         await interaction.followup.send(f"\U0001f513 {target.mention} has been **unlocked**.")
     except discord.Forbidden:
         await interaction.followup.send("\u274c I don't have permission to edit that channel.", ephemeral=True)
@@ -595,6 +807,16 @@ async def nick_cmd(interaction: discord.Interaction, member: discord.Member, nic
         old_nick = member.display_name
         await member.edit(nick=nickname)
         await db.log_action(_get_guild_id(interaction), "nick", str(member.id), str(interaction.user.id), f"{old_nick} -> {nickname or 'reset'}")
+        embed = _build_log_embed(
+            "nick",
+            target=member,
+            moderator=interaction.user,
+            extra_fields=[
+                ("\u270f\ufe0f Old Nickname", old_nick, True),
+                ("\u2728 New Nickname",       nickname or "*(reset)*", True),
+            ],
+        )
+        await _send_log_embed(interaction.guild, embed)
         if nickname:
             await interaction.followup.send(f"\u270f\ufe0f **{member.name}**'s nickname set to **{nickname}**.")
         else:
@@ -618,10 +840,24 @@ async def role_cmd(interaction: discord.Interaction, action: app_commands.Choice
         if action.value == "add":
             await member.add_roles(role, reason=f"By {interaction.user}")
             await db.log_action(_get_guild_id(interaction), "role-add", str(member.id), str(interaction.user.id), str(role.id))
+            embed = _build_log_embed(
+                "role-add",
+                target=member,
+                moderator=interaction.user,
+                extra_fields=[("\U0001f3f7\ufe0f Role", role.mention, True)],
+            )
+            await _send_log_embed(interaction.guild, embed)
             await interaction.followup.send(f"\u2705 Added {role.mention} to **{member.display_name}**.")
         else:
             await member.remove_roles(role, reason=f"By {interaction.user}")
             await db.log_action(_get_guild_id(interaction), "role-remove", str(member.id), str(interaction.user.id), str(role.id))
+            embed = _build_log_embed(
+                "role-remove",
+                target=member,
+                moderator=interaction.user,
+                extra_fields=[("\U0001f3f7\ufe0f Role", role.mention, True)],
+            )
+            await _send_log_embed(interaction.guild, embed)
             await interaction.followup.send(f"\u2705 Removed {role.mention} from **{member.display_name}**.")
     except discord.Forbidden:
         await interaction.followup.send("\u274c I don't have permission to manage that role.", ephemeral=True)
@@ -641,7 +877,14 @@ async def softban_cmd(interaction: discord.Interaction, member: discord.Member, 
         await member.ban(delete_message_days=delete_days, reason=f"Softban: {reason}")
         await interaction.guild.unban(member, reason="Softban unban")
         await db.log_action(_get_guild_id(interaction), "softban", str(member.id), str(interaction.user.id), reason)
-        await _send_log(interaction.guild, f"\U0001f9fc **{member}** was softbanned by {interaction.user.mention}. Reason: {reason}")
+        embed = _build_log_embed(
+            "softban",
+            target=member,
+            moderator=interaction.user,
+            reason=reason,
+            extra_fields=[("\U0001f5d1\ufe0f Messages Deleted", f"{delete_days} day(s)", True)],
+        )
+        await _send_log_embed(interaction.guild, embed)
         await interaction.followup.send(f"\U0001f9fc **{member}** was softbanned ({delete_days}d of messages deleted). Reason: {reason}")
     except discord.Forbidden:
         await interaction.followup.send("\u274c I don't have permission to ban/unban that member.", ephemeral=True)
@@ -680,6 +923,17 @@ async def announce_cmd(
         content = "@everyone" if ping_everyone else None
         await target.send(content=content, embed=embed)
         await db.log_action(_get_guild_id(interaction), "announce", str(target.id), str(interaction.user.id), title[:100])
+        log_embed = _build_log_embed(
+            "announce",
+            moderator=interaction.user,
+            channel=target,
+            extra_fields=[
+                ("\U0001f4e3 Title",    title[:200], False),
+                ("\U0001f4ac Preview", message[:200], False),
+                ("\U0001f4e2 Pinged @everyone", "Yes" if ping_everyone else "No", True),
+            ],
+        )
+        await _send_log_embed(interaction.guild, log_embed)
         await interaction.followup.send(f"\u2705 Announcement sent to {target.mention}.", ephemeral=True)
     except discord.Forbidden:
         await interaction.followup.send("\u274c I don't have permission to send messages in that channel.", ephemeral=True)
@@ -697,7 +951,7 @@ async def serverinfo_cmd(interaction: discord.Interaction):
         online  = sum(1 for m in guild.members if m.status != discord.Status.offline)
         txt_ch  = len(guild.text_channels)
         voc_ch  = len(guild.voice_channels)
-        roles   = len(guild.roles) - 1  # exclude @everyone
+        roles   = len(guild.roles) - 1
         boosts  = guild.premium_subscription_count
         created = discord.utils.format_dt(guild.created_at, style="D")
 
