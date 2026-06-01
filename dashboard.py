@@ -124,18 +124,44 @@ def _bot_headers():
 
 
 def _bot_guilds() -> set:
-    """Return set of guild IDs the bot is currently in."""
+    """Return set of guild IDs the bot is currently in.
+    Paginates through all pages (Discord returns max 200 per request).
+    Returns empty set on any error — check /api/debug/bot-guilds for details.
+    """
     if not BOT_TOKEN:
+        print("[_bot_guilds] BOT_TOKEN is not set", flush=True)
         return set()
-    try:
-        req = urllib.request.Request(
-            f"{DISCORD_API}/users/@me/guilds",
-            headers=_bot_headers()
-        )
-        with urllib.request.urlopen(req, timeout=8) as resp:
-            return {g["id"] for g in json.loads(resp.read())}
-    except Exception:
-        return set()
+    guild_ids = set()
+    after = None
+    page = 0
+    while True:
+        page += 1
+        url = f"{DISCORD_API}/users/@me/guilds?limit=200"
+        if after:
+            url += f"&after={after}"
+        try:
+            req = urllib.request.Request(url, headers=_bot_headers())
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                batch = json.loads(resp.read())
+        except urllib.error.HTTPError as e:
+            body = ""
+            try: body = e.read().decode()
+            except Exception: pass
+            print(f"[_bot_guilds] HTTP {e.code} on page {page}: {body}", flush=True)
+            break
+        except Exception as ex:
+            print(f"[_bot_guilds] Error on page {page}: {ex}", flush=True)
+            break
+        if not batch:
+            break
+        for g in batch:
+            guild_ids.add(g["id"])
+        if len(batch) < 200:
+            # Last page
+            break
+        after = batch[-1]["id"]
+    print(f"[_bot_guilds] Found {len(guild_ids)} guilds across {page} page(s)", flush=True)
+    return guild_ids
 
 
 def _fetch_discord_user(user_id: str) -> tuple[dict, str]:
@@ -595,6 +621,55 @@ def api_status():
         return jsonify({"online": False, "reason": "heartbeat file not found"})
     except Exception as e:
         return jsonify({"online": False, "reason": str(e)})
+
+
+# ── Debug: bot guild membership ────────────────────────────────────────────
+
+@app.route("/api/debug/bot-guilds")
+@login_required
+def api_debug_bot_guilds():
+    """Debug endpoint — shows what guilds the bot token can see
+       and whether each of the logged-in user's guilds is found.
+       Visit /api/debug/bot-guilds in your browser after logging in.
+    """
+    bot_token_set = bool(BOT_TOKEN)
+    bot_guild_ids = set()
+    api_error = None
+
+    if bot_token_set:
+        # Single-page fetch with full error detail
+        try:
+            req = urllib.request.Request(
+                f"{DISCORD_API}/users/@me/guilds?limit=200",
+                headers=_bot_headers()
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                batch = json.loads(resp.read())
+                bot_guild_ids = {g["id"] for g in batch}
+        except urllib.error.HTTPError as e:
+            body = ""
+            try: body = e.read().decode()
+            except Exception: pass
+            api_error = f"HTTP {e.code}: {body}"
+        except Exception as ex:
+            api_error = f"{type(ex).__name__}: {ex}"
+
+    user_guilds = session.get("user_guilds", {})
+    comparison = []
+    for gid, g in user_guilds.items():
+        comparison.append({
+            "id":      gid,
+            "name":    g.get("name", gid),
+            "bot_sees": gid in bot_guild_ids,
+        })
+
+    return jsonify({
+        "bot_token_set":   bot_token_set,
+        "bot_token_prefix": BOT_TOKEN[:12] + "..." if BOT_TOKEN else None,
+        "api_error":       api_error,
+        "bot_guild_count": len(bot_guild_ids),
+        "your_guilds":     comparison,
+    })
 
 
 # ── Helper: get active guild_id or abort ──────────────────────────────────
