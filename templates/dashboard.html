@@ -514,4 +514,178 @@
 <div class="dash-main-grid">
 
   <!-- Recent Actions -->
-  <div class="card ac
+  <div class="card activity-card" style="padding:0; overflow:hidden;">
+    <div class="card-title" style="padding:18px 20px 14px; margin-bottom:0; border-bottom:1px solid var(--glass-border);">
+      Recent Actions
+    </div>
+    {% if logs %}
+    <table class="actions-table">
+      <thead>
+        <tr>
+          <th>Action</th>
+          <th>Moderator</th>
+          <th>Target</th>
+          <th>Reason</th>
+          <th>Time</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in logs[:8] %}
+        <tr>
+          <td><span class="action-type action-{{ log.action_type|lower if log.action_type else 'unknown' }}">{{ log.action_type|upper if log.action_type else '—' }}</span></td>
+          <td style="color:var(--text-2);">{{ log.moderator_name or log.moderator_id or 'Unknown' }}</td>
+          <td style="font-weight:600;">{{ log.target_name or log.target_id or '—' }}</td>
+          <td style="color:var(--text-2); max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ log.reason or '—' }}</td>
+          <td style="color:var(--text-3); white-space:nowrap; font-size:11px; font-variant-numeric:tabular-nums;">{{ log.timestamp or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <a href="{{ url_for('logging_page') }}" class="view-all-link">
+      View all logs
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </a>
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-state-emoji">🛡️</div>
+      <h3>No actions yet</h3>
+      <p>Moderation actions will appear here once your mods get to work.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Server Info -->
+  <div class="card" style="padding:0; overflow:hidden;">
+    <div class="card-title" style="padding:18px 20px 14px; margin-bottom:0; border-bottom:1px solid var(--glass-border);">
+      Server Info
+    </div>
+    <div class="server-info-card" style="padding:16px 20px 20px;">
+      <div class="server-info-row">
+        <span class="server-info-label">Bot Status</span>
+        <span class="server-info-badge">
+          <span style="width:6px;height:6px;border-radius:50%;background:var(--ios-green);box-shadow:0 0 6px var(--ios-green);flex-shrink:0;"></span>
+          Online
+        </span>
+      </div>
+      <div class="server-info-row">
+        <span class="server-info-label">Auto-Mod</span>
+        <span class="server-info-badge">
+          <span style="width:6px;height:6px;border-radius:50%;background:var(--ios-blue);flex-shrink:0;"></span>
+          Active
+        </span>
+      </div>
+      <div class="server-info-row">
+        <span class="server-info-label">Logging</span>
+        <span class="server-info-badge">
+          <span style="width:6px;height:6px;border-radius:50%;background:var(--ios-purple);flex-shrink:0;"></span>
+          Enabled
+        </span>
+      </div>
+      <div class="server-info-row">
+        <span class="server-info-label">Total Actions</span>
+        <span class="server-info-value" style="font-variant-numeric:tabular-nums;">{{ (stats.bans or 0) + (stats.kicks or 0) + (stats.timeouts or 0) + (stats.warnings or 0) }}</span>
+      </div>
+      {% if session.get('guild_id') %}
+      <div class="server-info-row">
+        <span class="server-info-label">Server ID</span>
+        <span class="server-info-value" style="font-size:11px; color:var(--text-2); font-variant-numeric:tabular-nums;">{{ session['guild_id'] }}</span>
+      </div>
+      {% endif %}
+    </div>
+    <a href="{{ url_for('settings') }}" class="view-all-link">
+      Server settings
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </a>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     FEATURE CARDS
+═══════════════════════════════════════════════ -->
+<div class="section-heading">Features</div>
+<div class="feature-grid">
+
+  <a href="{{ url_for('moderation') }}" class="feature-card" style="animation-delay:80ms">
+    <div class="feature-icon-wrap" style="background:rgba(255,69,58,0.18);">🛡️</div>
+    <h3>Moderation</h3>
+    <p>Modlogs, timed punishments, full infraction history — everything your mod team needs.</p>
+    <div class="feature-card-link">Manage <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+  </a>
+
+  <a href="{{ url_for('logging_page') }}" class="feature-card" style="animation-delay:140ms">
+    <div class="feature-icon-wrap" style="background:rgba(10,132,255,0.18);">📄</div>
+    <h3>Logging</h3>
+    <p>Track message edits, deletes, joins, leaves, role changes and more — fully configurable.</p>
+    <div class="feature-card-link">Configure <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+  </a>
+
+  <a href="{{ url_for('autoroles') }}" class="feature-card" style="animation-delay:200ms">
+    <div class="feature-icon-wrap" style="background:rgba(48,209,88,0.18);">👥</div>
+    <h3>Auto Roles</h3>
+    <p>Automatically assign roles to new members when they join your server.</p>
+    <div class="feature-card-link">Configure <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+  </a>
+
+  <a href="{{ url_for('reaction_roles') }}" class="feature-card" style="animation-delay:260ms">
+    <div class="feature-icon-wrap" style="background:rgba(191,90,242,0.18);">😀</div>
+    <h3>Reaction Roles</h3>
+    <p>Let members self-assign roles by reacting to messages with configurable emoji.</p>
+    <div class="feature-card-link">Configure <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+  </a>
+
+  <a href="{{ url_for('greetings') }}" class="feature-card" style="animation-delay:320ms">
+    <div class="feature-icon-wrap" style="background:rgba(255,159,10,0.18);">💌</div>
+    <h3>Greetings</h3>
+    <p>Custom welcome and farewell messages with embeds and user mention support.</p>
+    <div class="feature-card-link">Configure <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+  </a>
+
+  <a href="{{ url_for('tags') }}" class="feature-card" style="animation-delay:380ms">
+    <div class="feature-icon-wrap" style="background:rgba(50,173,230,0.18);">🏷️</div>
+    <h3>Tags &amp; Commands</h3>
+    <p>Create custom commands and tags for quick, reusable responses in your server.</p>
+    <div class="feature-card-link">Configure <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+  </a>
+
+</div>
+
+<script>
+/* Animated stat counter */
+function animateCounters() {
+  document.querySelectorAll('.stat-value[data-count]').forEach(el => {
+    const target = parseInt(el.dataset.count, 10) || 0;
+    if (target === 0) return;
+    const duration = 900;
+    const start = performance.now();
+    function update(now) {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      el.textContent = Math.round(eased * target).toLocaleString();
+      if (progress < 1) requestAnimationFrame(update);
+    }
+    requestAnimationFrame(update);
+  });
+}
+
+/* Ripple effect on .btn clicks */
+document.querySelectorAll('.btn').forEach(btn => {
+  btn.addEventListener('click', function(e) {
+    const r = document.createElement('span');
+    r.className = 'lg-ripple';
+    const rect = btn.getBoundingClientRect();
+    r.style.top  = (e.clientY - rect.top)  + 'px';
+    r.style.left = (e.clientX - rect.left) + 'px';
+    btn.appendChild(r);
+    r.addEventListener('animationend', () => r.remove());
+  });
+});
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', animateCounters);
+} else {
+  animateCounters();
+}
+</script>
+{% endblock %}
