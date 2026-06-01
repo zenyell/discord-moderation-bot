@@ -60,6 +60,32 @@ BADGE_FLAGS = {
     discord.PublicUserFlags.active_developer:         "\u2699\ufe0f Active Dev",
 }
 
+# ─────────────────────── response embed helpers ───────────────────────────────
+
+def _ok(description: str, title: str = None) -> discord.Embed:
+    """Green success embed."""
+    return discord.Embed(
+        title=title or "\u2705 Success",
+        description=description,
+        color=0x57F287,
+    )
+
+def _err(description: str, title: str = None) -> discord.Embed:
+    """Red error embed."""
+    return discord.Embed(
+        title=title or "\u274c Error",
+        description=description,
+        color=0xED4245,
+    )
+
+def _info(description: str, title: str = None) -> discord.Embed:
+    """Blurple info embed."""
+    return discord.Embed(
+        title=title or "\U0001f4cb Info",
+        description=description,
+        color=0x5865F2,
+    )
+
 # ─────────────────────── log embed helpers ────────────────────────────────────
 
 # Maps action type → (color, emoji, label)
@@ -203,13 +229,13 @@ async def _check_command(interaction: discord.Interaction, command_name: str) ->
     except Exception as e:
         print(f"[Bot] DB error in _check_command({command_name}): {e}", flush=True)
         if not _is_mod(interaction) and not interaction.user.guild_permissions.administrator:
-            await interaction.followup.send("\u274c You need **Moderate Members** permission.", ephemeral=True)
+            await interaction.followup.send(embed=_err("You need **Moderate Members** permission."), ephemeral=True)
             return False
         return True
 
     if not cs["enabled"]:
         await interaction.followup.send(
-            f"\u274c The `/{command_name}` command is currently **disabled**.", ephemeral=True
+            embed=_err(f"The `/{command_name}` command is currently **disabled**."), ephemeral=True
         )
         return False
 
@@ -220,14 +246,14 @@ async def _check_command(interaction: discord.Interaction, command_name: str) ->
     bl_users = [x.strip() for x in cs["blacklist_users"].split(",") if x.strip()]
     if user_id in bl_users:
         await interaction.followup.send(
-            f"\u274c You have been **blacklisted** from using `/{command_name}`.", ephemeral=True
+            embed=_err(f"You have been **blacklisted** from using `/{command_name}`."), ephemeral=True
         )
         return False
 
     bl_mods = [x.strip() for x in cs["blacklist_mods"].split(",") if x.strip()]
     if user_id in bl_mods:
         await interaction.followup.send(
-            f"\u274c You are **not allowed** to use `/{command_name}`.", ephemeral=True
+            embed=_err(f"You are **not allowed** to use `/{command_name}`."), ephemeral=True
         )
         return False
 
@@ -237,13 +263,13 @@ async def _check_command(interaction: discord.Interaction, command_name: str) ->
         allowed = (user_id in wl_users) or any(r in user_roles for r in wl_roles) or is_admin
         if not allowed:
             await interaction.followup.send(
-                f"\u274c You need a **whitelisted role or user ID** to use `/{command_name}`.", ephemeral=True
+                embed=_err(f"You need a **whitelisted role or user ID** to use `/{command_name}`."), ephemeral=True
             )
             return False
 
     if not _is_mod(interaction) and not is_admin:
         await interaction.followup.send(
-            "\u274c You need **Moderate Members** permission.", ephemeral=True
+            embed=_err("You need **Moderate Members** permission."), ephemeral=True
         )
         return False
 
@@ -272,19 +298,19 @@ async def on_ready():
 @bot.tree.error
 async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
     if isinstance(error, app_commands.MissingPermissions):
-        msg = "\u274c You don't have permission to use this command."
+        embed = _err("You don't have permission to use this command.")
     elif isinstance(error, app_commands.BotMissingPermissions):
-        msg = f"\u274c I'm missing permissions: `{', '.join(error.missing_permissions)}`"
+        embed = _err(f"I'm missing permissions: `{', '.join(error.missing_permissions)}`")
     elif isinstance(error, app_commands.CommandOnCooldown):
-        msg = f"\u23f3 Command on cooldown. Try again in `{error.retry_after:.1f}s`."
+        embed = _info(f"Command on cooldown. Try again in `{error.retry_after:.1f}s`.", title="\u23f3 Cooldown")
     else:
         print(f"[Bot] Unhandled error in /{interaction.command and interaction.command.name}: {error}", flush=True)
-        msg = "\u274c Something went wrong. Please try again."
+        embed = _err("Something went wrong. Please try again.")
     try:
         if interaction.response.is_done():
-            await interaction.followup.send(msg, ephemeral=True)
+            await interaction.followup.send(embed=embed, ephemeral=True)
         else:
-            await interaction.response.send_message(msg, ephemeral=True)
+            await interaction.response.send_message(embed=embed, ephemeral=True)
     except Exception:
         pass
 
@@ -471,11 +497,14 @@ async def kick(interaction: discord.Interaction, member: discord.Member, reason:
         if await db.get_setting("log_kick", "1") == "1":
             embed = _build_log_embed("kick", target=member, moderator=interaction.user, reason=reason)
             await _send_log_embed(interaction.guild, embed)
-        await interaction.followup.send(f"\U0001f462 **{member}** was kicked. Reason: {reason}")
+        await interaction.followup.send(embed=_ok(
+            f"**{member.display_name}** (`{member}`) has been kicked.\n**Reason:** {reason}",
+            title="\U0001f462 Member Kicked"
+        ))
     except discord.Forbidden:
-        await interaction.followup.send("\u274c I don't have permission to kick that member.", ephemeral=True)
+        await interaction.followup.send(embed=_err("I don't have permission to kick that member."), ephemeral=True)
     except Exception as e:
-        await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
+        await interaction.followup.send(embed=_err(f"An unexpected error occurred: {e}"), ephemeral=True)
 
 
 @tree.command(name="ban", description="Ban a member", guild=TEST_GUILD)
@@ -489,11 +518,14 @@ async def ban(interaction: discord.Interaction, member: discord.Member, reason: 
         if await db.get_setting("log_ban", "1") == "1":
             embed = _build_log_embed("ban", target=member, moderator=interaction.user, reason=reason)
             await _send_log_embed(interaction.guild, embed)
-        await interaction.followup.send(f"\U0001f528 **{member}** was banned. Reason: {reason}")
+        await interaction.followup.send(embed=_ok(
+            f"**{member.display_name}** (`{member}`) has been banned.\n**Reason:** {reason}",
+            title="\U0001f528 Member Banned"
+        ))
     except discord.Forbidden:
-        await interaction.followup.send("\u274c I don't have permission to ban that member.", ephemeral=True)
+        await interaction.followup.send(embed=_err("I don't have permission to ban that member."), ephemeral=True)
     except Exception as e:
-        await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
+        await interaction.followup.send(embed=_err(f"An unexpected error occurred: {e}"), ephemeral=True)
 
 
 @tree.command(name="unban", description="Unban a user by ID", guild=TEST_GUILD)
@@ -508,13 +540,16 @@ async def unban(interaction: discord.Interaction, user_id: str, reason: str = "N
         if await db.get_setting("log_unban", "1") == "1":
             embed = _build_log_embed("unban", target=user, moderator=interaction.user, reason=reason)
             await _send_log_embed(interaction.guild, embed)
-        await interaction.followup.send(f"\u2705 **{user}** was unbanned.")
+        await interaction.followup.send(embed=_ok(
+            f"**{user}** has been unbanned.\n**Reason:** {reason}",
+            title="\u2705 Member Unbanned"
+        ))
     except discord.NotFound:
-        await interaction.followup.send("\u274c User not found or not banned.", ephemeral=True)
+        await interaction.followup.send(embed=_err("User not found or not banned."), ephemeral=True)
     except discord.Forbidden:
-        await interaction.followup.send("\u274c I don't have permission to unban.", ephemeral=True)
+        await interaction.followup.send(embed=_err("I don't have permission to unban."), ephemeral=True)
     except Exception as e:
-        await interaction.followup.send(f"\u274c Could not unban: {e}", ephemeral=True)
+        await interaction.followup.send(embed=_err(f"Could not unban: {e}"), ephemeral=True)
 
 
 @tree.command(name="timeout", description="Timeout a member", guild=TEST_GUILD)
@@ -538,11 +573,14 @@ async def timeout_cmd(interaction: discord.Interaction, member: discord.Member, 
                 ],
             )
             await _send_log_embed(interaction.guild, embed)
-        await interaction.followup.send(f"\u23f1\ufe0f **{member}** timed out for {minutes}m. Reason: {reason}")
+        await interaction.followup.send(embed=_ok(
+            f"**{member.display_name}** has been timed out for **{minutes} minute(s)**.\n**Reason:** {reason}",
+            title="\u23f1\ufe0f Member Timed Out"
+        ))
     except discord.Forbidden:
-        await interaction.followup.send("\u274c I don't have permission to timeout that member.", ephemeral=True)
+        await interaction.followup.send(embed=_err("I don't have permission to timeout that member."), ephemeral=True)
     except Exception as e:
-        await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
+        await interaction.followup.send(embed=_err(f"An unexpected error occurred: {e}"), ephemeral=True)
 
 
 @tree.command(name="untimeout", description="Remove timeout from a member", guild=TEST_GUILD)
@@ -555,11 +593,14 @@ async def untimeout_cmd(interaction: discord.Interaction, member: discord.Member
         await db.log_action(_get_guild_id(interaction), "untimeout", str(member.id), str(interaction.user.id), reason)
         embed = _build_log_embed("untimeout", target=member, moderator=interaction.user, reason=reason)
         await _send_log_embed(interaction.guild, embed)
-        await interaction.followup.send(f"\u2705 Timeout removed from **{member}**.")
+        await interaction.followup.send(embed=_ok(
+            f"Timeout has been removed from **{member.display_name}**.",
+            title="\u23f0 Timeout Removed"
+        ))
     except discord.Forbidden:
-        await interaction.followup.send("\u274c I don't have permission to modify that member.", ephemeral=True)
+        await interaction.followup.send(embed=_err("I don't have permission to modify that member."), ephemeral=True)
     except Exception as e:
-        await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
+        await interaction.followup.send(embed=_err(f"An unexpected error occurred: {e}"), ephemeral=True)
 
 
 @tree.command(name="purge", description="Delete messages in bulk", guild=TEST_GUILD)
@@ -576,15 +617,18 @@ async def purge(interaction: discord.Interaction, amount: int):
                 "purge",
                 moderator=interaction.user,
                 channel=interaction.channel,
-                reason=f"Bulk delete requested",
+                reason="Bulk delete requested",
                 extra_fields=[("\U0001f5d1\ufe0f Messages Deleted", str(len(deleted)), True)],
             )
             await _send_log_embed(interaction.guild, embed)
-        await interaction.followup.send(f"\U0001f5d1\ufe0f Deleted {len(deleted)} messages.", ephemeral=True)
+        await interaction.followup.send(embed=_ok(
+            f"Successfully deleted **{len(deleted)}** message(s) in {interaction.channel.mention}.",
+            title="\U0001f5d1\ufe0f Messages Purged"
+        ), ephemeral=True)
     except discord.Forbidden:
-        await interaction.followup.send("\u274c I don't have permission to delete messages here.", ephemeral=True)
+        await interaction.followup.send(embed=_err("I don't have permission to delete messages here."), ephemeral=True)
     except Exception as e:
-        await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
+        await interaction.followup.send(embed=_err(f"An unexpected error occurred: {e}"), ephemeral=True)
 
 
 @tree.command(name="warn", description="Warn a member", guild=TEST_GUILD)
@@ -605,9 +649,14 @@ async def warn(interaction: discord.Interaction, member: discord.Member, reason:
                 extra_fields=[("\u26a0\ufe0f Total Warnings", str(len(warns)), True)],
             )
             await _send_log_embed(interaction.guild, embed)
-        await interaction.followup.send(f"\u26a0\ufe0f **{member}** has been warned. Reason: {reason}")
+        warns = await db.get_warnings(_get_guild_id(interaction), str(member.id))
+        await interaction.followup.send(embed=discord.Embed(
+            title="\u26a0\ufe0f Member Warned",
+            description=f"**{member.display_name}** has been warned.\n**Reason:** {reason}\n**Total Warnings:** {len(warns)}",
+            color=0xFEE75C,
+        ).set_thumbnail(url=member.display_avatar.url))
     except Exception as e:
-        await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
+        await interaction.followup.send(embed=_err(f"An unexpected error occurred: {e}"), ephemeral=True)
 
 
 @tree.command(name="warnings", description="View warnings for a member", guild=TEST_GUILD)
@@ -618,15 +667,25 @@ async def warnings_cmd(interaction: discord.Interaction, member: discord.Member)
     try:
         rows = await db.get_warnings(_get_guild_id(interaction), str(member.id))
         if not rows:
-            await interaction.followup.send(f"\u2705 **{member}** has no warnings.")
+            await interaction.followup.send(embed=_ok(
+                f"**{member.display_name}** has no warnings.",
+                title="\u2705 No Warnings"
+            ))
             return
         lines = [
             f"`{i+1}.` {r['reason'] or 'No reason'} {DASH} {r['created_at'][:19]}"
             for i, r in enumerate(rows)
         ]
-        await interaction.followup.send(f"\u26a0\ufe0f **{member}** has **{len(rows)}** warning(s):\n" + "\n".join(lines))
+        embed = discord.Embed(
+            title=f"\u26a0\ufe0f Warnings — {member.display_name}",
+            description="\n".join(lines),
+            color=0xFEE75C,
+        )
+        embed.set_thumbnail(url=member.display_avatar.url)
+        embed.set_footer(text=f"Total: {len(rows)} warning(s)")
+        await interaction.followup.send(embed=embed)
     except Exception as e:
-        await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
+        await interaction.followup.send(embed=_err(f"An unexpected error occurred: {e}"), ephemeral=True)
 
 
 @tree.command(name="clearwarnings", description="Clear all warnings for a member", guild=TEST_GUILD)
@@ -645,9 +704,12 @@ async def clearwarnings_cmd(interaction: discord.Interaction, member: discord.Me
             extra_fields=[("\u26a0\ufe0f Warnings Cleared", str(old_count), True)],
         )
         await _send_log_embed(interaction.guild, embed)
-        await interaction.followup.send(f"\u2705 All warnings for **{member}** have been cleared.")
+        await interaction.followup.send(embed=_ok(
+            f"All warnings for **{member.display_name}** have been cleared.\n**Warnings removed:** {old_count}",
+            title="\U0001f9f9 Warnings Cleared"
+        ))
     except Exception as e:
-        await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
+        await interaction.followup.send(embed=_err(f"An unexpected error occurred: {e}"), ephemeral=True)
 
 
 @tree.command(name="modlogs", description="View recent mod actions", guild=TEST_GUILD)
@@ -658,15 +720,21 @@ async def modlogs(interaction: discord.Interaction, limit: int = 10):
     try:
         rows = await db.recent_logs(_get_guild_id(interaction), limit)
         if not rows:
-            await interaction.followup.send("No mod logs yet.")
+            await interaction.followup.send(embed=_info("No mod logs yet.", title="\U0001f4cb Mod Logs"))
             return
         lines = [
             f"`{r['action'].upper()}` {ARROW} <@{r['target_id']}> by <@{r['moderator_id']}> {DASH} {r['reason'] or DASH}"
             for r in rows
         ]
-        await interaction.followup.send("\U0001f4cb **Recent Mod Logs:**\n" + "\n".join(lines))
+        embed = discord.Embed(
+            title="\U0001f4cb Recent Mod Logs",
+            description="\n".join(lines),
+            color=0x5865F2,
+        )
+        embed.set_footer(text=f"Showing last {len(rows)} action(s)")
+        await interaction.followup.send(embed=embed)
     except Exception as e:
-        await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
+        await interaction.followup.send(embed=_err(f"An unexpected error occurred: {e}"), ephemeral=True)
 
 
 @tree.command(name="blacklist", description="Add a user to the blacklist (auto-ban on join)", guild=TEST_GUILD)
@@ -679,9 +747,13 @@ async def blacklist_cmd(interaction: discord.Interaction, member: discord.Member
         await db.log_action(_get_guild_id(interaction), "blacklist", str(member.id), str(interaction.user.id), reason)
         embed = _build_log_embed("blacklist", target=member, moderator=interaction.user, reason=reason)
         await _send_log_embed(interaction.guild, embed)
-        await interaction.followup.send(f"\U0001f6ab **{member}** has been blacklisted. Reason: {reason}")
+        await interaction.followup.send(embed=discord.Embed(
+            title="\U0001f6ab User Blacklisted",
+            description=f"**{member.display_name}** has been added to the blacklist.\n**Reason:** {reason}",
+            color=0xED4245,
+        ).set_thumbnail(url=member.display_avatar.url))
     except Exception as e:
-        await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
+        await interaction.followup.send(embed=_err(f"An unexpected error occurred: {e}"), ephemeral=True)
 
 
 @tree.command(name="unblacklist", description="Remove a user from the blacklist", guild=TEST_GUILD)
@@ -699,9 +771,12 @@ async def unblacklist_cmd(interaction: discord.Interaction, user_id: str):
             extra_fields=[("\U0001f194 User ID", f"`{user_id}`", True)],
         )
         await _send_log_embed(interaction.guild, embed)
-        await interaction.followup.send(f"\u2705 User `{user_id}` removed from blacklist.")
+        await interaction.followup.send(embed=_ok(
+            f"User `{user_id}` has been removed from the blacklist.",
+            title="\u2705 User Unblacklisted"
+        ))
     except Exception as e:
-        await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
+        await interaction.followup.send(embed=_err(f"An unexpected error occurred: {e}"), ephemeral=True)
 
 
 @tree.command(name="addword", description="Add a word to the word blacklist", guild=TEST_GUILD)
@@ -711,9 +786,9 @@ async def addword(interaction: discord.Interaction, word: str):
     if not await _check_command(interaction, "addword"): return
     try:
         await db.add_blacklisted_word(_get_guild_id(interaction), word, str(interaction.user.id))
-        await interaction.followup.send(f"\u2705 Word `{word}` added to blacklist.", ephemeral=True)
+        await interaction.followup.send(embed=_ok(f"Word `{word}` has been added to the blacklist."), ephemeral=True)
     except Exception as e:
-        await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
+        await interaction.followup.send(embed=_err(f"An unexpected error occurred: {e}"), ephemeral=True)
 
 
 @tree.command(name="removeword", description="Remove a word from the word blacklist", guild=TEST_GUILD)
@@ -723,9 +798,9 @@ async def removeword(interaction: discord.Interaction, word: str):
     if not await _check_command(interaction, "removeword"): return
     try:
         await db.remove_blacklisted_word(_get_guild_id(interaction), word)
-        await interaction.followup.send(f"\u2705 Word `{word}` removed from blacklist.", ephemeral=True)
+        await interaction.followup.send(embed=_ok(f"Word `{word}` has been removed from the blacklist."), ephemeral=True)
     except Exception as e:
-        await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
+        await interaction.followup.send(embed=_err(f"An unexpected error occurred: {e}"), ephemeral=True)
 
 
 # ─────────────────────────────── channel & role commands ──────────────────────
@@ -749,13 +824,19 @@ async def slowmode_cmd(interaction: discord.Interaction, seconds: int, channel: 
         )
         await _send_log_embed(interaction.guild, embed)
         if seconds == 0:
-            await interaction.followup.send(f"\u23f1\ufe0f Slowmode **disabled** in {target.mention}.")
+            await interaction.followup.send(embed=_ok(
+                f"Slowmode has been **disabled** in {target.mention}.",
+                title="\u23f1\ufe0f Slowmode Disabled"
+            ))
         else:
-            await interaction.followup.send(f"\u23f1\ufe0f Slowmode set to **{seconds}s** in {target.mention}.")
+            await interaction.followup.send(embed=_ok(
+                f"Slowmode set to **{seconds}s** in {target.mention}.",
+                title="\u23f1\ufe0f Slowmode Updated"
+            ))
     except discord.Forbidden:
-        await interaction.followup.send("\u274c I don't have permission to edit that channel.", ephemeral=True)
+        await interaction.followup.send(embed=_err("I don't have permission to edit that channel."), ephemeral=True)
     except Exception as e:
-        await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
+        await interaction.followup.send(embed=_err(f"An unexpected error occurred: {e}"), ephemeral=True)
 
 
 @tree.command(name="lock", description="Lock a channel so members cannot send messages", guild=TEST_GUILD)
@@ -771,11 +852,15 @@ async def lock_cmd(interaction: discord.Interaction, channel: discord.TextChanne
         await db.log_action(_get_guild_id(interaction), "lock", str(target.id), str(interaction.user.id), reason)
         embed = _build_log_embed("lock", moderator=interaction.user, channel=target, reason=reason)
         await _send_log_embed(interaction.guild, embed)
-        await interaction.followup.send(f"\U0001f512 {target.mention} has been **locked**. Reason: {reason}")
+        await interaction.followup.send(embed=discord.Embed(
+            title="\U0001f512 Channel Locked",
+            description=f"{target.mention} has been **locked**.\n**Reason:** {reason}",
+            color=0xF4A300,
+        ))
     except discord.Forbidden:
-        await interaction.followup.send("\u274c I don't have permission to edit that channel.", ephemeral=True)
+        await interaction.followup.send(embed=_err("I don't have permission to edit that channel."), ephemeral=True)
     except Exception as e:
-        await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
+        await interaction.followup.send(embed=_err(f"An unexpected error occurred: {e}"), ephemeral=True)
 
 
 @tree.command(name="unlock", description="Unlock a channel so members can send messages again", guild=TEST_GUILD)
@@ -791,11 +876,14 @@ async def unlock_cmd(interaction: discord.Interaction, channel: discord.TextChan
         await db.log_action(_get_guild_id(interaction), "unlock", str(target.id), str(interaction.user.id), reason)
         embed = _build_log_embed("unlock", moderator=interaction.user, channel=target, reason=reason)
         await _send_log_embed(interaction.guild, embed)
-        await interaction.followup.send(f"\U0001f513 {target.mention} has been **unlocked**.")
+        await interaction.followup.send(embed=_ok(
+            f"{target.mention} has been **unlocked**.",
+            title="\U0001f513 Channel Unlocked"
+        ))
     except discord.Forbidden:
-        await interaction.followup.send("\u274c I don't have permission to edit that channel.", ephemeral=True)
+        await interaction.followup.send(embed=_err("I don't have permission to edit that channel."), ephemeral=True)
     except Exception as e:
-        await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
+        await interaction.followup.send(embed=_err(f"An unexpected error occurred: {e}"), ephemeral=True)
 
 
 @tree.command(name="nick", description="Change a member's nickname", guild=TEST_GUILD)
@@ -818,13 +906,19 @@ async def nick_cmd(interaction: discord.Interaction, member: discord.Member, nic
         )
         await _send_log_embed(interaction.guild, embed)
         if nickname:
-            await interaction.followup.send(f"\u270f\ufe0f **{member.name}**'s nickname set to **{nickname}**.")
+            await interaction.followup.send(embed=_ok(
+                f"**{member.name}**'s nickname has been set to **{nickname}**.",
+                title="\u270f\ufe0f Nickname Changed"
+            ))
         else:
-            await interaction.followup.send(f"\u270f\ufe0f **{member.name}**'s nickname has been **reset**.")
+            await interaction.followup.send(embed=_ok(
+                f"**{member.name}**'s nickname has been **reset**.",
+                title="\u270f\ufe0f Nickname Reset"
+            ))
     except discord.Forbidden:
-        await interaction.followup.send("\u274c I don't have permission to change that member's nickname.", ephemeral=True)
+        await interaction.followup.send(embed=_err("I don't have permission to change that member's nickname."), ephemeral=True)
     except Exception as e:
-        await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
+        await interaction.followup.send(embed=_err(f"An unexpected error occurred: {e}"), ephemeral=True)
 
 
 @tree.command(name="role", description="Add or remove a role from a member", guild=TEST_GUILD)
@@ -847,7 +941,10 @@ async def role_cmd(interaction: discord.Interaction, action: app_commands.Choice
                 extra_fields=[("\U0001f3f7\ufe0f Role", role.mention, True)],
             )
             await _send_log_embed(interaction.guild, embed)
-            await interaction.followup.send(f"\u2705 Added {role.mention} to **{member.display_name}**.")
+            await interaction.followup.send(embed=_ok(
+                f"{role.mention} has been added to **{member.display_name}**.",
+                title="\u2705 Role Added"
+            ))
         else:
             await member.remove_roles(role, reason=f"By {interaction.user}")
             await db.log_action(_get_guild_id(interaction), "role-remove", str(member.id), str(interaction.user.id), str(role.id))
@@ -858,11 +955,14 @@ async def role_cmd(interaction: discord.Interaction, action: app_commands.Choice
                 extra_fields=[("\U0001f3f7\ufe0f Role", role.mention, True)],
             )
             await _send_log_embed(interaction.guild, embed)
-            await interaction.followup.send(f"\u2705 Removed {role.mention} from **{member.display_name}**.")
+            await interaction.followup.send(embed=_ok(
+                f"{role.mention} has been removed from **{member.display_name}**.",
+                title="\u274c Role Removed"
+            ))
     except discord.Forbidden:
-        await interaction.followup.send("\u274c I don't have permission to manage that role.", ephemeral=True)
+        await interaction.followup.send(embed=_err("I don't have permission to manage that role."), ephemeral=True)
     except Exception as e:
-        await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
+        await interaction.followup.send(embed=_err(f"An unexpected error occurred: {e}"), ephemeral=True)
 
 
 # ─────────────────────────────── utility commands ─────────────────────────────
@@ -885,11 +985,15 @@ async def softban_cmd(interaction: discord.Interaction, member: discord.Member, 
             extra_fields=[("\U0001f5d1\ufe0f Messages Deleted", f"{delete_days} day(s)", True)],
         )
         await _send_log_embed(interaction.guild, embed)
-        await interaction.followup.send(f"\U0001f9fc **{member}** was softbanned ({delete_days}d of messages deleted). Reason: {reason}")
+        await interaction.followup.send(embed=discord.Embed(
+            title="\U0001f9fc Member Softbanned",
+            description=f"**{member.display_name}** has been softbanned ({delete_days}d of messages deleted).\n**Reason:** {reason}",
+            color=0xFEE75C,
+        ).set_thumbnail(url=member.display_avatar.url))
     except discord.Forbidden:
-        await interaction.followup.send("\u274c I don't have permission to ban/unban that member.", ephemeral=True)
+        await interaction.followup.send(embed=_err("I don't have permission to ban/unban that member."), ephemeral=True)
     except Exception as e:
-        await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
+        await interaction.followup.send(embed=_err(f"An unexpected error occurred: {e}"), ephemeral=True)
 
 
 @tree.command(name="announce", description="Send an announcement embed to a channel", guild=TEST_GUILD)
@@ -934,11 +1038,14 @@ async def announce_cmd(
             ],
         )
         await _send_log_embed(interaction.guild, log_embed)
-        await interaction.followup.send(f"\u2705 Announcement sent to {target.mention}.", ephemeral=True)
+        await interaction.followup.send(embed=_ok(
+            f"Announcement sent to {target.mention}.",
+            title="\U0001f4e3 Announcement Sent"
+        ), ephemeral=True)
     except discord.Forbidden:
-        await interaction.followup.send("\u274c I don't have permission to send messages in that channel.", ephemeral=True)
+        await interaction.followup.send(embed=_err("I don't have permission to send messages in that channel."), ephemeral=True)
     except Exception as e:
-        await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
+        await interaction.followup.send(embed=_err(f"An unexpected error occurred: {e}"), ephemeral=True)
 
 
 @tree.command(name="serverinfo", description="Display server information and stats", guild=TEST_GUILD)
@@ -980,7 +1087,7 @@ async def serverinfo_cmd(interaction: discord.Interaction):
         embed.set_footer(text=f"Requested by {interaction.user}", icon_url=interaction.user.display_avatar.url)
         await interaction.followup.send(embed=embed)
     except Exception as e:
-        await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
+        await interaction.followup.send(embed=_err(f"An unexpected error occurred: {e}"), ephemeral=True)
 
 
 @tree.command(name="avatar", description="Get a member's avatar", guild=TEST_GUILD)
@@ -1004,7 +1111,7 @@ async def avatar_cmd(interaction: discord.Interaction, member: discord.Member = 
         embed.set_footer(text=f"ID: {target.id}")
         await interaction.followup.send(embed=embed)
     except Exception as e:
-        await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
+        await interaction.followup.send(embed=_err(f"An unexpected error occurred: {e}"), ephemeral=True)
 
 
 # ─────────────────────────────── user lookup ──────────────────────────────────
