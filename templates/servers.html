@@ -1,149 +1,466 @@
-{% extends "base.html" %}
-{% block title %}Select Server{% endblock %}
-{% block page_title %}Select a Server{% endblock %}
-{% block content %}
-<style>
-  .servers-page { max-width: 960px; margin: 0 auto; }
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Select Server — Mask</title>
 
-  .servers-header {
-    margin-bottom: 2rem;
-    animation: page-enter 420ms cubic-bezier(0.34,1.20,0.64,1) both;
-  }
-  .servers-header h1 {
-    font-size: 1.5rem; font-weight: 700; letter-spacing: -0.4px;
-    color: var(--text); margin-bottom: 0.375rem;
-  }
-  .servers-header p { font-size: 0.875rem; color: var(--text-2); }
+  <script>
+    (function(){
+      var t = localStorage.getItem('mp-theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
 
-  .perm-notice {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 6px 14px; border-radius: var(--r-xl);
-    background: var(--glass-bg-light); border: 1px solid var(--glass-border);
-    box-shadow: var(--glass-inset); font-size: 11px; font-weight: 600;
-    color: var(--text-2); letter-spacing: 0.2px; margin-bottom: 1.75rem;
-  }
-  .perm-notice svg { color: var(--ios-yellow); }
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23bf5af2' opacity='.18'/%3E%3Cpath d='M16 6a10 10 0 1 0 0 20A10 10 0 0 0 16 6zm0 3a7 7 0 1 1 0 14A7 7 0 0 1 16 9zm-1 3v5.27l4 2.4-.78 1.33L13 18V12h2z' fill='%23bf5af2'/%3E%3C/svg%3E">
 
-  .section-label {
-    font-size: 10px; font-weight: 700; letter-spacing: 0.9px;
-    text-transform: uppercase; color: var(--text-3);
-    margin-bottom: 0.875rem; margin-top: 0.25rem; padding-left: 2px;
-  }
+  <style>
+    /* ═══════════════════════════════════════════════
+       APPLE iOS 26 LIQUID GLASS — DESIGN TOKENS
+    ═══════════════════════════════════════════════ */
+    :root {
+      --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --glass-bg:           rgba(30, 20, 50, 0.55);
+      --glass-bg-light:     rgba(255,255,255,0.08);
+      --glass-bg-hover:     rgba(255,255,255,0.13);
+      --glass-border:       rgba(255,255,255,0.18);
+      --glass-border-strong:rgba(255,255,255,0.28);
+      --glass-inset:        inset 0 1.5px 0 rgba(255,255,255,0.22);
+      --glass-blur:         blur(28px) saturate(180%);
+      --glass-blur-heavy:   blur(48px) saturate(200%);
+      --ios-purple:    #bf5af2;
+      --ios-purple-2:  #9b59f5;
+      --ios-blue:      #0a84ff;
+      --ios-teal:      #32ade6;
+      --ios-green:     #30d158;
+      --ios-orange:    #ff9f0a;
+      --ios-red:       #ff453a;
+      --ios-pink:      #ff375f;
+      --ios-yellow:    #ffd60a;
+      --text:         rgba(255,255,255,0.95);
+      --text-2:       rgba(255,255,255,0.62);
+      --text-3:       rgba(255,255,255,0.38);
+      --shadow-sm:  0 2px 8px rgba(0,0,0,0.35);
+      --shadow-md:  0 8px 28px rgba(0,0,0,0.45);
+      --shadow-lg:  0 20px 60px rgba(0,0,0,0.55);
+      --shadow-glass: 0 8px 32px rgba(0,0,0,0.45), inset 0 1.5px 0 rgba(255,255,255,0.22);
+      --r-sm: 10px; --r-md: 16px; --r-lg: 22px; --r-xl: 30px;
+      --t-spring: 420ms cubic-bezier(0.34,1.36,0.64,1);
+      --t-ease:   250ms cubic-bezier(0.16,1,0.3,1);
+    }
+    [data-theme="light"] {
+      --glass-bg:           rgba(255,255,255,0.52);
+      --glass-bg-light:     rgba(255,255,255,0.72);
+      --glass-bg-hover:     rgba(255,255,255,0.82);
+      --glass-border:       rgba(0,0,0,0.10);
+      --glass-border-strong:rgba(0,0,0,0.18);
+      --glass-inset:        inset 0 1.5px 0 rgba(255,255,255,0.90);
+      --text:         rgba(20,10,40,0.92);
+      --text-2:       rgba(20,10,40,0.55);
+      --text-3:       rgba(20,10,40,0.32);
+      --shadow-glass: 0 8px 32px rgba(120,80,200,0.18), inset 0 1.5px 0 rgba(255,255,255,0.90);
+    }
+    [data-theme="midnight"] {
+      --ios-purple: #00d4ff; --ios-purple-2: #00b8e6; --ios-blue: #00d4ff; --ios-green: #00ff9d;
+      --glass-bg: rgba(0,12,30,0.70); --glass-bg-light: rgba(0,180,255,0.07); --glass-bg-hover: rgba(0,180,255,0.14);
+      --glass-border: rgba(0,200,255,0.16); --glass-border-strong: rgba(0,200,255,0.30);
+      --glass-inset: inset 0 1.5px 0 rgba(0,220,255,0.20);
+      --text: rgba(220,245,255,0.95); --text-2: rgba(140,200,230,0.65); --text-3: rgba(80,160,200,0.40);
+    }
+    [data-theme="space"] {
+      --ios-purple: #c8aaff; --ios-purple-2: #a07aee; --ios-blue: #7ec8ff;
+      --glass-bg: rgba(0,0,8,0.75); --glass-bg-light: rgba(180,160,255,0.06); --glass-bg-hover: rgba(180,160,255,0.12);
+      --glass-border: rgba(160,140,255,0.14); --glass-border-strong: rgba(200,180,255,0.26);
+      --glass-inset: inset 0 1.5px 0 rgba(220,210,255,0.18);
+      --text: rgba(235,230,255,0.96); --text-2: rgba(180,170,220,0.65); --text-3: rgba(120,110,170,0.40);
+    }
 
-  .guild-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-    gap: 14px; margin-bottom: 2rem;
-  }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-font-smoothing: antialiased; scroll-behavior: smooth; }
+    body {
+      min-height: 100dvh;
+      font-family: var(--font-body);
+      font-size: 14px;
+      color: var(--text);
+      background: #0d0820;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 48px 20px 60px;
+      overflow-x: hidden;
+    }
+    [data-theme="light"]    body { background: #ede8fa; }
+    [data-theme="midnight"] body { background: #00060f; }
+    [data-theme="space"]    body { background: #000008; }
+    a { text-decoration: none; color: inherit; }
+    button { cursor: pointer; background: none; border: none; font: inherit; color: inherit; }
+    img { display: block; max-width: 100%; }
 
-  .guild-card {
-    position: relative; overflow: hidden;
-    display: flex; flex-direction: column; align-items: center;
-    gap: 10px; padding: 1.375rem 1rem 1.125rem;
-    text-align: center; border-radius: var(--r-lg);
-    background: var(--glass-bg); backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    border: 1px solid var(--glass-border); box-shadow: var(--shadow-glass);
-    text-decoration: none; color: inherit; cursor: pointer;
-    opacity: 0;
-    animation: card-spring 500ms cubic-bezier(0.34,1.46,0.64,1) forwards;
-    transition: border-color var(--t-ease), box-shadow var(--t-ease), transform var(--t-ease);
-  }
-  .guild-card::before {
-    content: ''; position: absolute; inset: 0; border-radius: inherit;
-    background: linear-gradient(135deg,rgba(255,255,255,0.10) 0%,rgba(255,255,255,0.03) 50%,transparent 100%);
-    opacity: 0; transition: opacity var(--t-ease); pointer-events: none;
-  }
-  .guild-card:hover {
-    border-color: rgba(191,90,242,0.40);
-    box-shadow: 0 12px 40px rgba(191,90,242,0.22),0 4px 16px rgba(0,0,0,0.40),inset 0 1.5px 0 rgba(255,255,255,0.26);
-    transform: translateY(-3px);
-  }
-  .guild-card:hover::before { opacity: 1; }
-  .guild-card:active { transform: translateY(0) scale(0.97); }
+    /* Background wallpaper */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse 70% 60% at 15% 20%, rgba(120,50,255,0.38) 0%, transparent 65%),
+        radial-gradient(ellipse 50% 50% at 85% 10%, rgba(191,90,242,0.28) 0%, transparent 55%),
+        radial-gradient(ellipse 60% 70% at 60% 90%, rgba(10,132,255,0.20) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 40% at 90% 70%, rgba(50,173,230,0.16) 0%, transparent 55%),
+        linear-gradient(160deg, #0d0820 0%, #130a2e 40%, #0e1540 100%);
+      pointer-events: none;
+    }
+    [data-theme="light"] body::before {
+      background:
+        radial-gradient(ellipse 70% 60% at 15% 20%, rgba(160,100,255,0.22) 0%, transparent 65%),
+        radial-gradient(ellipse 50% 50% at 85% 10%, rgba(191,90,242,0.14) 0%, transparent 55%),
+        radial-gradient(ellipse 60% 70% at 60% 90%, rgba(10,132,255,0.10) 0%, transparent 60%),
+        linear-gradient(160deg, #ede8fa 0%, #e0d8f8 100%);
+    }
+    [data-theme="midnight"] body::before {
+      background:
+        radial-gradient(ellipse 65% 55% at 10% 15%, rgba(0,100,200,0.45) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 45% at 90% 5%,  rgba(0,200,255,0.25) 0%, transparent 55%),
+        linear-gradient(160deg, #00060f 0%, #000d1e 45%, #001228 100%);
+    }
+    [data-theme="space"] body::before {
+      background:
+        radial-gradient(ellipse 55% 40% at 12% 18%, rgba(80,30,160,0.18) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 35% at 88% 8%,  rgba(100,50,200,0.12) 0%, transparent 55%),
+        linear-gradient(180deg, #000008 0%, #00000e 50%, #000008 100%);
+    }
 
-  [data-theme="midnight"] .guild-card:hover {
-    border-color: rgba(0,180,255,0.35);
-    box-shadow: 0 12px 40px rgba(0,180,255,0.22),0 4px 16px rgba(0,0,0,0.50),inset 0 1.5px 0 rgba(0,220,255,0.18);
-  }
-  [data-theme="space"] .guild-card:hover {
-    border-color: rgba(180,160,255,0.32);
-    box-shadow: 0 12px 40px rgba(160,140,255,0.20),0 4px 16px rgba(0,0,0,0.55),inset 0 1.5px 0 rgba(220,210,255,0.16);
-  }
+    /* ── Cursor glow ── */
+    #cursor-glow {
+      position: fixed; width: 300px; height: 300px; border-radius: 50%;
+      pointer-events: none; z-index: 2;
+      background: radial-gradient(circle, rgba(191,90,242,0.08) 0%, transparent 70%);
+      transform: translate(-50%, -50%);
+      transition: left 80ms linear, top 80ms linear;
+      will-change: left, top;
+    }
+    [data-theme="midnight"] #cursor-glow { background: radial-gradient(circle, rgba(0,180,255,0.09) 0%, transparent 70%); }
+    [data-theme="space"]    #cursor-glow { background: radial-gradient(circle, rgba(180,160,255,0.07) 0%, transparent 70%); }
 
-  .guild-card.no-bot { border-style: dashed; border-color: var(--glass-border); cursor: default; }
-  .guild-card.no-bot:hover { transform: none; border-color: rgba(191,90,242,0.28); box-shadow: var(--shadow-glass); }
+    /* ── Topbar (minimal, no sidebar) ── */
+    .topbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 24px;
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border-bottom: 1px solid var(--glass-border);
+      box-shadow: var(--glass-inset);
+      animation: topbar-enter 360ms cubic-bezier(0.34,1.30,0.64,1) 60ms both;
+    }
+    .topbar-brand {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .brand-icon {
+      width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, var(--ios-purple), var(--ios-blue));
+      box-shadow: 0 4px 16px rgba(191,90,242,0.45);
+      color: #fff;
+    }
+    .brand-name { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
+    .topbar-right { display: flex; align-items: center; gap: 8px; }
+    .topbar-btn {
+      width: 34px; height: 34px; border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--glass-bg-light); border: 1px solid var(--glass-border);
+      color: var(--text-2); transition: all var(--t-ease);
+    }
+    .topbar-btn:hover { background: var(--glass-bg-hover); color: var(--text); box-shadow: var(--shadow-sm); }
+    .user-chip {
+      display: flex; align-items: center; gap: 8px;
+      padding: 5px 12px 5px 6px;
+      background: var(--glass-bg-light); border: 1px solid var(--glass-border);
+      border-radius: var(--r-xl); box-shadow: var(--glass-inset);
+    }
+    .user-avatar {
+      width: 24px; height: 24px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--ios-purple), var(--ios-blue));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0;
+    }
+    .user-avatar img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
+    .user-name { font-size: 12px; font-weight: 600; color: var(--text-2); }
 
-  .guild-avatar {
-    width: 60px; height: 60px; border-radius: 50%; object-fit: cover;
-    border: 2px solid var(--glass-border); box-shadow: 0 4px 14px rgba(0,0,0,0.35); flex-shrink: 0;
-  }
-  .guild-avatar-placeholder {
-    width: 60px; height: 60px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.25rem; font-weight: 700;
-    background: linear-gradient(135deg,rgba(191,90,242,0.28),rgba(10,132,255,0.22));
-    border: 2px solid rgba(191,90,242,0.30); color: rgba(255,255,255,0.75); flex-shrink: 0;
-  }
-  [data-theme="midnight"] .guild-avatar-placeholder {
-    background: linear-gradient(135deg,rgba(0,180,255,0.28),rgba(0,80,200,0.22));
-    border-color: rgba(0,200,255,0.30);
-  }
-  [data-theme="space"] .guild-avatar-placeholder {
-    background: linear-gradient(135deg,rgba(160,140,255,0.26),rgba(100,170,255,0.18));
-    border-color: rgba(180,160,255,0.28);
-  }
+    /* ── Page wrapper ── */
+    .servers-page {
+      position: relative; z-index: 1;
+      width: 100%; max-width: 1000px;
+      margin-top: 72px; /* below fixed topbar */
+    }
 
-  .guild-name { font-size: 0.875rem; font-weight: 600; color: var(--text); line-height: 1.35; word-break: break-word; }
+    /* ── Header ── */
+    .servers-header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+      animation: page-enter 420ms cubic-bezier(0.34,1.20,0.64,1) both;
+    }
+    .servers-header h1 {
+      font-size: 1.75rem; font-weight: 800; letter-spacing: -0.5px;
+      color: var(--text); margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, var(--text) 30%, var(--ios-purple));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    [data-theme="midnight"] .servers-header h1 {
+      background: linear-gradient(135deg, var(--text) 30%, var(--ios-blue));
+      -webkit-background-clip: text; background-clip: text;
+    }
+    .servers-header p { font-size: 0.9rem; color: var(--text-2); }
 
-  .guild-badge {
-    display: inline-flex; align-items: center; gap: 4px;
-    font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em;
-    padding: 3px 9px; border-radius: var(--r-xl); text-transform: uppercase;
-  }
-  .badge-owner  { background: rgba(255,214,10,0.14);  color: var(--ios-yellow); border: 1px solid rgba(255,214,10,0.25); }
-  .badge-admin  { background: rgba(191,90,242,0.16);  color: var(--ios-purple); border: 1px solid rgba(191,90,242,0.28); }
-  .badge-manage { background: rgba(10,132,255,0.14);  color: var(--ios-blue);   border: 1px solid rgba(10,132,255,0.26); }
-  [data-theme="midnight"] .badge-admin,
-  [data-theme="midnight"] .badge-manage {
-    color: var(--ios-blue); background: rgba(0,180,255,0.14); border-color: rgba(0,200,255,0.26);
-  }
+    .perm-notice {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 16px; border-radius: var(--r-xl);
+      background: var(--glass-bg-light); border: 1px solid var(--glass-border);
+      box-shadow: var(--glass-inset); font-size: 11px; font-weight: 600;
+      color: var(--text-2); letter-spacing: 0.2px; margin-bottom: 2.5rem;
+    }
+    .perm-notice svg { color: var(--ios-yellow); }
 
-  .no-bot-label { font-size: 0.7rem; color: var(--text-3); display: flex; align-items: center; gap: 4px; }
+    /* ── Section label ── */
+    .section-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.9px;
+      text-transform: uppercase; color: var(--text-3);
+      margin-bottom: 0.875rem; margin-top: 0.25rem; padding-left: 2px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .section-label::after {
+      content: ''; flex: 1; height: 1px;
+      background: linear-gradient(90deg, var(--glass-border), transparent);
+    }
 
-  .add-bot-btn {
-    display: inline-flex; align-items: center; gap: 5px;
-    font-size: 0.75rem; font-weight: 700; padding: 5px 14px;
-    border-radius: var(--r-xl); background: rgba(191,90,242,0.18);
-    border: 1px solid rgba(191,90,242,0.32); color: var(--ios-purple);
-    text-decoration: none; transition: all var(--t-ease); cursor: pointer;
-  }
-  .add-bot-btn:hover {
-    background: rgba(191,90,242,0.30); border-color: rgba(191,90,242,0.52);
-    color: #fff; transform: translateY(-1px);
-  }
-  [data-theme="midnight"] .add-bot-btn { background: rgba(0,180,255,0.14); border-color: rgba(0,200,255,0.28); color: var(--ios-blue); }
-  [data-theme="midnight"] .add-bot-btn:hover { background: rgba(0,180,255,0.28); border-color: rgba(0,200,255,0.50); color: #fff; }
-  [data-theme="space"] .add-bot-btn { background: rgba(160,140,255,0.14); border-color: rgba(180,160,255,0.28); color: var(--ios-purple); }
+    /* ── Guild grid ── */
+    .guild-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 14px; margin-bottom: 2.5rem;
+    }
 
-  .empty-state { text-align: center; padding: 3.5rem 1rem; color: var(--text-2); }
-  .empty-state-icon {
-    width: 52px; height: 52px; border-radius: var(--r-lg);
-    background: var(--glass-bg-light); border: 1px solid var(--glass-border);
-    display: flex; align-items: center; justify-content: center;
-    margin: 0 auto 1.25rem; color: var(--text-3);
-  }
-  .empty-state h3 { font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
-  .empty-state p  { font-size: 0.875rem; color: var(--text-2); max-width: 34ch; margin: 0 auto 1.25rem; }
+    /* ── Guild card (bot present — clickable) ── */
+    .guild-card {
+      position: relative; overflow: hidden;
+      display: flex; flex-direction: column; align-items: center;
+      gap: 10px; padding: 1.5rem 1rem 1.25rem;
+      text-align: center; border-radius: var(--r-lg);
+      background: var(--glass-bg); backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border); box-shadow: var(--shadow-glass);
+      text-decoration: none; color: inherit; cursor: pointer;
+      opacity: 0;
+      animation: card-spring 500ms cubic-bezier(0.34,1.46,0.64,1) forwards;
+      transition: border-color var(--t-ease), box-shadow var(--t-ease), transform var(--t-ease);
+    }
+    .guild-card::before {
+      content: ''; position: absolute; inset: 0; border-radius: inherit;
+      background: linear-gradient(135deg,rgba(255,255,255,0.10) 0%,rgba(255,255,255,0.03) 50%,transparent 100%);
+      opacity: 0; transition: opacity var(--t-ease); pointer-events: none;
+    }
+    .guild-card:hover {
+      border-color: rgba(191,90,242,0.45);
+      box-shadow: 0 12px 40px rgba(191,90,242,0.25),0 4px 16px rgba(0,0,0,0.40),inset 0 1.5px 0 rgba(255,255,255,0.28);
+      transform: translateY(-4px);
+    }
+    .guild-card:hover::before { opacity: 1; }
+    .guild-card:active { transform: translateY(0) scale(0.97); }
+    [data-theme="midnight"] .guild-card:hover {
+      border-color: rgba(0,180,255,0.38);
+      box-shadow: 0 12px 40px rgba(0,180,255,0.22),0 4px 16px rgba(0,0,0,0.50),inset 0 1.5px 0 rgba(0,220,255,0.20);
+    }
+    [data-theme="space"] .guild-card:hover {
+      border-color: rgba(180,160,255,0.35);
+      box-shadow: 0 12px 40px rgba(160,140,255,0.22),0 4px 16px rgba(0,0,0,0.55),inset 0 1.5px 0 rgba(220,210,255,0.18);
+    }
 
-  .refresh-hint { text-align: center; font-size: 0.8rem; color: var(--text-3); margin-top: 1.25rem; }
-  .refresh-hint a { color: var(--text-2); text-decoration: underline; text-underline-offset: 2px; }
-  .refresh-hint a:hover { color: var(--text); }
+    /* ── Guild card (no bot — non-clickable, dimmed) ── */
+    .guild-card.no-bot {
+      border-style: dashed;
+      opacity: 0;
+      cursor: default;
+      /* slightly more transparent/dim */
+      background: rgba(255,255,255,0.03);
+    }
+    .guild-card.no-bot:hover {
+      transform: none;
+      border-color: rgba(191,90,242,0.22);
+      box-shadow: var(--shadow-glass);
+    }
 
-  {% for i in range(20) %}
-  .guild-grid .guild-card:nth-child({{ i + 1 }}) { animation-delay: {{ 60 + i * 45 }}ms; }
-  {% endfor %}
-</style>
+    .guild-avatar {
+      width: 64px; height: 64px; border-radius: 50%; object-fit: cover;
+      border: 2px solid var(--glass-border); box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+      flex-shrink: 0;
+    }
+    .guild-avatar-placeholder {
+      width: 64px; height: 64px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.375rem; font-weight: 700;
+      background: linear-gradient(135deg,rgba(191,90,242,0.28),rgba(10,132,255,0.22));
+      border: 2px solid rgba(191,90,242,0.30); color: rgba(255,255,255,0.75); flex-shrink: 0;
+    }
+    [data-theme="midnight"] .guild-avatar-placeholder {
+      background: linear-gradient(135deg,rgba(0,180,255,0.28),rgba(0,80,200,0.22));
+      border-color: rgba(0,200,255,0.30);
+    }
+    [data-theme="space"] .guild-avatar-placeholder {
+      background: linear-gradient(135deg,rgba(160,140,255,0.26),rgba(100,170,255,0.18));
+      border-color: rgba(180,160,255,0.28);
+    }
+
+    /* Dim avatar for no-bot cards */
+    .guild-card.no-bot .guild-avatar,
+    .guild-card.no-bot .guild-avatar-placeholder { opacity: 0.55; filter: grayscale(0.4); }
+
+    .guild-name {
+      font-size: 0.875rem; font-weight: 600; color: var(--text);
+      line-height: 1.35; word-break: break-word;
+    }
+    .guild-card.no-bot .guild-name { color: var(--text-2); }
+
+    .guild-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em;
+      padding: 3px 9px; border-radius: var(--r-xl); text-transform: uppercase;
+    }
+    .badge-owner  { background: rgba(255,214,10,0.14);  color: var(--ios-yellow); border: 1px solid rgba(255,214,10,0.25); }
+    .badge-admin  { background: rgba(191,90,242,0.16);  color: var(--ios-purple); border: 1px solid rgba(191,90,242,0.28); }
+    .badge-manage { background: rgba(10,132,255,0.14);  color: var(--ios-blue);   border: 1px solid rgba(10,132,255,0.26); }
+    [data-theme="midnight"] .badge-admin,
+    [data-theme="midnight"] .badge-manage {
+      color: var(--ios-blue); background: rgba(0,180,255,0.14); border-color: rgba(0,200,255,0.26);
+    }
+
+    /* ── No-bot info row ── */
+    .no-bot-info {
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      width: 100%;
+    }
+    .no-bot-label {
+      font-size: 0.7rem; color: var(--text-3);
+      display: flex; align-items: center; gap: 4px;
+    }
+    .add-bot-btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 0.75rem; font-weight: 700; padding: 5px 14px;
+      border-radius: var(--r-xl); background: rgba(191,90,242,0.18);
+      border: 1px solid rgba(191,90,242,0.32); color: var(--ios-purple);
+      text-decoration: none; transition: all var(--t-ease); cursor: pointer;
+    }
+    .add-bot-btn:hover {
+      background: rgba(191,90,242,0.30); border-color: rgba(191,90,242,0.52);
+      color: #fff; transform: translateY(-1px);
+    }
+    [data-theme="midnight"] .add-bot-btn { background: rgba(0,180,255,0.14); border-color: rgba(0,200,255,0.28); color: var(--ios-blue); }
+    [data-theme="midnight"] .add-bot-btn:hover { background: rgba(0,180,255,0.28); border-color: rgba(0,200,255,0.50); color: #fff; }
+    [data-theme="space"] .add-bot-btn { background: rgba(160,140,255,0.14); border-color: rgba(180,160,255,0.28); color: var(--ios-purple); }
+
+    /* ── Empty state ── */
+    .empty-state { text-align: center; padding: 4rem 1rem; color: var(--text-2); }
+    .empty-state-icon {
+      width: 56px; height: 56px; border-radius: var(--r-lg);
+      background: var(--glass-bg-light); border: 1px solid var(--glass-border);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 1.25rem; color: var(--text-3);
+    }
+    .empty-state h3 { font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+    .empty-state p  { font-size: 0.875rem; color: var(--text-2); max-width: 34ch; margin: 0 auto 1.25rem; }
+
+    .btn {
+      position: relative; overflow: hidden;
+      display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+      padding: 9px 20px; border-radius: 980px;
+      font-family: var(--font-body); font-size: 13px; font-weight: 650;
+      white-space: nowrap; cursor: pointer; user-select: none; text-decoration: none;
+      background: rgba(255,255,255,0.10); backdrop-filter: blur(28px) saturate(180%);
+      -webkit-backdrop-filter: blur(28px) saturate(180%);
+      border: 1px solid rgba(255,255,255,0.22);
+      box-shadow: inset 0 1.5px 0 rgba(255,255,255,0.38), inset 0 -1.2px 0 rgba(0,0,0,0.22),
+        0 2px 10px rgba(0,0,0,0.30), 0 6px 24px rgba(0,0,0,0.22);
+      color: rgba(255,255,255,0.92); text-shadow: 0 1px 6px rgba(0,0,0,0.35);
+      transition: transform 320ms cubic-bezier(0.34,1.36,0.64,1), box-shadow 280ms cubic-bezier(0.16,1,0.3,1);
+    }
+    .btn:hover { transform: translateY(-2px) scale(1.015); border-color: rgba(255,255,255,0.34); background-color: rgba(255,255,255,0.16); }
+    .btn:active { transform: translateY(0) scale(0.975); }
+    .btn-glass { background-color: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.18); color: var(--text); }
+
+    /* ── Flash ── */
+    .flash {
+      display: flex; align-items: center; gap: 10px; padding: 12px 16px;
+      border-radius: var(--r-md); margin-bottom: 18px;
+      background: rgba(255,69,58,0.15); border: 1px solid rgba(255,69,58,0.30);
+      color: var(--ios-red); font-size: 13px; font-weight: 500;
+      animation: flash-bounce 360ms cubic-bezier(0.34,1.56,0.64,1) both;
+    }
+
+    .refresh-hint { text-align: center; font-size: 0.8rem; color: var(--text-3); margin-top: 1.25rem; }
+    .refresh-hint a { color: var(--text-2); text-decoration: underline; text-underline-offset: 2px; }
+    .refresh-hint a:hover { color: var(--text); }
+
+    /* ── Animations ── */
+    @keyframes page-enter { from { opacity:0; transform:translateY(16px) scale(0.987); } to { opacity:1; transform:translateY(0) scale(1); } }
+    @keyframes card-spring {
+      0%   { opacity:0; transform:translateY(24px) scale(0.96); }
+      60%  { opacity:1; transform:translateY(-3px) scale(1.006); }
+      100% { opacity:1; transform:translateY(0) scale(1); }
+    }
+    @keyframes topbar-enter { from { opacity:0; transform:translateY(-100%); } to { opacity:1; transform:translateY(0); } }
+    @keyframes flash-bounce { 0% { opacity:0; transform:scale(0.92) translateY(-6px); } 65% { transform:scale(1.02) translateY(2px); } 100% { opacity:1; transform:scale(1) translateY(0); } }
+
+    {% for i in range(40) %}
+    .guild-grid .guild-card:nth-child({{ i + 1 }}) { animation-delay: {{ 80 + i * 40 }}ms; }
+    {% endfor %}
+
+    @media (max-width: 600px) {
+      body { padding: 44px 14px 48px; }
+      .guild-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+      .servers-header h1 { font-size: 1.4rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="cursor-glow"></div>
+
+<!-- ── Minimal topbar (no sidebar) ── -->
+<header class="topbar">
+  <a class="topbar-brand" href="{{ url_for('index') }}">
+    <div class="brand-icon">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    </div>
+    <span class="brand-name">Mask</span>
+  </a>
+  <div class="topbar-right">
+    <button class="topbar-btn" aria-label="Cycle theme" onclick="cycleTheme()" id="themeQuickBtn">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+    </button>
+    {% if session.get('user') %}
+    <div class="user-chip">
+      <div class="user-avatar">
+        {% if session['user'].get('avatar') %}
+          <img src="https://cdn.discordapp.com/avatars/{{ session['user']['id'] }}/{{ session['user']['avatar'] }}.png?size=64" alt="avatar">
+        {% else %}
+          {{ session['user'].get('username', '?')[0]|upper }}
+        {% endif %}
+      </div>
+      <span class="user-name">{{ session['user'].get('username', '') }}</span>
+    </div>
+    {% endif %}
+    <a href="{{ url_for('logout') }}" class="topbar-btn" aria-label="Sign out" title="Sign out">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    </a>
+  </div>
+</header>
 
 <div class="servers-page">
 
@@ -152,15 +469,17 @@
     <p>Choose a server you manage to configure its moderation settings.</p>
   </div>
 
-  <div class="perm-notice">
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-    Only servers where you have <strong style="color:var(--text);margin:0 2px;">Administrator</strong> or <strong style="color:var(--text);margin:0 2px;">Manage Server</strong> are shown
+  <div style="text-align:center; margin-bottom:2rem;">
+    <div class="perm-notice">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      Only servers where you have <strong style="color:var(--text);margin:0 3px;">Administrator</strong> or <strong style="color:var(--text);margin:0 3px;">Manage Server</strong> are shown
+    </div>
   </div>
 
   {% with messages = get_flashed_messages() %}
     {% if messages %}
       {% for msg in messages %}
-        <div class="flash flash-error">
+        <div class="flash">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           {{ msg }}
         </div>
@@ -168,28 +487,15 @@
     {% endif %}
   {% endwith %}
 
-  {# Servers WITH bot #}
+  {# ── Servers WITH bot ── #}
   {% if guilds_with_bot %}
-    <div class="section-label">Bot Active</div>
+    <div class="section-label">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="var(--ios-green)"><circle cx="12" cy="12" r="10"/></svg>
+      Bot Active — {{ guilds_with_bot|length }} server{{ 's' if guilds_with_bot|length != 1 else '' }}
+    </div>
     <div class="guild-grid">
       {% for g in guilds_with_bot %}
-        {# Compute badge class OUTSIDE any HTML attribute to avoid bare & parsing issues #}
         {% set perms = g.permissions | int %}
-        {% if g.owner %}
-          {% set badge_class = 'badge-owner' %}
-          {% set badge_label = 'Owner' %}
-          {% set badge_icon  = 'owner' %}
-        {% elif perms is divisibleby 1 and (perms // 1) % 16 >= 8 %}
-          {# administrator bit: perms & 8 via divisibility workaround #}
-          {% set badge_class = 'badge-admin' %}
-          {% set badge_label = 'Admin' %}
-          {% set badge_icon  = 'shield' %}
-        {% else %}
-          {% set badge_class = 'badge-manage' %}
-          {% set badge_label = 'Manage Server' %}
-          {% set badge_icon  = 'settings' %}
-        {% endif %}
-        {# Re-derive admin correctly using Jinja2-safe arithmetic #}
         {% set is_admin = (perms // 8) % 2 == 1 %}
         {% if g.owner %}
           {% set badge_class = 'badge-owner' %}
@@ -203,7 +509,7 @@
         {% endif %}
         <a href="{{ url_for('select_guild', guild_id=g.id) }}" class="guild-card">
           {% if g.icon_url %}
-            <img src="{{ g.icon_url }}" alt="{{ g.name }}" class="guild-avatar" loading="lazy" width="60" height="60">
+            <img src="{{ g.icon_url }}" alt="{{ g.name }}" class="guild-avatar" loading="lazy" width="64" height="64">
           {% else %}
             <div class="guild-avatar-placeholder">{{ g.name[0]|upper }}</div>
           {% endif %}
@@ -223,37 +529,42 @@
     </div>
   {% endif %}
 
-  {# Servers WITHOUT bot #}
+  {# ── Servers WITHOUT bot ── #}
   {% if guilds_without_bot %}
-    <div class="section-label" style="margin-top:{% if guilds_with_bot %}0.5rem{% else %}0{% endif %}">Add Bot To</div>
+    <div class="section-label" style="margin-top:{% if guilds_with_bot %}0.75rem{% else %}0{% endif %}">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Bot Not Added — {{ guilds_without_bot|length }} server{{ 's' if guilds_without_bot|length != 1 else '' }}
+    </div>
     <div class="guild-grid">
       {% for g in guilds_without_bot %}
         <div class="guild-card no-bot">
           {% if g.icon_url %}
-            <img src="{{ g.icon_url }}" alt="{{ g.name }}" class="guild-avatar" loading="lazy" width="60" height="60">
+            <img src="{{ g.icon_url }}" alt="{{ g.name }}" class="guild-avatar" loading="lazy" width="64" height="64">
           {% else %}
             <div class="guild-avatar-placeholder">{{ g.name[0]|upper }}</div>
           {% endif %}
           <span class="guild-name">{{ g.name }}</span>
-          <span class="no-bot-label">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            Bot not in server
-          </span>
-          {% set invite = bot_invite_url ~ '&guild_id=' ~ g.id %}
-          <a href="{{ invite }}" target="_blank" rel="noopener noreferrer" class="add-bot-btn">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Add Bot
-          </a>
+          <div class="no-bot-info">
+            <span class="no-bot-label">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              Bot not in server
+            </span>
+            {% set invite = bot_invite_url ~ '&guild_id=' ~ g.id %}
+            <a href="{{ invite }}" target="_blank" rel="noopener noreferrer" class="add-bot-btn">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Bot
+            </a>
+          </div>
         </div>
       {% endfor %}
     </div>
   {% endif %}
 
-  {# Empty state #}
+  {# ── Empty state ── #}
   {% if not guilds_with_bot and not guilds_without_bot %}
     <div class="empty-state">
       <div class="empty-state-icon">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       </div>
       <h3>No servers found</h3>
       <p>You need <strong>Administrator</strong> or <strong>Manage Server</strong> permission in at least one Discord server.</p>
@@ -270,4 +581,39 @@
   </p>
 
 </div>
-{% endblock %}
+
+<script>
+var THEMES = ['dark','light','midnight','space'];
+function applyTheme(t){ document.documentElement.setAttribute('data-theme',t); localStorage.setItem('mp-theme',t); }
+function cycleTheme(){
+  var cur = document.documentElement.getAttribute('data-theme') || 'dark';
+  var next = THEMES[(THEMES.indexOf(cur)+1) % THEMES.length];
+  applyTheme(next);
+  var btn = document.getElementById('themeQuickBtn');
+  if(btn){ btn.style.transform='scale(0.88) rotate(30deg)'; setTimeout(function(){ btn.style.transition='transform 420ms cubic-bezier(0.34,1.56,0.64,1)'; btn.style.transform='scale(1) rotate(0deg)'; setTimeout(function(){ btn.style.transition=''; },420); },90); }
+}
+
+// Cursor glow
+(function(){
+  var g = document.getElementById('cursor-glow');
+  if(!g) return;
+  document.addEventListener('mousemove', function(e){ g.style.left = e.clientX+'px'; g.style.top = e.clientY+'px'; });
+})();
+
+// Ripple on bot-active cards
+document.querySelectorAll('.guild-card:not(.no-bot)').forEach(function(card){
+  card.addEventListener('click', function(e){
+    var r = document.createElement('span');
+    r.className = 'lg-ripple';
+    r.style.cssText = 'position:absolute;border-radius:50%;background:rgba(255,255,255,0.25);pointer-events:none;width:80px;height:80px;margin-top:-40px;margin-left:-40px;animation:lg-ripple 520ms cubic-bezier(0.16,1,0.3,1) forwards;';
+    r.style.left = (e.offsetX)+'px'; r.style.top = (e.offsetY)+'px';
+    card.appendChild(r);
+    setTimeout(function(){ r.remove(); }, 540);
+  });
+});
+</script>
+<style>
+@keyframes lg-ripple { from { transform:scale(0); opacity:0.45; } to { transform:scale(5); opacity:0; } }
+</style>
+</body>
+</html>
