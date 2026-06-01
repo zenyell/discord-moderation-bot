@@ -8,7 +8,6 @@ from pathlib import Path
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 
-# Load .env from the same directory as this file, regardless of cwd
 load_dotenv(dotenv_path=Path(__file__).resolve().parent / ".env", override=True)
 
 import database as db
@@ -28,6 +27,24 @@ DISCORD_API = "https://discord.com/api/v10"
 print(f"[Dashboard] GUILD_ID={GUILD_ID!r}  BOT_TOKEN present={bool(BOT_TOKEN)}", flush=True)
 
 db.init_db_sync()
+
+# All log toggle keys — must match the name= attributes in logging.html exactly
+LOG_TOGGLE_KEYS = [
+    "log_message_delete",
+    "log_message_edit",
+    "log_bulk_delete",
+    "log_member_join",
+    "log_member_leave",
+    "log_nickname_change",
+    "log_role_change",
+    "log_ban",
+    "log_kick",
+    "log_mute",
+    "log_warn",
+    "log_channel_update",
+    "log_role_update",
+    "log_voice",
+]
 
 
 # ── Context processor ──
@@ -97,7 +114,6 @@ def _discord_headers():
 
 
 def _fetch_discord_user(user_id: str) -> tuple[dict, str]:
-    """Returns (data_dict, error_string). error_string is '' on success."""
     if not BOT_TOKEN:
         return {}, "DISCORD_BOT_TOKEN is not set in environment"
     try:
@@ -143,7 +159,6 @@ def _fetch_guild_roles() -> list:
 
 
 def _search_guild_members(query: str) -> list:
-    """Search guild members by username prefix via Discord API (requires GUILD_MEMBERS intent)."""
     if not BOT_TOKEN or not GUILD_ID or GUILD_ID == "0":
         return []
     try:
@@ -338,34 +353,24 @@ def moderation():
 
 # ── Logging ──
 
-LOG_EVENTS = [
-    {"key": "ban",     "label": "Bans",            "desc": "Member bans"},
-    {"key": "kick",    "label": "Kicks",           "desc": "Member kicks"},
-    {"key": "timeout", "label": "Timeouts",        "desc": "Timeouts issued"},
-    {"key": "warn",    "label": "Warnings",        "desc": "Warnings issued"},
-    {"key": "unban",   "label": "Unbans",          "desc": "Bans lifted"},
-    {"key": "purge",   "label": "Purges",          "desc": "Bulk message deletes"},
-    {"key": "join",    "label": "Member Join",     "desc": "New members joining"},
-    {"key": "leave",   "label": "Member Leave",    "desc": "Members leaving"},
-    {"key": "edit",    "label": "Message Edits",   "desc": "Edited messages"},
-    {"key": "delete",  "label": "Message Deletes", "desc": "Deleted messages"},
-]
-
-
 @app.route("/logging", methods=["GET", "POST"])
 @login_required
 def logging_page():
     if request.method == "POST":
+        # Save log channel ID
         db.set_setting_sync("log_channel_id", request.form.get("log_channel_id", ""))
-        for e in LOG_EVENTS:
-            val = "1" if request.form.get(f"log_{e['key']}") else "0"
-            db.set_setting_sync(f"log_{e['key']}", val)
-        flash("Logging settings saved.")
+        # Save every toggle — unchecked boxes send nothing, so default to "0"
+        for key in LOG_TOGGLE_KEYS:
+            val = "1" if request.form.get(key) else "0"
+            db.set_setting_sync(key, val)
+        flash("Log settings saved.")
         return redirect(url_for("logging_page"))
+
+    # Build cfg dict with current values from DB
     cfg = {"log_channel_id": db.get_setting_sync("log_channel_id", "")}
-    for e in LOG_EVENTS:
-        cfg[f"log_{e['key']}"] = db.get_setting_sync(f"log_{e['key']}", "1")
-    return render_template("logging.html", cfg=cfg, events=LOG_EVENTS)
+    for key in LOG_TOGGLE_KEYS:
+        cfg[key] = db.get_setting_sync(key, "1")  # default ON
+    return render_template("logging.html", cfg=cfg)
 
 
 # ── Reaction Roles ──
@@ -551,7 +556,6 @@ def command_settings():
 # ── User lookup ──
 
 def _build_lookup_result(user_id: str) -> tuple[dict | None, str]:
-    """Returns (result_dict_or_None, error_string)."""
     user_data, err = _fetch_discord_user(user_id)
     if not user_data.get("id"):
         return None, err or "User not found"
@@ -572,14 +576,13 @@ def _build_lookup_result(user_id: str) -> tuple[dict | None, str]:
 @app.route("/user-lookup")
 @login_required
 def user_lookup():
-    query   = request.args.get("q", "").strip()
-    results = []
+    query     = request.args.get("q", "").strip()
+    results   = []
     api_error = ""
 
     if query:
         seen = set()
 
-        # 1. If pure numeric — direct Discord user lookup by ID
         if query.isdigit():
             r, err = _build_lookup_result(query)
             if r:
@@ -588,7 +591,6 @@ def user_lookup():
             elif err:
                 api_error = err
 
-        # 2. Search profile_cache by username / global_name
         if not query.isdigit() or not results:
             try:
                 cached = db.search_profile_cache_sync(query)
@@ -612,7 +614,6 @@ def user_lookup():
                 if not api_error:
                     api_error = f"Cache search error: {e}"
 
-        # 3. Try Discord guild member search API
         try:
             members = _search_guild_members(query)
             for m in members:
@@ -620,21 +621,17 @@ def user_lookup():
                 uid = u.get("id", "")
                 if uid and uid not in seen:
                     av = _avatar_url(u, m)
-                    username      = u.get("username", uid)
-                    global_name   = u.get("global_name") or username
-                    discriminator = u.get("discriminator", "0")
                     results.append({
                         "target_id":     uid,
-                        "username":      username,
-                        "display_name":  global_name,
-                        "discriminator": discriminator,
+                        "username":      u.get("username", uid),
+                        "display_name":  u.get("global_name") or u.get("username", uid),
+                        "discriminator": u.get("discriminator", "0"),
                         "avatar_url":    av,
                     })
                     seen.add(uid)
         except Exception:
             pass
 
-        # 4. Fallback: scan recent mod logs for partial ID match
         if query.isdigit() and not results:
             try:
                 rows = db.recent_logs_sync(GUILD_ID, 500)
@@ -670,11 +667,11 @@ def user_profile(user_id):
     except Exception:
         pass
 
-    user_data, api_err   = _fetch_discord_user(user_id)
-    member_data = _fetch_guild_member(user_id)
-    guild_roles = _fetch_guild_roles()
+    user_data, api_err = _fetch_discord_user(user_id)
+    member_data        = _fetch_guild_member(user_id)
+    guild_roles        = _fetch_guild_roles()
 
-    role_map = {r["id"]: r for r in guild_roles}
+    role_map        = {r["id"]: r for r in guild_roles}
     member_role_ids = member_data.get("roles", [])
     member_roles = [
         {
@@ -684,27 +681,18 @@ def user_profile(user_id):
         }
         for rid in member_role_ids
     ]
-    member_roles.sort(
-        key=lambda r: role_map.get(r["id"], {}).get("position", 0),
-        reverse=True
-    )
-
-    avatar_url   = _avatar_url(user_data, member_data)
-    banner_url   = _banner_url(user_data, member_data)
-    accent_color = _accent_hex(user_data)
-    badges       = _get_badges(user_data.get("public_flags", 0))
-    bio          = _bio(user_data)
+    member_roles.sort(key=lambda r: role_map.get(r["id"], {}).get("position", 0), reverse=True)
 
     profile = {
         "id":            user_id,
         "username":      user_data.get("username", user_id),
         "global_name":   user_data.get("global_name") or user_data.get("username", user_id),
         "discriminator": user_data.get("discriminator", "0"),
-        "avatar_url":    avatar_url,
-        "banner_url":    banner_url,
-        "accent_color":  accent_color,
-        "badges":        badges,
-        "bio":           bio,
+        "avatar_url":    _avatar_url(user_data, member_data),
+        "banner_url":    _banner_url(user_data, member_data),
+        "accent_color":  _accent_hex(user_data),
+        "badges":        _get_badges(user_data.get("public_flags", 0)),
+        "bio":           _bio(user_data),
         "bot":           user_data.get("bot", False),
         "nick":          member_data.get("nick") or "",
         "joined_at":     member_data.get("joined_at", "")[:10] if member_data.get("joined_at") else "",
@@ -712,14 +700,8 @@ def user_profile(user_id):
         "api_error":     api_err,
     }
 
-    return render_template(
-        "user_profile.html",
-        user_id=user_id,
-        profile=profile,
-        warns=warns,
-        logs=logs,
-        blacklisted=bl
-    )
+    return render_template("user_profile.html", user_id=user_id, profile=profile,
+                           warns=warns, logs=logs, blacklisted=bl)
 
 
 # ── API ──
@@ -742,10 +724,7 @@ def api_debug(user_id):
     user_data, err = _fetch_discord_user(user_id)
     member_data    = _fetch_guild_member(user_id)
     return jsonify({
-        "env": {
-            "bot_token_set": bool(BOT_TOKEN),
-            "guild_id": GUILD_ID,
-        },
+        "env": {"bot_token_set": bool(BOT_TOKEN), "guild_id": GUILD_ID},
         "api_error": err,
         "user":   user_data,
         "member": member_data,
