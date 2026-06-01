@@ -375,6 +375,22 @@ async def timeout_cmd(interaction: discord.Interaction, member: discord.Member, 
         await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
 
 
+@tree.command(name="untimeout", description="Remove timeout from a member", guild=TEST_GUILD)
+@app_commands.describe(member="Member to remove timeout from", reason="Reason")
+async def untimeout_cmd(interaction: discord.Interaction, member: discord.Member, reason: str = "No reason provided"):
+    await interaction.response.defer()
+    if not await _check_command(interaction, "untimeout"): return
+    try:
+        await member.timeout(None, reason=reason)
+        await db.log_action(_get_guild_id(interaction), "untimeout", str(member.id), str(interaction.user.id), reason)
+        await _send_log(interaction.guild, f"\u23f1\ufe0f Timeout removed from **{member}** by {interaction.user.mention}. Reason: {reason}")
+        await interaction.followup.send(f"\u2705 Timeout removed from **{member}**.")
+    except discord.Forbidden:
+        await interaction.followup.send("\u274c I don't have permission to modify that member.", ephemeral=True)
+    except Exception as e:
+        await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
+
+
 @tree.command(name="purge", description="Delete messages in bulk", guild=TEST_GUILD)
 @app_commands.describe(amount="Number of messages to delete (1-100)")
 async def purge(interaction: discord.Interaction, amount: int):
@@ -423,6 +439,20 @@ async def warnings_cmd(interaction: discord.Interaction, member: discord.Member)
             for i, r in enumerate(rows)
         ]
         await interaction.followup.send(f"\u26a0\ufe0f **{member}** has **{len(rows)}** warning(s):\n" + "\n".join(lines))
+    except Exception as e:
+        await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
+
+
+@tree.command(name="clearwarnings", description="Clear all warnings for a member", guild=TEST_GUILD)
+@app_commands.describe(member="Member whose warnings to clear")
+async def clearwarnings_cmd(interaction: discord.Interaction, member: discord.Member):
+    await interaction.response.defer()
+    if not await _check_command(interaction, "clearwarnings"): return
+    try:
+        await db.clear_warnings(_get_guild_id(interaction), str(member.id))
+        await db.log_action(_get_guild_id(interaction), "clearwarnings", str(member.id), str(interaction.user.id))
+        await _send_log(interaction.guild, f"\U0001f9f9 All warnings cleared for **{member}** by {interaction.user.mention}.")
+        await interaction.followup.send(f"\u2705 All warnings for **{member}** have been cleared.")
     except Exception as e:
         await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
 
@@ -492,6 +522,233 @@ async def removeword(interaction: discord.Interaction, word: str):
     try:
         await db.remove_blacklisted_word(_get_guild_id(interaction), word)
         await interaction.followup.send(f"\u2705 Word `{word}` removed from blacklist.", ephemeral=True)
+    except Exception as e:
+        await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
+
+
+# ─────────────────────────────── channel & role commands ──────────────────────
+
+@tree.command(name="slowmode", description="Set slowmode delay in a channel", guild=TEST_GUILD)
+@app_commands.describe(seconds="Slowmode delay in seconds (0 to disable, max 21600)", channel="Channel to apply slowmode (defaults to current)")
+async def slowmode_cmd(interaction: discord.Interaction, seconds: int, channel: discord.TextChannel = None):
+    await interaction.response.defer()
+    if not await _check_command(interaction, "slowmode"): return
+    target = channel or interaction.channel
+    try:
+        seconds = max(0, min(seconds, 21600))
+        await target.edit(slowmode_delay=seconds)
+        await db.log_action(_get_guild_id(interaction), "slowmode", str(target.id), str(interaction.user.id), f"{seconds}s")
+        if seconds == 0:
+            await interaction.followup.send(f"\u23f1\ufe0f Slowmode **disabled** in {target.mention}.")
+        else:
+            await interaction.followup.send(f"\u23f1\ufe0f Slowmode set to **{seconds}s** in {target.mention}.")
+    except discord.Forbidden:
+        await interaction.followup.send("\u274c I don't have permission to edit that channel.", ephemeral=True)
+    except Exception as e:
+        await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
+
+
+@tree.command(name="lock", description="Lock a channel so members cannot send messages", guild=TEST_GUILD)
+@app_commands.describe(channel="Channel to lock (defaults to current)", reason="Reason")
+async def lock_cmd(interaction: discord.Interaction, channel: discord.TextChannel = None, reason: str = "No reason provided"):
+    await interaction.response.defer()
+    if not await _check_command(interaction, "lock"): return
+    target = channel or interaction.channel
+    try:
+        overwrite = target.overwrites_for(interaction.guild.default_role)
+        overwrite.send_messages = False
+        await target.set_permissions(interaction.guild.default_role, overwrite=overwrite, reason=reason)
+        await db.log_action(_get_guild_id(interaction), "lock", str(target.id), str(interaction.user.id), reason)
+        await _send_log(interaction.guild, f"\U0001f512 {target.mention} locked by {interaction.user.mention}. Reason: {reason}")
+        await interaction.followup.send(f"\U0001f512 {target.mention} has been **locked**. Reason: {reason}")
+    except discord.Forbidden:
+        await interaction.followup.send("\u274c I don't have permission to edit that channel.", ephemeral=True)
+    except Exception as e:
+        await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
+
+
+@tree.command(name="unlock", description="Unlock a channel so members can send messages again", guild=TEST_GUILD)
+@app_commands.describe(channel="Channel to unlock (defaults to current)", reason="Reason")
+async def unlock_cmd(interaction: discord.Interaction, channel: discord.TextChannel = None, reason: str = "No reason provided"):
+    await interaction.response.defer()
+    if not await _check_command(interaction, "unlock"): return
+    target = channel or interaction.channel
+    try:
+        overwrite = target.overwrites_for(interaction.guild.default_role)
+        overwrite.send_messages = None
+        await target.set_permissions(interaction.guild.default_role, overwrite=overwrite, reason=reason)
+        await db.log_action(_get_guild_id(interaction), "unlock", str(target.id), str(interaction.user.id), reason)
+        await _send_log(interaction.guild, f"\U0001f513 {target.mention} unlocked by {interaction.user.mention}. Reason: {reason}")
+        await interaction.followup.send(f"\U0001f513 {target.mention} has been **unlocked**.")
+    except discord.Forbidden:
+        await interaction.followup.send("\u274c I don't have permission to edit that channel.", ephemeral=True)
+    except Exception as e:
+        await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
+
+
+@tree.command(name="nick", description="Change a member's nickname", guild=TEST_GUILD)
+@app_commands.describe(member="Member to rename", nickname="New nickname (leave blank to reset)")
+async def nick_cmd(interaction: discord.Interaction, member: discord.Member, nickname: str = None):
+    await interaction.response.defer()
+    if not await _check_command(interaction, "nick"): return
+    try:
+        old_nick = member.display_name
+        await member.edit(nick=nickname)
+        await db.log_action(_get_guild_id(interaction), "nick", str(member.id), str(interaction.user.id), f"{old_nick} -> {nickname or 'reset'}")
+        if nickname:
+            await interaction.followup.send(f"\u270f\ufe0f **{member.name}**'s nickname set to **{nickname}**.")
+        else:
+            await interaction.followup.send(f"\u270f\ufe0f **{member.name}**'s nickname has been **reset**.")
+    except discord.Forbidden:
+        await interaction.followup.send("\u274c I don't have permission to change that member's nickname.", ephemeral=True)
+    except Exception as e:
+        await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
+
+
+@tree.command(name="role", description="Add or remove a role from a member", guild=TEST_GUILD)
+@app_commands.describe(action="add or remove", member="Target member", role="Role to add/remove")
+@app_commands.choices(action=[
+    app_commands.Choice(name="add",    value="add"),
+    app_commands.Choice(name="remove", value="remove"),
+])
+async def role_cmd(interaction: discord.Interaction, action: app_commands.Choice[str], member: discord.Member, role: discord.Role):
+    await interaction.response.defer()
+    if not await _check_command(interaction, "role"): return
+    try:
+        if action.value == "add":
+            await member.add_roles(role, reason=f"By {interaction.user}")
+            await db.log_action(_get_guild_id(interaction), "role-add", str(member.id), str(interaction.user.id), str(role.id))
+            await interaction.followup.send(f"\u2705 Added {role.mention} to **{member.display_name}**.")
+        else:
+            await member.remove_roles(role, reason=f"By {interaction.user}")
+            await db.log_action(_get_guild_id(interaction), "role-remove", str(member.id), str(interaction.user.id), str(role.id))
+            await interaction.followup.send(f"\u2705 Removed {role.mention} from **{member.display_name}**.")
+    except discord.Forbidden:
+        await interaction.followup.send("\u274c I don't have permission to manage that role.", ephemeral=True)
+    except Exception as e:
+        await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
+
+
+# ─────────────────────────────── utility commands ─────────────────────────────
+
+@tree.command(name="softban", description="Ban then immediately unban a member (clears their messages)", guild=TEST_GUILD)
+@app_commands.describe(member="Member to softban", delete_days="Days of messages to delete (0-7)", reason="Reason")
+async def softban_cmd(interaction: discord.Interaction, member: discord.Member, delete_days: int = 1, reason: str = "No reason provided"):
+    await interaction.response.defer()
+    if not await _check_command(interaction, "softban"): return
+    try:
+        delete_days = max(0, min(delete_days, 7))
+        await member.ban(delete_message_days=delete_days, reason=f"Softban: {reason}")
+        await interaction.guild.unban(member, reason="Softban unban")
+        await db.log_action(_get_guild_id(interaction), "softban", str(member.id), str(interaction.user.id), reason)
+        await _send_log(interaction.guild, f"\U0001f9fc **{member}** was softbanned by {interaction.user.mention}. Reason: {reason}")
+        await interaction.followup.send(f"\U0001f9fc **{member}** was softbanned ({delete_days}d of messages deleted). Reason: {reason}")
+    except discord.Forbidden:
+        await interaction.followup.send("\u274c I don't have permission to ban/unban that member.", ephemeral=True)
+    except Exception as e:
+        await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
+
+
+@tree.command(name="announce", description="Send an announcement embed to a channel", guild=TEST_GUILD)
+@app_commands.describe(
+    title="Announcement title",
+    message="Announcement body text",
+    channel="Channel to send to (defaults to current)",
+    color="Embed color hex (e.g. ff5733 — optional)",
+    ping_everyone="Ping @everyone with the announcement"
+)
+async def announce_cmd(
+    interaction: discord.Interaction,
+    title: str,
+    message: str,
+    channel: discord.TextChannel = None,
+    color: str = None,
+    ping_everyone: bool = False
+):
+    await interaction.response.defer(ephemeral=True)
+    if not await _check_command(interaction, "announce"): return
+    target = channel or interaction.channel
+    try:
+        embed_color = discord.Color.blurple()
+        if color:
+            try:
+                embed_color = discord.Color(int(color.lstrip("#"), 16))
+            except ValueError:
+                pass
+        embed = discord.Embed(title=title, description=message, color=embed_color)
+        embed.set_footer(text=f"Announced by {interaction.user.display_name}", icon_url=interaction.user.display_avatar.url)
+        content = "@everyone" if ping_everyone else None
+        await target.send(content=content, embed=embed)
+        await db.log_action(_get_guild_id(interaction), "announce", str(target.id), str(interaction.user.id), title[:100])
+        await interaction.followup.send(f"\u2705 Announcement sent to {target.mention}.", ephemeral=True)
+    except discord.Forbidden:
+        await interaction.followup.send("\u274c I don't have permission to send messages in that channel.", ephemeral=True)
+    except Exception as e:
+        await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
+
+
+@tree.command(name="serverinfo", description="Display server information and stats", guild=TEST_GUILD)
+async def serverinfo_cmd(interaction: discord.Interaction):
+    await interaction.response.defer()
+    guild = interaction.guild
+    try:
+        bots    = sum(1 for m in guild.members if m.bot)
+        humans  = guild.member_count - bots
+        online  = sum(1 for m in guild.members if m.status != discord.Status.offline)
+        txt_ch  = len(guild.text_channels)
+        voc_ch  = len(guild.voice_channels)
+        roles   = len(guild.roles) - 1  # exclude @everyone
+        boosts  = guild.premium_subscription_count
+        created = discord.utils.format_dt(guild.created_at, style="D")
+
+        embed = discord.Embed(
+            title=f"\U0001f3f0 {guild.name}",
+            color=discord.Color.blurple()
+        )
+        if guild.icon:
+            embed.set_thumbnail(url=guild.icon.url)
+        if guild.banner:
+            embed.set_image(url=guild.banner.url)
+
+        embed.add_field(name="Owner",        value=f"<@{guild.owner_id}>",    inline=True)
+        embed.add_field(name="Created",      value=created,                   inline=True)
+        embed.add_field(name="Boost Level",  value=f"Level {guild.premium_tier} ({boosts} boosts)", inline=True)
+        embed.add_field(name="Members",      value=f"\U0001f465 {guild.member_count} ({humans} humans, {bots} bots)", inline=False)
+        embed.add_field(name="Online",       value=f"\U0001f7e2 ~{online}",   inline=True)
+        embed.add_field(name="Channels",     value=f"\U0001f4ac {txt_ch} text  \U0001f50a {voc_ch} voice", inline=True)
+        embed.add_field(name="Roles",        value=str(roles),                inline=True)
+        embed.add_field(name="Server ID",    value=f"`{guild.id}`",           inline=True)
+        embed.add_field(name="Verification", value=str(guild.verification_level).title(), inline=True)
+
+        if guild.description:
+            embed.add_field(name="Description", value=guild.description, inline=False)
+
+        embed.set_footer(text=f"Requested by {interaction.user}", icon_url=interaction.user.display_avatar.url)
+        await interaction.followup.send(embed=embed)
+    except Exception as e:
+        await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
+
+
+@tree.command(name="avatar", description="Get a member's avatar", guild=TEST_GUILD)
+@app_commands.describe(member="Member whose avatar to fetch (defaults to you)")
+async def avatar_cmd(interaction: discord.Interaction, member: discord.Member = None):
+    await interaction.response.defer()
+    target = member or interaction.user
+    try:
+        embed = discord.Embed(
+            title=f"{target.display_name}'s Avatar",
+            color=target.color or discord.Color.blurple()
+        )
+        embed.set_image(url=target.display_avatar.url)
+        embed.add_field(name="Global Avatar", value=f"[Link]({target.display_avatar.url})", inline=True)
+        try:
+            full_user = await bot.fetch_user(target.id)
+            if full_user.avatar and full_user.avatar.url != target.display_avatar.url:
+                embed.add_field(name="Server Avatar", value=f"[Link]({target.display_avatar.url})", inline=True)
+        except Exception:
+            pass
+        embed.set_footer(text=f"ID: {target.id}")
+        await interaction.followup.send(embed=embed)
     except Exception as e:
         await interaction.followup.send(f"\u274c Error: {e}", ephemeral=True)
 
