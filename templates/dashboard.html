@@ -4,98 +4,229 @@
 
 {% block content %}
 <style>
-/* ══════════════════════════════════════
-   DASHBOARD — iOS Liquid Glass Styles
-══════════════════════════════════════ */
+/* ══════════════════════════════════════════════════
+   DASHBOARD — Apple iOS 26 Liquid Glass — Enhanced
+══════════════════════════════════════════════════ */
 
-/* Hero banner */
+/* ── Animated stat counter ── */
+@keyframes count-up {
+  from { opacity: 0; transform: translateY(12px) scale(0.88); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+/* ── Hero banner ── */
 .dash-hero {
   position: relative;
   overflow: hidden;
-  border-radius: 24px;
-  padding: 36px 36px;
+  border-radius: 28px;
+  padding: 40px 40px 36px;
   margin-bottom: 28px;
-  background:
-    linear-gradient(135deg, rgba(120,50,255,0.55) 0%, rgba(191,90,242,0.40) 40%, rgba(10,132,255,0.35) 100%);
-  backdrop-filter: blur(40px) saturate(180%);
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
-  border: 1px solid rgba(255,255,255,0.22);
-  box-shadow: 0 20px 60px rgba(80,20,200,0.35), inset 0 1.5px 0 rgba(255,255,255,0.28);
+  background: linear-gradient(
+    140deg,
+    rgba(140, 60, 255, 0.60) 0%,
+    rgba(191, 90, 242, 0.50) 35%,
+    rgba(10, 132, 255, 0.42) 70%,
+    rgba(50, 173, 230, 0.30) 100%
+  );
+  backdrop-filter: blur(48px) saturate(200%);
+  -webkit-backdrop-filter: blur(48px) saturate(200%);
+  border: 1px solid rgba(255,255,255,0.26);
+  box-shadow:
+    0 24px 72px rgba(80, 20, 200, 0.40),
+    0 8px 24px rgba(0,0,0,0.30),
+    inset 0 2px 0 rgba(255,255,255,0.32),
+    inset 0 -1px 0 rgba(0,0,0,0.18);
 }
+[data-theme="midnight"] .dash-hero {
+  background: linear-gradient(140deg,
+    rgba(0, 100, 200, 0.60) 0%,
+    rgba(0, 180, 255, 0.48) 50%,
+    rgba(0, 60, 160, 0.38) 100%);
+  box-shadow: 0 24px 72px rgba(0,100,200,0.40), 0 8px 24px rgba(0,0,0,0.45),
+    inset 0 2px 0 rgba(0,220,255,0.28), inset 0 -1px 0 rgba(0,0,0,0.20);
+}
+[data-theme="space"] .dash-hero {
+  background: linear-gradient(140deg,
+    rgba(100, 70, 220, 0.55) 0%,
+    rgba(160, 130, 255, 0.42) 45%,
+    rgba(80, 160, 255, 0.35) 100%);
+  box-shadow: 0 24px 72px rgba(100,60,220,0.38), 0 8px 24px rgba(0,0,0,0.50),
+    inset 0 2px 0 rgba(200,190,255,0.28), inset 0 -1px 0 rgba(0,0,0,0.22);
+}
+[data-theme="light"] .dash-hero {
+  background: linear-gradient(140deg,
+    rgba(160, 90, 255, 0.62) 0%,
+    rgba(191, 90, 242, 0.52) 40%,
+    rgba(10, 132, 255, 0.44) 100%);
+  box-shadow: 0 20px 56px rgba(120,50,220,0.30), 0 6px 20px rgba(0,0,0,0.14),
+    inset 0 2px 0 rgba(255,255,255,0.55), inset 0 -1px 0 rgba(0,0,0,0.08);
+}
+
+/* Hero orb accents */
 .dash-hero::before {
   content: '';
-  position: absolute; inset: 0;
+  position: absolute; inset: 0; pointer-events: none;
   background:
-    radial-gradient(ellipse 55% 70% at 90% 20%, rgba(191,90,242,0.28) 0%, transparent 60%),
-    radial-gradient(ellipse 40% 50% at 10% 80%, rgba(10,132,255,0.22) 0%, transparent 55%);
+    radial-gradient(ellipse 60% 80% at 92% 15%, rgba(191,90,242,0.32) 0%, transparent 60%),
+    radial-gradient(ellipse 45% 55% at 8%  85%, rgba(10,132,255,0.26) 0%, transparent 55%),
+    radial-gradient(ellipse 30% 30% at 50% 50%, rgba(255,255,255,0.04) 0%, transparent 70%);
+}
+/* Glass shimmer sweep */
+.dash-hero::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0; left: -80%;
+  width: 55%;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255,255,255,0.06) 40%,
+    rgba(255,255,255,0.12) 50%,
+    rgba(255,255,255,0.06) 60%,
+    transparent 100%);
+  transform: skewX(-12deg);
+  animation: hero-sweep 8s ease-in-out infinite;
   pointer-events: none;
 }
+@keyframes hero-sweep {
+  0%   { left: -80%; opacity: 0; }
+  10%  { opacity: 1; }
+  60%  { opacity: 0.5; }
+  80%  { left: 130%; opacity: 0; }
+  100% { left: 130%; opacity: 0; }
+}
+
 .dash-hero-content {
   position: relative; z-index: 1;
-  display: flex; align-items: center; justify-content: space-between; gap: 24px;
+  display: flex; align-items: flex-start;
+  justify-content: space-between; gap: 24px;
   flex-wrap: wrap;
 }
 .dash-hero-text h1 {
-  font-size: clamp(22px, 3vw, 30px);
+  font-size: clamp(22px, 3.2vw, 32px);
   font-weight: 800;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.6px;
+  line-height: 1.2;
   color: #fff;
-  margin-bottom: 8px;
-  text-shadow: 0 2px 16px rgba(0,0,0,0.25);
+  margin-bottom: 10px;
+  text-shadow: 0 2px 20px rgba(0,0,0,0.28);
 }
 .dash-hero-text p {
   font-size: 14px;
-  color: rgba(255,255,255,0.72);
-  max-width: 42ch;
+  color: rgba(255,255,255,0.75);
+  max-width: 44ch;
+  line-height: 1.6;
 }
 .dash-hero-badges {
-  display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px;
+  display: flex; gap: 9px; flex-wrap: wrap; margin-top: 22px;
 }
 .hero-badge {
   display: flex; align-items: center; gap: 7px;
   padding: 7px 14px;
-  background: rgba(255,255,255,0.14);
-  border: 1px solid rgba(255,255,255,0.24);
+  background: rgba(255,255,255,0.13);
+  border: 1px solid rgba(255,255,255,0.22);
   border-radius: 999px;
   font-size: 12px; font-weight: 600; color: #fff;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.22);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  box-shadow: inset 0 1.5px 0 rgba(255,255,255,0.22), 0 2px 8px rgba(0,0,0,0.20);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: all 220ms cubic-bezier(0.16,1,0.3,1);
+}
+.hero-badge:hover {
+  background: rgba(255,255,255,0.22);
+  border-color: rgba(255,255,255,0.38);
+  transform: translateY(-1px);
+  box-shadow: inset 0 1.5px 0 rgba(255,255,255,0.30), 0 4px 14px rgba(0,0,0,0.28);
 }
 .hero-badge-dot {
   width: 7px; height: 7px; border-radius: 50%;
+  flex-shrink: 0;
+}
+.dash-hero-right {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 12px;
+  flex-shrink: 0;
 }
 .dash-hero-shield {
-  flex-shrink: 0;
-  width: 90px; height: 90px; border-radius: 22px;
+  width: 88px; height: 88px; border-radius: 24px;
   display: flex; align-items: center; justify-content: center;
-  background: rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.13);
   border: 1px solid rgba(255,255,255,0.24);
-  box-shadow: inset 0 1.5px 0 rgba(255,255,255,0.28), 0 8px 32px rgba(0,0,0,0.25);
+  box-shadow:
+    inset 0 2px 0 rgba(255,255,255,0.30),
+    inset 0 -1px 0 rgba(0,0,0,0.18),
+    0 12px 40px rgba(0,0,0,0.30);
   color: #fff;
-  animation: hero-float 4s ease-in-out infinite;
+  animation: hero-float 5s ease-in-out infinite;
 }
 @keyframes hero-float {
-  0%,100% { transform: translateY(0); }
-  50%      { transform: translateY(-8px); }
+  0%,100% { transform: translateY(0) rotate(0deg); }
+  33%      { transform: translateY(-6px) rotate(1deg); }
+  66%      { transform: translateY(-3px) rotate(-0.5deg); }
+}
+.dash-hero-server-name {
+  font-size: 11px; font-weight: 700;
+  color: rgba(255,255,255,0.60);
+  text-transform: uppercase; letter-spacing: 0.8px;
+  background: rgba(255,255,255,0.10);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 999px;
+  padding: 4px 12px;
 }
 
-/* Stat grid — always 4 equal columns, collapses on mobile */
+/* ── Section heading ── */
+.section-heading {
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.8px;
+  color: var(--text-3);
+  margin-bottom: 14px;
+  margin-top: 4px;
+  display: flex; align-items: center; gap: 10px;
+}
+.section-heading::after {
+  content: ''; flex: 1; height: 1px;
+  background: linear-gradient(90deg, var(--glass-border), transparent);
+}
+
+/* ── Quick actions ── */
+.quick-actions {
+  display: flex; flex-wrap: wrap; gap: 9px;
+  margin-bottom: 28px;
+}
+
+/* ── Bento stat grid ── */
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+  gap: 14px;
   margin-bottom: 28px;
 }
-@media (max-width: 768px) {
-  .stat-grid { grid-template-columns: repeat(2, 1fr); }
-}
-@media (max-width: 480px) {
-  .stat-grid { grid-template-columns: 1fr; }
-}
+@media (max-width: 900px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 480px) { .stat-grid { grid-template-columns: 1fr; } }
+
 .stat-card {
-  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  padding: 20px 20px 18px;
   display: flex; flex-direction: column; gap: 4px;
+}
+/* Accent glow on top edge */
+.stat-card::before {
+  content: '';
+  position: absolute; top: 0; left: 12px; right: 12px;
+  height: 1px;
+  border-radius: 999px;
+  opacity: 0.7;
+}
+.stat-card:nth-child(1)::before { background: linear-gradient(90deg, transparent, var(--ios-red),    transparent); }
+.stat-card:nth-child(2)::before { background: linear-gradient(90deg, transparent, var(--ios-orange), transparent); }
+.stat-card:nth-child(3)::before { background: linear-gradient(90deg, transparent, var(--ios-blue),   transparent); }
+.stat-card:nth-child(4)::before { background: linear-gradient(90deg, transparent, var(--ios-yellow), transparent); }
+
+.stat-icon {
+  width: 38px; height: 38px; border-radius: 11px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 10px;
+  font-size: 19px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.15);
 }
 .stat-label {
   font-size: 11px; font-weight: 600;
@@ -103,41 +234,33 @@
   color: var(--text-2);
 }
 .stat-value {
-  font-size: 28px; font-weight: 800;
-  letter-spacing: -1px;
+  font-size: clamp(26px, 3vw, 32px);
+  font-weight: 800;
+  letter-spacing: -1.5px;
   color: var(--text);
-  display: inline-block;
-  animation: stat-pop 500ms cubic-bezier(0.34,1.56,0.64,1) both;
-}
-@keyframes stat-pop {
-  0%   { transform: scale(0.80); opacity: 0; }
-  70%  { transform: scale(1.06); opacity: 1; }
-  100% { transform: scale(1);    opacity: 1; }
+  font-variant-numeric: tabular-nums;
+  animation: count-up 600ms cubic-bezier(0.34,1.46,0.64,1) both;
 }
 .stat-sub {
-  font-size: 12px; color: var(--text-2);
-}
-.stat-icon {
-  width: 36px; height: 36px; border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  margin-bottom: 10px;
-  font-size: 18px;
+  font-size: 11px; color: var(--text-3);
+  margin-top: 2px;
 }
 
-/* Two-column grid */
-.dash-grid {
+/* ── Two-column main grid ── */
+.dash-main-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 18px;
   margin-bottom: 28px;
+  align-items: start;
 }
-@media (max-width: 900px) { .dash-grid { grid-template-columns: 1fr; } }
+@media (max-width: 960px) { .dash-main-grid { grid-template-columns: 1fr; } }
 
-/* Feature cards (Carl-bot style) */
+/* ── Feature grid ── */
 .feature-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 14px;
   margin-bottom: 28px;
 }
 .feature-card {
@@ -150,86 +273,165 @@
   box-shadow: var(--shadow-glass);
   padding: 22px;
   opacity: 0;
-  animation: card-spring 500ms cubic-bezier(0.34,1.46,0.64,1) forwards;
+  animation: card-spring 520ms cubic-bezier(0.34,1.46,0.64,1) forwards;
   transition: box-shadow var(--t-ease), border-color var(--t-ease), transform var(--t-ease);
   text-decoration: none; color: var(--text);
   display: flex; flex-direction: column; gap: 10px;
 }
+/* Inset top-light per card */
+.feature-card::before {
+  content: '';
+  position: absolute; top: 0; left: 10%; right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+  border-radius: 999px;
+  pointer-events: none;
+}
+.feature-card::after {
+  content: '';
+  position: absolute;
+  top: -60%; left: -60%;
+  width: 50%; height: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  transition: opacity var(--t-ease);
+}
 .feature-card:hover {
   border-color: var(--glass-border-strong);
-  box-shadow: 0 16px 48px rgba(0,0,0,0.55), inset 0 1.5px 0 rgba(255,255,255,0.28);
-  transform: translateY(-3px);
+  box-shadow: 0 20px 56px rgba(0,0,0,0.55), inset 0 2px 0 rgba(255,255,255,0.30);
+  transform: translateY(-4px) scale(1.012);
 }
 .feature-icon-wrap {
   width: 44px; height: 44px; border-radius: 13px;
   display: flex; align-items: center; justify-content: center;
   font-size: 22px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
+  flex-shrink: 0;
 }
-.feature-card h3 { font-size: 15px; font-weight: 700; }
-.feature-card p  { font-size: 13px; color: var(--text-2); line-height: 1.55; flex: 1; }
+.feature-card h3 { font-size: 14px; font-weight: 700; letter-spacing: -0.2px; }
+.feature-card p  { font-size: 12.5px; color: var(--text-2); line-height: 1.6; flex: 1; }
 .feature-card-link {
-  display: flex; align-items: center; gap: 5px;
-  font-size: 13px; font-weight: 600;
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; font-weight: 700;
   color: var(--ios-purple);
-  margin-top: 4px;
+  margin-top: 2px;
+  letter-spacing: -0.1px;
 }
 .feature-card-link svg { transition: transform var(--t-ease); }
-.feature-card:hover .feature-card-link svg { transform: translateX(3px); }
+.feature-card:hover .feature-card-link svg { transform: translateX(4px); }
 
-/* Quick actions */
-.quick-actions {
-  display: flex; flex-wrap: wrap; gap: 10px;
-  margin-bottom: 28px;
+/* ── Activity card ── */
+.activity-card {
+  display: flex; flex-direction: column; gap: 0;
+}
+.activity-card .card-title {
+  padding: 18px 20px 14px;
+  margin-bottom: 0;
+  border-bottom: 1px solid var(--glass-border);
 }
 
-/* Recent actions table */
+/* ── Actions table ── */
 .actions-table { width: 100%; border-collapse: collapse; }
 .actions-table th {
-  font-size: 11px; font-weight: 700;
+  font-size: 10px; font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.6px;
-  color: var(--text-2);
-  padding: 8px 12px;
+  color: var(--text-3);
+  padding: 8px 14px;
   text-align: left;
   border-bottom: 1px solid var(--glass-border);
 }
 .actions-table td {
-  padding: 11px 12px;
-  font-size: 13px;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+  padding: 10px 14px;
+  font-size: 12.5px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
   vertical-align: middle;
 }
 .actions-table tr:last-child td { border-bottom: none; }
-.actions-table tr:hover td { background: var(--glass-bg-hover); }
+.actions-table tr:hover td {
+  background: var(--glass-bg-hover);
+  transition: background 150ms ease;
+}
 .action-type {
-  display: inline-flex; align-items: center; gap: 6px;
+  display: inline-flex; align-items: center; gap: 5px;
   padding: 3px 9px; border-radius: 999px;
-  font-size: 11px; font-weight: 700;
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.3px;
 }
-.action-ban   { background: rgba(255,69,58,0.18); color: var(--ios-red); }
-.action-kick  { background: rgba(255,159,10,0.18); color: var(--ios-orange); }
-.action-mute  { background: rgba(10,132,255,0.18); color: var(--ios-blue); }
-.action-timeout { background: rgba(10,132,255,0.18); color: var(--ios-blue); }
-.action-warn  { background: rgba(255,214,10,0.18); color: var(--ios-yellow); }
-.action-unmute{ background: rgba(48,209,88,0.18); color: var(--ios-green); }
-.action-unban { background: rgba(50,173,230,0.18); color: var(--ios-teal); }
+.action-ban    { background: rgba(255,69,58,0.18);   color: var(--ios-red);    border: 1px solid rgba(255,69,58,0.25);   }
+.action-kick   { background: rgba(255,159,10,0.18);  color: var(--ios-orange); border: 1px solid rgba(255,159,10,0.25);  }
+.action-mute   { background: rgba(10,132,255,0.18);  color: var(--ios-blue);   border: 1px solid rgba(10,132,255,0.25);  }
+.action-timeout{ background: rgba(10,132,255,0.14);  color: var(--ios-teal);   border: 1px solid rgba(50,173,230,0.22);  }
+.action-warn   { background: rgba(255,214,10,0.14);  color: var(--ios-yellow); border: 1px solid rgba(255,214,10,0.22);  }
+.action-unmute { background: rgba(48,209,88,0.14);   color: var(--ios-green);  border: 1px solid rgba(48,209,88,0.22);   }
+.action-unban  { background: rgba(50,173,230,0.14);  color: var(--ios-teal);   border: 1px solid rgba(50,173,230,0.20);  }
 
-/* Section heading */
-.section-heading {
-  font-size: 13px; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 0.6px;
+/* ── Server info side card ── */
+.server-info-card {
+  display: flex; flex-direction: column; gap: 14px;
+}
+.server-info-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--glass-border);
+}
+.server-info-row:last-child { border-bottom: none; padding-bottom: 0; }
+.server-info-label {
+  font-size: 11px; font-weight: 600; color: var(--text-2);
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.server-info-value {
+  font-size: 13px; font-weight: 700; color: var(--text);
+}
+.server-info-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px;
+  background: var(--glass-bg-light);
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  font-size: 11px; font-weight: 600;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+}
+
+/* ── Empty state ── */
+.empty-state {
+  padding: 52px 24px;
+  text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+.empty-state-emoji {
+  font-size: 40px;
+  animation: hero-float 4s ease-in-out infinite;
+  margin-bottom: 6px;
+}
+.empty-state h3 {
+  font-size: 14px; font-weight: 700; color: var(--text);
+}
+.empty-state p {
+  font-size: 13px; color: var(--text-2);
+  max-width: 32ch; line-height: 1.6;
+}
+
+/* ── View all link ── */
+.view-all-link {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 12px;
+  font-size: 12px; font-weight: 600;
   color: var(--text-2);
-  margin-bottom: 14px;
-  display: flex; align-items: center; gap: 8px;
+  border-top: 1px solid var(--glass-border);
+  transition: color var(--t-ease), background var(--t-ease);
+  text-decoration: none;
 }
-.section-heading::after {
-  content: ''; flex: 1; height: 1px;
-  background: var(--glass-border);
-}
+.view-all-link:hover { color: var(--text); background: var(--glass-bg-hover); }
+.view-all-link svg { transition: transform var(--t-ease); }
+.view-all-link:hover svg { transform: translateX(3px); }
 </style>
 
-<!-- ═══ HERO BANNER ═══ -->
+<!-- ═══════════════════════════════════════════════
+     HERO BANNER
+═══════════════════════════════════════════════ -->
 <div class="dash-hero">
   <div class="dash-hero-content">
+
     <div class="dash-hero-text">
       <h1>Welcome back{% if session.get('username') %}, {{ session['username'] }}{% endif %} 👋</h1>
       <p>Your server is protected and running smoothly. Here's what's happening today.</p>
@@ -239,7 +441,7 @@
           Bot Online
         </div>
         <div class="hero-badge">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
           Shield Active
         </div>
         <div class="hero-badge">
@@ -248,138 +450,258 @@
         </div>
       </div>
     </div>
-    <div class="dash-hero-shield">
-      <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-        <polyline points="9 12 11 14 15 10"/>
-      </svg>
+
+    <div class="dash-hero-right">
+      <div class="dash-hero-shield">
+        <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <polyline points="9 12 11 14 15 10"/>
+        </svg>
+      </div>
+      {% if session.get('guild_name') %}
+      <div class="dash-hero-server-name">{{ session['guild_name'] }}</div>
+      {% endif %}
     </div>
+
   </div>
 </div>
 
-<!-- ═══ QUICK ACTIONS ═══ -->
+<!-- ═══════════════════════════════════════════════
+     QUICK ACTIONS
+═══════════════════════════════════════════════ -->
 <div class="section-heading">Quick Actions</div>
 <div class="quick-actions">
   <a href="{{ url_for('moderation') }}" class="btn btn-primary">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
     Moderation
   </a>
   <a href="{{ url_for('user_lookup') }}" class="btn btn-glass">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     User Lookup
   </a>
   <a href="{{ url_for('logging_page') }}" class="btn btn-glass">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
     View Logs
   </a>
   <a href="{{ url_for('settings') }}" class="btn btn-glass">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     Settings
   </a>
 </div>
 
-<!-- ═══ STAT CARDS ═══ -->
+<!-- ═══════════════════════════════════════════════
+     STAT CARDS
+═══════════════════════════════════════════════ -->
 <div class="section-heading">Overview</div>
 <div class="stat-grid">
-  <div class="stat-card">
+  <div class="stat-card" style="animation-delay:60ms">
     <div class="stat-icon" style="background:rgba(255,69,58,0.16);">🔨</div>
     <div class="stat-label">Total Bans</div>
-    <div class="stat-value">{{ stats.bans or 0 }}</div>
+    <div class="stat-value" data-count="{{ stats.bans or 0 }}">{{ stats.bans or 0 }}</div>
     <div class="stat-sub">All time</div>
   </div>
-  <div class="stat-card">
+  <div class="stat-card" style="animation-delay:120ms">
     <div class="stat-icon" style="background:rgba(255,159,10,0.16);">👢</div>
     <div class="stat-label">Total Kicks</div>
-    <div class="stat-value">{{ stats.kicks or 0 }}</div>
+    <div class="stat-value" data-count="{{ stats.kicks or 0 }}">{{ stats.kicks or 0 }}</div>
     <div class="stat-sub">All time</div>
   </div>
-  <div class="stat-card">
+  <div class="stat-card" style="animation-delay:180ms">
     <div class="stat-icon" style="background:rgba(10,132,255,0.16);">⏱️</div>
     <div class="stat-label">Total Timeouts</div>
-    <div class="stat-value">{{ stats.timeouts or 0 }}</div>
+    <div class="stat-value" data-count="{{ stats.timeouts or 0 }}">{{ stats.timeouts or 0 }}</div>
     <div class="stat-sub">All time</div>
   </div>
-  <div class="stat-card">
+  <div class="stat-card" style="animation-delay:240ms">
     <div class="stat-icon" style="background:rgba(255,214,10,0.16);">⚠️</div>
     <div class="stat-label">Total Warns</div>
-    <div class="stat-value">{{ stats.warnings or 0 }}</div>
+    <div class="stat-value" data-count="{{ stats.warnings or 0 }}">{{ stats.warnings or 0 }}</div>
     <div class="stat-sub">All time</div>
   </div>
 </div>
 
-<!-- ═══ FEATURE CARDS (Carl-bot style) ═══ -->
+<!-- ═══════════════════════════════════════════════
+     MAIN TWO-COLUMN GRID
+═══════════════════════════════════════════════ -->
+<div class="dash-main-grid">
+
+  <!-- Recent Actions -->
+  <div class="card activity-card" style="padding:0; overflow:hidden;">
+    <div class="card-title" style="padding:18px 20px 14px; margin-bottom:0; border-bottom:1px solid var(--glass-border);">
+      Recent Actions
+    </div>
+    {% if logs %}
+    <table class="actions-table">
+      <thead>
+        <tr>
+          <th>Action</th>
+          <th>Moderator</th>
+          <th>Target</th>
+          <th>Reason</th>
+          <th>Time</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in logs[:8] %}
+        <tr>
+          <td><span class="action-type action-{{ log.action_type|lower if log.action_type else 'unknown' }}">{{ log.action_type|upper if log.action_type else '—' }}</span></td>
+          <td style="color:var(--text-2);">{{ log.moderator_name or log.moderator_id or 'Unknown' }}</td>
+          <td style="font-weight:600;">{{ log.target_name or log.target_id or '—' }}</td>
+          <td style="color:var(--text-2); max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ log.reason or '—' }}</td>
+          <td style="color:var(--text-3); white-space:nowrap; font-size:11px; font-variant-numeric:tabular-nums;">{{ log.timestamp or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <a href="{{ url_for('logging_page') }}" class="view-all-link">
+      View all logs
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </a>
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-state-emoji">🛡️</div>
+      <h3>No actions yet</h3>
+      <p>Moderation actions will appear here once your mods get to work.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Server Info -->
+  <div class="card" style="padding:0; overflow:hidden;">
+    <div class="card-title" style="padding:18px 20px 14px; margin-bottom:0; border-bottom:1px solid var(--glass-border);">
+      Server Info
+    </div>
+    <div class="server-info-card" style="padding:16px 20px 20px;">
+      <div class="server-info-row">
+        <span class="server-info-label">Bot Status</span>
+        <span class="server-info-badge">
+          <span style="width:6px;height:6px;border-radius:50%;background:var(--ios-green);box-shadow:0 0 8px var(--ios-green);display:inline-block;"></span>
+          Online
+        </span>
+      </div>
+      <div class="server-info-row">
+        <span class="server-info-label">Auto-Mod</span>
+        <span class="server-info-badge">
+          <span style="width:6px;height:6px;border-radius:50%;background:var(--ios-green);box-shadow:0 0 8px var(--ios-green);display:inline-block;"></span>
+          Enabled
+        </span>
+      </div>
+      <div class="server-info-row">
+        <span class="server-info-label">Total Actions</span>
+        <span class="server-info-value" style="font-variant-numeric:tabular-nums;">{{ (stats.bans or 0) + (stats.kicks or 0) + (stats.timeouts or 0) + (stats.warnings or 0) }}</span>
+      </div>
+      <div class="server-info-row">
+        <span class="server-info-label">Logging</span>
+        <span class="server-info-badge">
+          <span style="width:6px;height:6px;border-radius:50%;background:var(--ios-blue);box-shadow:0 0 8px var(--ios-blue);display:inline-block;"></span>
+          Active
+        </span>
+      </div>
+      {% if session.get('guild_id') %}
+      <div class="server-info-row">
+        <span class="server-info-label">Server ID</span>
+        <span class="server-info-value" style="font-size:11px; color:var(--text-2); font-variant-numeric:tabular-nums;">{{ session['guild_id'] }}</span>
+      </div>
+      {% endif %}
+    </div>
+    <a href="{{ url_for('settings') }}" class="view-all-link">
+      Server settings
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </a>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     FEATURE CARDS
+═══════════════════════════════════════════════ -->
 <div class="section-heading">Features</div>
 <div class="feature-grid">
+
   <a href="{{ url_for('moderation') }}" class="feature-card" style="animation-delay:80ms">
     <div class="feature-icon-wrap" style="background:rgba(255,69,58,0.18);">🛡️</div>
     <h3>Moderation</h3>
     <p>Modlogs, timed punishments, full infraction history — everything your mod team needs.</p>
     <div class="feature-card-link">Manage <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
   </a>
+
   <a href="{{ url_for('logging_page') }}" class="feature-card" style="animation-delay:140ms">
     <div class="feature-icon-wrap" style="background:rgba(10,132,255,0.18);">📄</div>
     <h3>Logging</h3>
     <p>Track message edits, deletes, joins, leaves, role changes and more — fully configurable.</p>
     <div class="feature-card-link">Configure <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
   </a>
+
   <a href="{{ url_for('autoroles') }}" class="feature-card" style="animation-delay:200ms">
     <div class="feature-icon-wrap" style="background:rgba(48,209,88,0.18);">👥</div>
     <h3>Auto Roles</h3>
     <p>Automatically assign roles to new members when they join your server.</p>
     <div class="feature-card-link">Configure <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
   </a>
+
   <a href="{{ url_for('reaction_roles') }}" class="feature-card" style="animation-delay:260ms">
     <div class="feature-icon-wrap" style="background:rgba(191,90,242,0.18);">😀</div>
     <h3>Reaction Roles</h3>
     <p>Let members self-assign roles by reacting to messages with configurable emoji.</p>
     <div class="feature-card-link">Configure <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
   </a>
+
   <a href="{{ url_for('greetings') }}" class="feature-card" style="animation-delay:320ms">
     <div class="feature-icon-wrap" style="background:rgba(255,159,10,0.18);">💌</div>
     <h3>Greetings</h3>
     <p>Custom welcome and farewell messages with embeds and user mention support.</p>
     <div class="feature-card-link">Configure <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
   </a>
+
   <a href="{{ url_for('tags') }}" class="feature-card" style="animation-delay:380ms">
     <div class="feature-icon-wrap" style="background:rgba(50,173,230,0.18);">🏷️</div>
-    <h3>Tags & Commands</h3>
+    <h3>Tags &amp; Commands</h3>
     <p>Create custom commands and tags for quick, reusable responses in your server.</p>
     <div class="feature-card-link">Configure <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
   </a>
+
 </div>
 
-<!-- ═══ RECENT ACTIONS ═══ -->
-<div class="section-heading">Recent Actions</div>
-<div class="card" style="padding:0;overflow:hidden;">
-  {% if logs %}
-  <table class="actions-table">
-    <thead>
-      <tr>
-        <th>Action</th>
-        <th>Moderator</th>
-        <th>Target</th>
-        <th>Reason</th>
-        <th>Time</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for log in logs[:10] %}
-      <tr>
-        <td><span class="action-type action-{{ log.action_type|lower if log.action_type else 'unknown' }}">{{ log.action_type|upper if log.action_type else '—' }}</span></td>
-        <td style="color:var(--text-2);">{{ log.moderator_name or log.moderator_id or 'Unknown' }}</td>
-        <td>{{ log.target_name or log.target_id or '—' }}</td>
-        <td style="color:var(--text-2); max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ log.reason or '—' }}</td>
-        <td style="color:var(--text-3); white-space:nowrap; font-size:12px;">{{ log.timestamp or '—' }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  {% else %}
-  <div style="padding:48px 24px; text-align:center;">
-    <div style="font-size:40px; margin-bottom:12px;">🛡️</div>
-    <div style="font-size:14px; font-weight:600; color:var(--text); margin-bottom:6px;">No actions yet</div>
-    <div style="font-size:13px; color:var(--text-2);">Moderation actions will appear here once your mods get to work.</div>
-  </div>
-  {% endif %}
-</div>
+<!-- ═══════════════════════════════════════════════
+     ANIMATED STAT COUNTERS + RIPPLE JS
+═══════════════════════════════════════════════ -->
+<script>
+/* Animated stat counter */
+function animateCounters() {
+  document.querySelectorAll('.stat-value[data-count]').forEach(el => {
+    const target = parseInt(el.dataset.count, 10) || 0;
+    if (target === 0) return;
+    const duration = 900;
+    const start = performance.now();
+    function update(now) {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      el.textContent = Math.round(eased * target).toLocaleString();
+      if (progress < 1) requestAnimationFrame(update);
+    }
+    requestAnimationFrame(update);
+  });
+}
+
+/* Ripple effect on .btn clicks */
+document.querySelectorAll('.btn').forEach(btn => {
+  btn.addEventListener('click', function(e) {
+    const r = document.createElement('span');
+    r.className = 'lg-ripple';
+    const rect = btn.getBoundingClientRect();
+    r.style.top  = (e.clientY - rect.top)  + 'px';
+    r.style.left = (e.clientX - rect.left) + 'px';
+    btn.appendChild(r);
+    r.addEventListener('animationend', () => r.remove());
+  });
+});
+
+/* Trigger counters on page load */
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', animateCounters);
+} else {
+  animateCounters();
+}
+</script>
 {% endblock %}
