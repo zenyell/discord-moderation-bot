@@ -2,7 +2,158 @@
 {% block title %}Settings{% endblock %}
 {% block page_title %}Settings{% endblock %}
 {% block content %}
-<div style="max-width:600px">
+<div style="max-width:680px">
+
+  <!-- ░░ APPEARANCE ░░ -->
+  <div class="card">
+    <div class="card-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20"/><path d="M12 2v20M2 12h20"/></svg>
+      Appearance
+    </div>
+    <div class="card-body">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label" style="margin-bottom:14px">Theme</label>
+        <div class="theme-picker" id="themePicker">
+
+          <!-- Dark -->
+          <label class="theme-swatch" data-theme="dark">
+            <input type="radio" name="theme" value="dark">
+            <div class="swatch-preview" style="background:linear-gradient(135deg,#0d0a2e,#0a0720);">
+              <div class="swatch-dots">
+                <div class="swatch-dot" style="background:#bf5af2;"></div>
+                <div class="swatch-dot" style="background:#ff375f;"></div>
+                <div class="swatch-dot" style="background:#0a84ff;"></div>
+              </div>
+              <div class="swatch-bar" style="background:rgba(191,90,242,0.50);margin-top:4px;"></div>
+              <div class="swatch-bar-sm" style="background:rgba(255,255,255,0.22);"></div>
+              <div class="swatch-bar-sm" style="background:rgba(255,255,255,0.14);width:38%;"></div>
+            </div>
+            <div class="swatch-label">Dark</div>
+            <div class="swatch-check">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+          </label>
+
+          <!-- Light -->
+          <label class="theme-swatch" data-theme="light">
+            <input type="radio" name="theme" value="light">
+            <div class="swatch-preview" style="background:linear-gradient(135deg,#e8e4f8,#f2f2f7);">
+              <div class="swatch-dots">
+                <div class="swatch-dot" style="background:#5e5ce6;"></div>
+                <div class="swatch-dot" style="background:#ff375f;"></div>
+                <div class="swatch-dot" style="background:#0a84ff;"></div>
+              </div>
+              <div class="swatch-bar" style="background:rgba(94,92,230,0.55);margin-top:4px;"></div>
+              <div class="swatch-bar-sm" style="background:rgba(0,0,0,0.18);"></div>
+              <div class="swatch-bar-sm" style="background:rgba(0,0,0,0.11);width:38%;"></div>
+            </div>
+            <div class="swatch-label" style="background:linear-gradient(transparent,rgba(80,60,160,0.45));">Light</div>
+            <div class="swatch-check" style="background:#5e5ce6;box-shadow:0 2px 8px rgba(94,92,230,0.5);">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+          </label>
+
+          <!-- Midnight -->
+          <label class="theme-swatch" data-theme="midnight">
+            <input type="radio" name="theme" value="midnight">
+            <div class="swatch-preview" style="background:linear-gradient(135deg,#050010,#000000);">
+              <div class="swatch-dots">
+                <div class="swatch-dot" style="background:#7d6af7;"></div>
+                <div class="swatch-dot" style="background:#5040cc;"></div>
+                <div class="swatch-dot" style="background:#3020aa;"></div>
+              </div>
+              <div class="swatch-bar" style="background:rgba(125,106,247,0.45);margin-top:4px;"></div>
+              <div class="swatch-bar-sm" style="background:rgba(255,255,255,0.16);"></div>
+              <div class="swatch-bar-sm" style="background:rgba(255,255,255,0.10);width:38%;"></div>
+            </div>
+            <div class="swatch-label">Midnight</div>
+            <div class="swatch-check" style="background:#7d6af7;box-shadow:0 2px 8px rgba(125,106,247,0.5);">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+          </label>
+
+          <!-- Starlight -->
+          <label class="theme-swatch" data-theme="starlight">
+            <input type="radio" name="theme" value="starlight">
+            <div class="swatch-preview" style="background:linear-gradient(135deg,#f5f0e8,#faf9f6);">
+              <div class="swatch-dots">
+                <div class="swatch-dot" style="background:#c97a2a;"></div>
+                <div class="swatch-dot" style="background:#e8a040;"></div>
+                <div class="swatch-dot" style="background:#d4b060;"></div>
+              </div>
+              <div class="swatch-bar" style="background:rgba(201,122,42,0.50);margin-top:4px;"></div>
+              <div class="swatch-bar-sm" style="background:rgba(40,32,24,0.18);"></div>
+              <div class="swatch-bar-sm" style="background:rgba(40,32,24,0.11);width:38%;"></div>
+            </div>
+            <div class="swatch-label" style="background:linear-gradient(transparent,rgba(100,70,20,0.50));">Starlight</div>
+            <div class="swatch-check" style="background:#c97a2a;box-shadow:0 2px 8px rgba(201,122,42,0.5);">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+          </label>
+
+          <!-- Aurora -->
+          <label class="theme-swatch" data-theme="aurora">
+            <input type="radio" name="theme" value="aurora">
+            <div class="swatch-preview" style="background:linear-gradient(135deg,#041a1a,#030f12);">
+              <div class="swatch-dots">
+                <div class="swatch-dot" style="background:#00d4aa;"></div>
+                <div class="swatch-dot" style="background:#0080ff;"></div>
+                <div class="swatch-dot" style="background:#7850ff;"></div>
+              </div>
+              <div class="swatch-bar" style="background:rgba(0,212,170,0.50);margin-top:4px;"></div>
+              <div class="swatch-bar-sm" style="background:rgba(140,220,200,0.30);"></div>
+              <div class="swatch-bar-sm" style="background:rgba(140,220,200,0.18);width:38%;"></div>
+            </div>
+            <div class="swatch-label">Aurora</div>
+            <div class="swatch-check" style="background:#00d4aa;box-shadow:0 2px 8px rgba(0,212,170,0.5);">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+          </label>
+
+          <!-- Sunset -->
+          <label class="theme-swatch" data-theme="sunset">
+            <input type="radio" name="theme" value="sunset">
+            <div class="swatch-preview" style="background:linear-gradient(135deg,#1e0a04,#130804);">
+              <div class="swatch-dots">
+                <div class="swatch-dot" style="background:#ff9f0a;"></div>
+                <div class="swatch-dot" style="background:#ff6428;"></div>
+                <div class="swatch-dot" style="background:#ff375f;"></div>
+              </div>
+              <div class="swatch-bar" style="background:rgba(255,159,10,0.55);margin-top:4px;"></div>
+              <div class="swatch-bar-sm" style="background:rgba(255,200,160,0.30);"></div>
+              <div class="swatch-bar-sm" style="background:rgba(255,200,160,0.18);width:38%;"></div>
+            </div>
+            <div class="swatch-label">Sunset</div>
+            <div class="swatch-check" style="background:#ff9f0a;box-shadow:0 2px 8px rgba(255,159,10,0.5);">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+          </label>
+
+          <!-- Ocean -->
+          <label class="theme-swatch" data-theme="ocean">
+            <input type="radio" name="theme" value="ocean">
+            <div class="swatch-preview" style="background:linear-gradient(135deg,#041228,#020c1b);">
+              <div class="swatch-dots">
+                <div class="swatch-dot" style="background:#0a84ff;"></div>
+                <div class="swatch-dot" style="background:#00c8f0;"></div>
+                <div class="swatch-dot" style="background:#0050d0;"></div>
+              </div>
+              <div class="swatch-bar" style="background:rgba(10,132,255,0.55);margin-top:4px;"></div>
+              <div class="swatch-bar-sm" style="background:rgba(140,200,240,0.30);"></div>
+              <div class="swatch-bar-sm" style="background:rgba(140,200,240,0.18);width:38%;"></div>
+            </div>
+            <div class="swatch-label">Ocean</div>
+            <div class="swatch-check" style="background:#0a84ff;box-shadow:0 2px 8px rgba(10,132,255,0.5);">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+          </label>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ░░ GENERAL ░░ -->
   <form method="post">
     <div class="card">
       <div class="card-title">
@@ -20,6 +171,7 @@
         </div>
       </div>
     </div>
+
     <div class="card">
       <div class="card-title">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
@@ -45,4 +197,46 @@
     <button type="submit" class="btn btn-primary">Save Settings</button>
   </form>
 </div>
+
+{% block scripts %}
+<script>
+(function(){
+  /* ── Apply saved theme ── */
+  const saved = localStorage.getItem('modpanel-theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', saved);
+
+  const picker = document.getElementById('themePicker');
+  if (!picker) return;
+
+  /* Mark active swatch */
+  function setActive(name) {
+    picker.querySelectorAll('.theme-swatch').forEach(s => {
+      s.classList.toggle('active', s.dataset.theme === name);
+      const radio = s.querySelector('input');
+      if (radio) radio.checked = s.dataset.theme === name;
+    });
+  }
+  setActive(saved);
+
+  /* Click handler — spring animation + theme switch */
+  picker.querySelectorAll('.theme-swatch').forEach(swatch => {
+    swatch.addEventListener('click', () => {
+      const name = swatch.dataset.theme;
+      /* spring scale feedback */
+      swatch.style.transform = 'scale(0.94)';
+      setTimeout(() => {
+        swatch.style.transition = 'transform 400ms cubic-bezier(0.34,1.56,0.64,1)';
+        swatch.style.transform = '';
+        setTimeout(() => swatch.style.transition = '', 400);
+      }, 80);
+
+      /* apply */
+      document.documentElement.setAttribute('data-theme', name);
+      localStorage.setItem('modpanel-theme', name);
+      setActive(name);
+    });
+  });
+})();
+</script>
+{% endblock %}
 {% endblock %}
