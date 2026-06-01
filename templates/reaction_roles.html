@@ -7,42 +7,46 @@
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
     Add Reaction Role
   </div>
-  <form method="post">
-    <input type="hidden" name="action" value="add">
-    <div class="grid-2">
-      <div class="form-group">
-        <label class="form-label">Message ID</label>
-        <input type="text" name="message_id" class="form-control" placeholder="Message ID" required>
+  <div class="card-body">
+    <form method="post">
+      <input type="hidden" name="action" value="add">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Message ID</label>
+          <input type="text" name="message_id" placeholder="Message ID" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Channel ID</label>
+          <input type="text" name="channel_id" placeholder="Channel ID" required>
+        </div>
       </div>
-      <div class="form-group">
-        <label class="form-label">Channel ID</label>
-        <input type="text" name="channel_id" class="form-control" placeholder="Channel ID" required>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Emoji</label>
+          <input type="text" name="emoji" placeholder="👍 or :custom:" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Role ID</label>
+          <input type="text" name="role_id" placeholder="Role ID to assign" required>
+        </div>
       </div>
-      <div class="form-group">
-        <label class="form-label">Emoji</label>
-        <input type="text" name="emoji" class="form-control" placeholder="👍 or :custom:" required>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Role ID</label>
-        <input type="text" name="role_id" class="form-control" placeholder="Role ID to assign" required>
-      </div>
-    </div>
-    <button type="submit" class="btn btn-primary">Add Reaction Role</button>
-  </form>
+      <button type="submit" class="btn btn-primary">Add Reaction Role</button>
+    </form>
+  </div>
 </div>
 <div class="card">
   <div class="card-title">Active Reaction Roles</div>
-  {% if rr_list %}
+  {% if reaction_roles %}
   <div class="table-wrap">
     <table>
-      <thead><tr><th>Emoji</th><th>Role ID</th><th>Message ID</th><th>Channel ID</th><th></th></tr></thead>
+      <thead><tr><th>Message</th><th>Channel</th><th>Emoji</th><th>Role</th><th></th></tr></thead>
       <tbody>
-        {% for rr in rr_list %}
+        {% for rr in reaction_roles %}
         <tr>
-          <td style="font-size:18px">{{ rr.emoji }}</td>
+          <td><code>{{ rr.message_id }}</code></td>
+          <td><code>{{ rr.channel_id }}</code></td>
+          <td>{{ rr.emoji }}</td>
           <td><code>{{ rr.role_id }}</code></td>
-          <td class="td-muted"><code>{{ rr.message_id }}</code></td>
-          <td class="td-muted"><code>{{ rr.channel_id }}</code></td>
           <td style="text-align:right">
             <form method="post" style="display:inline">
               <input type="hidden" name="action" value="remove">
@@ -56,7 +60,11 @@
     </table>
   </div>
   {% else %}
-  <div class="empty"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg><h3>No reaction roles yet</h3><p>Add one above to get started.</p></div>
+  <div class="empty">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+    <h3>No reaction roles yet</h3>
+    <p>React to a message to automatically assign a role to members.</p>
+  </div>
   {% endif %}
 </div>
 {% endblock %}

@@ -7,11 +7,16 @@
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
     Add Auto Role
   </div>
-  <form method="post" style="display:flex;gap:8px">
-    <input type="hidden" name="action" value="add">
-    <input type="text" name="role_id" class="form-control" placeholder="Role ID" required style="flex:1">
-    <button type="submit" class="btn btn-primary">Add</button>
-  </form>
+  <div class="card-body">
+    <form method="post" style="display:flex;gap:8px;align-items:flex-end">
+      <input type="hidden" name="action" value="add">
+      <div class="form-group" style="flex:1;margin-bottom:0">
+        <label class="form-label">Role ID</label>
+        <input type="text" name="role_id" placeholder="Role ID" required>
+      </div>
+      <button type="submit" class="btn btn-primary">Add</button>
+    </form>
+  </div>
 </div>
 <div class="card">
   <div class="card-title">Active Auto Roles</div>
@@ -36,7 +41,11 @@
     </table>
   </div>
   {% else %}
-  <div class="empty"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><h3>No auto roles set</h3><p>Roles added here are assigned when a member joins.</p></div>
+  <div class="empty">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+    <h3>No auto roles set</h3>
+    <p>Roles added here are assigned when a member joins.</p>
+  </div>
   {% endif %}
 </div>
 {% endblock %}

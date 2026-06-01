@@ -7,18 +7,20 @@
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
     Add Tag
   </div>
-  <form method="post">
-    <input type="hidden" name="action" value="add">
-    <div class="form-group">
-      <label class="form-label">Tag Name</label>
-      <input type="text" name="tag_name" class="form-control" placeholder="e.g. rules" required>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Response Content</label>
-      <textarea name="tag_content" class="form-control" placeholder="Content shown when !tag is used" required></textarea>
-    </div>
-    <button type="submit" class="btn btn-primary">Save Tag</button>
-  </form>
+  <div class="card-body">
+    <form method="post">
+      <input type="hidden" name="action" value="add">
+      <div class="form-group">
+        <label class="form-label">Tag Name</label>
+        <input type="text" name="tag_name" placeholder="e.g. rules" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Response Content</label>
+        <textarea name="tag_content" placeholder="Content shown when !tag is used" required></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary">Save Tag</button>
+    </form>
+  </div>
 </div>
 <div class="card">
   <div class="card-title">All Tags</div>
@@ -44,7 +46,11 @@
     </table>
   </div>
   {% else %}
-  <div class="empty"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg><h3>No tags yet</h3><p>Tags let users retrieve preset responses with <code>!tag name</code>.</p></div>
+  <div class="empty">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+    <h3>No tags yet</h3>
+    <p>Tags let users retrieve preset responses with <code>!tag name</code>.</p>
+  </div>
   {% endif %}
 </div>
 {% endblock %}

@@ -7,18 +7,20 @@
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
     Add Trigger
   </div>
-  <form method="post">
-    <input type="hidden" name="action" value="add">
-    <div class="form-group">
-      <label class="form-label">Trigger Phrase</label>
-      <input type="text" name="trigger_phrase" class="form-control" placeholder="Keyword or phrase to detect" required>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Auto Response</label>
-      <textarea name="trigger_response" class="form-control" placeholder="Bot will reply with this message" required></textarea>
-    </div>
-    <button type="submit" class="btn btn-primary">Add Trigger</button>
-  </form>
+  <div class="card-body">
+    <form method="post">
+      <input type="hidden" name="action" value="add">
+      <div class="form-group">
+        <label class="form-label">Trigger Phrase</label>
+        <input type="text" name="trigger_phrase" placeholder="Keyword or phrase to detect" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Auto Response</label>
+        <textarea name="trigger_response" placeholder="Bot will reply with this message" required></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary">Add Trigger</button>
+    </form>
+  </div>
 </div>
 <div class="card">
   <div class="card-title">Active Triggers</div>
@@ -44,7 +46,11 @@
     </table>
   </div>
   {% else %}
-  <div class="empty"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><h3>No triggers yet</h3><p>Triggers auto-respond when a keyword is detected in a message.</p></div>
+  <div class="empty">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+    <h3>No triggers yet</h3>
+    <p>Triggers auto-respond when a keyword is detected in a message.</p>
+  </div>
   {% endif %}
 </div>
 {% endblock %}
