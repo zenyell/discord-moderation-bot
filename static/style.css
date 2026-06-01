@@ -140,13 +140,6 @@ body::after {
   border-color: var(--glass-border-hover);
 }
 
-.glass-specular::before {
-  content: '';
-  position: absolute; top: 0; left: 8%; right: 8%; height: 1px;
-  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.5) 50%, transparent 100%);
-  border-radius: 1px; pointer-events: none; z-index: 2;
-}
-
 /* ════════════════════════════════
    LAYOUT SHELL
 ════════════════════════════════ */
@@ -310,7 +303,7 @@ body::after {
 }
 .topbar-btn:hover { background: rgba(255,255,255,0.13); color: var(--text); border-color: var(--glass-border-hover); }
 
-/* ── Main content — centered ── */
+/* ── Main content ── */
 .main-content {
   flex: 1;
   padding: 32px 32px 56px;
@@ -352,7 +345,7 @@ body::after {
 }
 
 /* ════════════════════════════════
-   STAT CARDS — iOS Control Center tiles
+   STAT CARDS
 ════════════════════════════════ */
 .grid-4 {
   display: grid;
@@ -473,11 +466,54 @@ body::after {
   color: var(--accent);
 }
 
-/* ── Card body — consistent padding on all pages ── */
+/* ── Explicit card-body wrapper ── */
 .card-body {
   padding: 22px 22px 20px;
   position: relative;
   z-index: 1;
+}
+
+/*
+  ── Auto-pad direct .card children ──
+  When templates place .form-group, .form-row, .form-section,
+  .submit-row, .btn, hr, or <p> directly inside .card (no .card-body
+  wrapper), give them the same 22px horizontal padding automatically.
+  Toggle rows and tables are excluded — they manage their own padding.
+*/
+.card > .form-group,
+.card > .form-row,
+.card > .form-section,
+.card > .submit-row,
+.card > .btn,
+.card > p,
+.card > hr {
+  padding-left: 22px;
+  padding-right: 22px;
+  position: relative;
+  z-index: 1;
+}
+
+/* First padded child after card-title gets top spacing */
+.card > .form-group:first-of-type,
+.card > .form-row:first-of-type {
+  padding-top: 20px;
+}
+
+/* Last padded child gets bottom spacing */
+.card > .form-group:last-child,
+.card > .form-row:last-child,
+.card > .form-section:last-child,
+.card > .submit-row:last-child,
+.card > .btn:last-child,
+.card > p:last-child {
+  padding-bottom: 22px;
+}
+
+/* hr inside card needs no side padding — just vertical spacing */
+.card > hr {
+  padding-left: 0;
+  padding-right: 0;
+  margin: 0 22px;
 }
 
 /* ════════════════════════════════
@@ -588,6 +624,7 @@ tr:hover td { background: rgba(255,255,255,0.038); }
    FORMS
 ════════════════════════════════ */
 .form-group { margin-bottom: 20px; }
+.form-group:last-child { margin-bottom: 0; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
 
@@ -630,7 +667,7 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
    B) Wrapper: <label class="toggle"><input type="checkbox"><span class="toggle-track"></span></label>
 ════════════════════════════════ */
 
-/* ── Shared row container — .toggle-wrap (new) and .toggle-row (old) ── */
+/* ── Shared row container ── */
 .toggle-wrap,
 .toggle-row {
   display: flex;
@@ -645,7 +682,7 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
 .toggle-wrap:last-child,
 .toggle-row:last-child { border-bottom: none; }
 
-/* ── Toggle grid container (old pattern from logging.html etc.) ── */
+/* ── Toggle grid container ── */
 .toggle-grid {
   position: relative;
   z-index: 1;
@@ -676,14 +713,14 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
    Pattern A — native checkbox:
      <input type="checkbox" class="toggle">
 
-   Pattern B — label wrapper (used in most templates):
+   Pattern B — label wrapper:
      <label class="toggle">
        <input type="checkbox" name="...">
        <span class="toggle-track"></span>
      </label>
 ════════════════════════════════ */
 
-/* -- Pattern A: native input.toggle -- */
+/* Pattern A: native input.toggle */
 input[type=checkbox].toggle {
   -webkit-appearance: none;
   -moz-appearance: none;
@@ -722,7 +759,7 @@ input[type=checkbox].toggle:checked::before {
 input[type=checkbox].toggle:active::before { width: 29px; }
 input[type=checkbox].toggle:checked:active::before { transform: translateX(16px); width: 29px; }
 
-/* -- Pattern B: label.toggle wrapper -- */
+/* Pattern B: label.toggle wrapper */
 label.toggle {
   position: relative;
   display: inline-block;
@@ -732,7 +769,6 @@ label.toggle {
   border-radius: 31px;
   cursor: pointer;
   vertical-align: middle;
-  /* Reset any label styles that bleed in */
   text-transform: none;
   letter-spacing: normal;
   font-size: inherit;
@@ -740,7 +776,6 @@ label.toggle {
   color: inherit;
 }
 
-/* Hide the real checkbox but keep it accessible */
 label.toggle input[type=checkbox] {
   position: absolute;
   opacity: 0;
@@ -748,7 +783,6 @@ label.toggle input[type=checkbox] {
   pointer-events: none;
 }
 
-/* The visible track */
 label.toggle .toggle-track {
   position: absolute;
   inset: 0;
@@ -759,7 +793,6 @@ label.toggle .toggle-track {
   transition: background var(--ease-snap), box-shadow var(--ease-snap), border-color var(--ease-snap);
 }
 
-/* The thumb knob */
 label.toggle .toggle-track::before {
   content: '';
   position: absolute;
@@ -771,7 +804,6 @@ label.toggle .toggle-track::before {
   transition: transform var(--spring), width var(--ease-snap);
 }
 
-/* Checked state — controlled by the hidden input */
 label.toggle input[type=checkbox]:checked ~ .toggle-track {
   background: var(--ios-purple);
   border-color: rgba(191,90,242,0.55);
@@ -781,13 +813,11 @@ label.toggle input[type=checkbox]:checked ~ .toggle-track::before {
   transform: translateX(20px);
 }
 
-/* Active stretch effect */
 label.toggle:active .toggle-track::before { width: 29px; }
 label.toggle input[type=checkbox]:checked:active ~ .toggle-track::before {
   transform: translateX(16px); width: 29px;
 }
 
-/* Focus ring for accessibility */
 label.toggle input[type=checkbox]:focus-visible ~ .toggle-track {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
