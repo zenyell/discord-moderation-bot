@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}ModPanel{% endblock %} — ModPanel</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23bf5af2' opacity='.18'/%3E%3Cpath d='M16 6a10 10 0 1 0 0 20A10 10 0 0 0 16 6zm0 3a7 7 0 1 1 0 14A7 7 0 0 1 16 9zm-1 3v5.27l4 2.4-.78 1.33L13 18V12h2z' fill='%23bf5af2'/%3E%3C/svg%3E">
+</head>
+<body>
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <a class="sidebar-brand" href="{{ url_for('dashboard') }}">
+      <div class="brand-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-name">ModPanel</div>
+        <div class="brand-sub">Discord Moderation</div>
+      </div>
+    </a>
+
+    <nav class="sidebar-nav">
+
+      <!-- Main -->
+      <div class="nav-section-header open" onclick="toggleSection(this)">
+        <span>Main</span>
+        <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="nav-section-body open">
+        <a href="{{ url_for('dashboard') }}" class="nav-item{% if request.endpoint == 'dashboard' %} active{% endif %}">
+          <span class="nav-item-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          </span>
+          Dashboard
+        </a>
+        <a href="{{ url_for('moderation') }}" class="nav-item{% if request.endpoint == 'moderation' %} active{% endif %}">
+          <span class="nav-item-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+          </span>
+          Moderation
+        </a>
+        <a href="{{ url_for('user_lookup') }}" class="nav-item{% if request.endpoint == 'user_lookup' %} active{% endif %}">
+          <span class="nav-item-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </span>
+          User Lookup
+        </a>
+      </div>
+
+      <div class="section-divider" style="margin: 6px 12px;"></div>
+
+      <!-- Config -->
+      <div class="nav-section-header open" onclick="toggleSection(this)">
+        <span>Configuration</span>
+        <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="nav-section-body open">
+        <a href="{{ url_for('logging_settings') }}" class="nav-item{% if request.endpoint == 'logging_settings' %} active{% endif %}">
+          <span class="nav-item-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </span>
+          Logging
+        </a>
+        <a href="{{ url_for('greetings') }}" class="nav-item{% if request.endpoint == 'greetings' %} active{% endif %}">
+          <span class="nav-item-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </span>
+          Greetings
+        </a>
+        <a href="{{ url_for('autoroles') }}" class="nav-item{% if request.endpoint == 'autoroles' %} active{% endif %}">
+          <span class="nav-item-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </span>
+          Auto Roles
+        </a>
+        <a href="{{ url_for('reaction_roles') }}" class="nav-item{% if request.endpoint == 'reaction_roles' %} active{% endif %}">
+          <span class="nav-item-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+          </span>
+          Reaction Roles
+        </a>
+      </div>
+
+      <div class="section-divider" style="margin: 6px 12px;"></div>
+
+      <!-- Features -->
+      <div class="nav-section-header open" onclick="toggleSection(this)">
+        <span>Features</span>
+        <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="nav-section-body open">
+        <a href="{{ url_for('tags') }}" class="nav-item{% if request.endpoint == 'tags' %} active{% endif %}">
+          <span class="nav-item-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+          </span>
+          Tags
+        </a>
+        <a href="{{ url_for('triggers') }}" class="nav-item{% if request.endpoint == 'triggers' %} active{% endif %}">
+          <span class="nav-item-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          </span>
+          Triggers
+        </a>
+        <a href="{{ url_for('starboard') }}" class="nav-item{% if request.endpoint == 'starboard' %} active{% endif %}">
+          <span class="nav-item-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </span>
+          Starboard
+        </a>
+        <a href="{{ url_for('suggestions') }}" class="nav-item{% if request.endpoint == 'suggestions' %} active{% endif %}">
+          <span class="nav-item-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </span>
+          Suggestions
+        </a>
+        <a href="{{ url_for('command_settings') }}" class="nav-item{% if request.endpoint == 'command_settings' %} active{% endif %}">
+          <span class="nav-item-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+          </span>
+          Commands
+        </a>
+      </div>
+
+      <div class="section-divider" style="margin: 6px 12px;"></div>
+
+      <!-- Admin -->
+      <div class="nav-section-header open" onclick="toggleSection(this)">
+        <span>Admin</span>
+        <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="nav-section-body open">
+        <a href="{{ url_for('settings') }}" class="nav-item{% if request.endpoint == 'settings' %} active{% endif %}">
+          <span class="nav-item-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </span>
+          Settings
+        </a>
+      </div>
+
+    </nav>
+
+    <div class="sidebar-footer">
+      <a href="{{ url_for('logout') }}" class="nav-item" style="color:var(--ios-red);">
+        <span class="nav-item-icon" style="background:rgba(255,69,58,0.12);">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </span>
+        Sign Out
+      </a>
+    </div>
+  </aside>
+
+  <!-- Mobile overlay -->
+  <div class="mobile-sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+  <!-- Main -->
+  <div class="main-wrap">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="topbar-btn sidebar-mobile-close" onclick="openSidebar()" aria-label="Open menu" style="display:none">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <span class="topbar-title">{% block page_title %}ModPanel{% endblock %}</span>
+      </div>
+      <div class="topbar-right">
+        <div class="bot-status">
+          <span class="status-dot" id="statusDot"></span>
+          <span id="statusText">Online</span>
+        </div>
+        <a href="{{ url_for('settings') }}" class="topbar-btn" aria-label="Settings">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </a>
+      </div>
+    </header>
+
+    <main class="main-content">
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="flash{% if category == 'error' %} flash-error{% endif %}">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                {% if category == 'error' %}
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                {% else %}
+                  <polyline points="20 6 9 17 4 12"/>
+                {% endif %}
+              </svg>
+              {{ message }}
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      {% block content %}{% endblock %}
+
+    </main>
+  </div>
+</div>
+
+<script>
+function toggleSection(header) {
+  header.classList.toggle('open');
+  const body = header.nextElementSibling;
+  body.classList.toggle('open');
+}
+function openSidebar() {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sidebarOverlay').classList.add('open');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('open');
+}
+// Show hamburger on mobile
+if (window.innerWidth <= 768) {
+  document.querySelector('.sidebar-mobile-close').style.display = 'flex';
+}
+// Stat card number animation
+document.querySelectorAll('.stat-value').forEach(el => {
+  const target = parseInt(el.textContent);
+  if (isNaN(target)) return;
+  let current = 0;
+  const step = Math.max(1, Math.ceil(target / 28));
+  const tick = () => {
+    current = Math.min(current + step, target);
+    el.textContent = current.toLocaleString();
+    if (current < target) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+});
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>
