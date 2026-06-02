@@ -440,8 +440,8 @@
 {# ── Auto-mod: on if either bad_words or spam_limit is configured ── #}
 {% set automod_on = (automod_bad_words|trim != '') or (automod_spam|trim not in ('', '0')) %}
 
-{# ── Logging: on if log_channel is set ── #}
-{% set logging_on = log_channel_id|trim != '' %}
+{# ── Logging: on if explicitly enabled (logging_enabled != '0') AND a log channel is set ── #}
+{% set logging_on = (cfg.get('logging_enabled', '1') != '0') and (log_channel_id|trim != '') %}
 
 <!-- ═══════════════════════════════════════════════
      HERO BANNER
@@ -505,7 +505,7 @@
     View Logs
   </a>
   <a href="{{ url_for('settings') }}" class="btn btn-glass">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     Settings
   </a>
 </div>
@@ -633,6 +633,11 @@
           <span style="width:6px;height:6px;border-radius:50%;background:var(--ios-purple);flex-shrink:0;"></span>
           Enabled
         </span>
+        {% elif log_channel_id|trim != '' %}
+        <a href="{{ url_for('logging_page') }}" class="server-info-badge" style="border-color:rgba(255,159,10,0.5);background:rgba(255,159,10,0.12);color:var(--ios-orange);text-decoration:none;">
+          <span style="width:6px;height:6px;border-radius:50%;background:var(--ios-orange);flex-shrink:0;"></span>
+          Paused
+        </a>
         {% else %}
         <a href="{{ url_for('logging_page') }}" class="server-info-badge" style="border-color:rgba(255,159,10,0.5);background:rgba(255,159,10,0.12);color:var(--ios-orange);text-decoration:none;">
           <span style="width:6px;height:6px;border-radius:50%;background:var(--ios-orange);flex-shrink:0;"></span>
