@@ -964,24 +964,8 @@
   <aside class="sidebar" id="sidebar">
     <a class="sidebar-brand" href="{{ url_for('index') }}">
       <div class="brand-icon">
-        <!-- Mask logo: blue shield with smiley face -->
-        <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Mask">
-          <!-- Outer halo/glow ring -->
-          <path d="M18 2.5 L31 7.5 L31 18 C31 26.5 25 32.5 18 34.5 C11 32.5 5 26.5 5 18 L5 7.5 Z" fill="#a8d4ff" rx="5"/>
-          <!-- Main shield body -->
-          <defs>
-            <linearGradient id="maskShield" x1="5" y1="2.5" x2="31" y2="34.5" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#5bb8ff"/>
-              <stop offset="100%" stop-color="#2b8ee8"/>
-            </linearGradient>
-          </defs>
-          <path d="M18 5 L29 9.5 L29 18 C29 25.5 24 31 18 32.8 C12 31 7 25.5 7 18 L7 9.5 Z" fill="url(#maskShield)"/>
-          <!-- Eyes -->
-          <circle cx="13.5" cy="17" r="2" fill="white"/>
-          <circle cx="22.5" cy="17" r="2" fill="white"/>
-          <!-- Smile -->
-          <path d="M13 22.5 Q18 26 23 22.5" stroke="white" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-        </svg>
+        <!-- Mask logo image -->
+        <img src="{{ url_for('static', filename='ahjin main.png') }}" alt="Mask" width="36" height="36" style="width:36px;height:36px;object-fit:contain;border-radius:8px;">
       </div>
       <div>
         <div class="brand-name">Mask</div>
@@ -1267,10 +1251,15 @@
       });
       requestAnimationFrame(draw);
     }
-    init();
-    draw();
-    window.addEventListener('resize', init);
+    if (document.documentElement.getAttribute('data-theme') === 'space') {
+      init(); draw();
+    }
+    window.addEventListener('resize', () => {
+      if (document.documentElement.getAttribute('data-theme') === 'space') resize();
+    });
   })();
 </script>
+
+{% block extra_js %}{% endblock %}
 </body>
 </html>
