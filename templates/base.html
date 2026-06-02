@@ -359,27 +359,6 @@
       color: var(--text);
       box-shadow: var(--shadow-sm);
     }
-    .bot-status {
-      display: flex; align-items: center; gap: 6px;
-      padding: 6px 12px;
-      background: var(--glass-bg-light);
-      border: 1px solid var(--glass-border);
-      border-radius: var(--r-xl);
-      font-size: 12px; font-weight: 600;
-      color: var(--text-2);
-      box-shadow: var(--glass-inset);
-    }
-    .status-dot {
-      width: 7px; height: 7px; border-radius: 50%;
-      background: var(--ios-green);
-      box-shadow: 0 0 8px var(--ios-green);
-      animation: pulse-dot 2.4s ease-in-out infinite;
-    }
-    .status-dot.offline { background: var(--ios-red); box-shadow: 0 0 8px var(--ios-red); animation: none; }
-    @keyframes pulse-dot {
-      0%,100% { box-shadow: 0 0 6px var(--ios-green); }
-      50%      { box-shadow: 0 0 14px var(--ios-green); }
-    }
 
     /* ══════════════════════════════════════
        MAIN CONTENT
@@ -1114,12 +1093,6 @@
       </div>
       <div class="topbar-right">
         {% block topbar_right %}
-        <div class="bot-status" id="botStatus">
-          <span class="status-dot" id="statusDot"></span>
-          <span id="statusText">Checking…</span>
-        </div>
-        {% endblock %}
-
         {% if current_user.logged_in %}
         <div style="display:flex;align-items:center;gap:8px;padding:4px 10px 4px 4px;background:var(--glass-bg-light);border:1px solid var(--glass-border);border-radius:var(--r-xl);box-shadow:var(--glass-inset);">
           {% if current_user.avatar %}
@@ -1130,6 +1103,7 @@
           <span style="font-size:12px;font-weight:600;color:var(--text-2);">{{ current_user.username }}</span>
         </div>
         {% endif %}
+        {% endblock %}
       </div>
     </header>
 
@@ -1211,108 +1185,7 @@
       glow.style.top  = e.clientY + 'px';
     });
   }
-
-  /* ── Orb particles ── */
-  (function(){
-    const layer = document.getElementById('orb-layer');
-    if (!layer) return;
-    const theme = document.documentElement.getAttribute('data-theme') || 'dark';
-    const palettes = {
-      dark:     ['rgba(191,90,242,0.55)','rgba(10,132,255,0.45)','rgba(50,173,230,0.35)','rgba(155,89,245,0.40)'],
-      light:    ['rgba(191,90,242,0.30)','rgba(10,132,255,0.22)','rgba(50,173,230,0.18)','rgba(155,89,245,0.25)'],
-      midnight: ['rgba(0,180,255,0.50)','rgba(0,100,200,0.40)','rgba(0,220,255,0.30)','rgba(0,60,160,0.35)'],
-      space:    ['rgba(180,160,255,0.45)','rgba(100,180,255,0.38)','rgba(140,110,255,0.30)','rgba(80,160,255,0.35)'],
-    };
-    const colors = palettes[theme] || palettes.dark;
-    for (let i = 0; i < 5; i++) {
-      const orb = document.createElement('div');
-      orb.className = 'orb-particle';
-      const size = 180 + Math.random() * 220;
-      const tx = (Math.random() - 0.5) * 200;
-      const ty = (Math.random() - 0.5) * 200;
-      orb.style.cssText = `
-        width:${size}px; height:${size}px;
-        left:${Math.random()*90}%;
-        top:${Math.random()*90}%;
-        background:${colors[i % colors.length]};
-        --tx:${tx}px; --ty:${ty}px;
-        animation-duration:${14 + Math.random()*12}s;
-        animation-delay:${-Math.random()*14}s;
-      `;
-      layer.appendChild(orb);
-    }
-  })();
-
-  /* ── Star canvas (space theme) ── */
-  (function(){
-    const canvas = document.getElementById('star-canvas');
-    if (!canvas) return;
-    const theme = document.documentElement.getAttribute('data-theme');
-    if (theme !== 'space') return;
-    const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    const stars = Array.from({length: 180}, () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      r: Math.random() * 1.2 + 0.2,
-      a: Math.random(),
-      speed: 0.003 + Math.random() * 0.006,
-    }));
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      stars.forEach(s => {
-        s.a += s.speed;
-        const alpha = (Math.sin(s.a) * 0.5 + 0.5) * 0.85 + 0.10;
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(220,235,255,${alpha.toFixed(2)})`;
-        ctx.fill();
-      });
-      requestAnimationFrame(draw);
-    }
-    draw();
-    window.addEventListener('resize', () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    });
-  })();
-
-  /* ── Page transition ── */
-  document.querySelectorAll('a[href]').forEach(a => {
-    if (a.target === '_blank' || a.href.startsWith('#') || a.href.startsWith('javascript')) return;
-    a.addEventListener('click', e => {
-      const url = a.href;
-      if (!url || url === window.location.href) return;
-      e.preventDefault();
-      document.body.classList.add('leaving');
-      setTimeout(() => { window.location.href = url; }, 200);
-    });
-  });
-
-  /* ── Bot status check ── */
-  (function(){
-    const dot = document.getElementById('statusDot');
-    const txt = document.getElementById('statusText');
-    if (!dot || !txt) return;
-    fetch('/api/bot-status')
-      .then(r => r.json())
-      .then(d => {
-        if (d.online) {
-          dot.classList.remove('offline');
-          txt.textContent = d.name ? d.name + ' • Online' : 'Online';
-        } else {
-          dot.classList.add('offline');
-          txt.textContent = 'Offline';
-        }
-      })
-      .catch(() => {
-        dot.classList.add('offline');
-        txt.textContent = 'Offline';
-      });
-  })();
 </script>
-
 {% block extra_js %}{% endblock %}
 </body>
 </html>
