@@ -388,15 +388,6 @@
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
-/* ── Automod toggle pulse ── */
-@keyframes automod-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(255,159,10,0.5); }
-  50%       { box-shadow: 0 0 0 5px rgba(255,159,10,0); }
-}
-.dot-pulse-warn {
-  animation: automod-pulse 1.6s ease-in-out infinite;
-}
-
 /* ── Empty state ── */
 .empty-state {
   padding: 52px 24px;
@@ -437,12 +428,6 @@
 {% set guild_id     = guild.id   if guild else '' %}
 {% set total_actions = (stats.bans or 0) + (stats.kicks or 0) + (stats.timeouts or 0) + (stats.warnings or 0) %}
 
-{# ── Auto-mod: on if either bad_words or spam_limit is configured ── #}
-{% set automod_on = (automod_bad_words|trim != '') or (automod_spam|trim not in ('', '0')) %}
-
-{# ── Logging: on if explicitly enabled (logging_enabled != '0') AND a log channel is set ── #}
-{% set logging_on = (cfg.get('logging_enabled', '1') != '0') and (log_channel_id|trim != '') %}
-
 <!-- ═══════════════════════════════════════════════
      HERO BANNER
 ═══════════════════════════════════════════════ -->
@@ -461,17 +446,10 @@
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
           Shield Active
         </div>
-        {% if automod_on %}
         <div class="hero-badge">
-          <span class="hero-badge-dot" style="background:var(--ios-blue); box-shadow:0 0 6px var(--ios-blue);"></span>
-          Auto-Mod On
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          {{ total_members or 0 }} Members
         </div>
-        {% else %}
-        <a href="{{ url_for('settings') }}" class="hero-badge" style="border-color:rgba(255,159,10,0.55); background:rgba(255,159,10,0.15); text-decoration:none;">
-          <span class="hero-badge-dot dot-pulse-warn" style="background:var(--ios-orange);"></span>
-          Auto-Mod Off
-        </a>
-        {% endif %}
       </div>
     </div>
 
@@ -609,41 +587,16 @@
         </span>
       </div>
 
-      <!-- Auto-Mod (dynamic) -->
+      <!-- Members -->
       <div class="server-info-row">
-        <span class="server-info-label">Auto-Mod</span>
-        {% if automod_on %}
-        <span class="server-info-badge">
-          <span style="width:6px;height:6px;border-radius:50%;background:var(--ios-blue);flex-shrink:0;"></span>
-          Active
-        </span>
-        {% else %}
-        <a href="{{ url_for('settings') }}" class="server-info-badge" style="border-color:rgba(255,159,10,0.5);background:rgba(255,159,10,0.12);color:var(--ios-orange);text-decoration:none;">
-          <span class="dot-pulse-warn" style="width:6px;height:6px;border-radius:50%;background:var(--ios-orange);flex-shrink:0;"></span>
-          Off — Configure
-        </a>
-        {% endif %}
+        <span class="server-info-label">Members</span>
+        <span class="server-info-value" data-count="{{ total_members or 0 }}" style="font-variant-numeric:tabular-nums;">{{ total_members or 0 }}</span>
       </div>
 
-      <!-- Logging (dynamic) -->
+      <!-- Warnings -->
       <div class="server-info-row">
-        <span class="server-info-label">Logging</span>
-        {% if logging_on %}
-        <span class="server-info-badge">
-          <span style="width:6px;height:6px;border-radius:50%;background:var(--ios-purple);flex-shrink:0;"></span>
-          Enabled
-        </span>
-        {% elif log_channel_id|trim != '' %}
-        <a href="{{ url_for('logging_page') }}" class="server-info-badge" style="border-color:rgba(255,159,10,0.5);background:rgba(255,159,10,0.12);color:var(--ios-orange);text-decoration:none;">
-          <span style="width:6px;height:6px;border-radius:50%;background:var(--ios-orange);flex-shrink:0;"></span>
-          Paused
-        </a>
-        {% else %}
-        <a href="{{ url_for('logging_page') }}" class="server-info-badge" style="border-color:rgba(255,159,10,0.5);background:rgba(255,159,10,0.12);color:var(--ios-orange);text-decoration:none;">
-          <span style="width:6px;height:6px;border-radius:50%;background:var(--ios-orange);flex-shrink:0;"></span>
-          Off — Set up
-        </a>
-        {% endif %}
+        <span class="server-info-label">Warnings</span>
+        <span class="server-info-value" data-count="{{ stats.warnings or 0 }}" style="font-variant-numeric:tabular-nums;">{{ stats.warnings or 0 }}</span>
       </div>
 
       <!-- Total Actions (animated) -->
@@ -720,7 +673,7 @@
 </div>
 
 <script>
-/* Animated counters — stat cards + total actions */
+/* Animated counters — stat cards + server info values */
 function animateCounters() {
   document.querySelectorAll('[data-count]').forEach(el => {
     const target = parseInt(el.dataset.count, 10) || 0;
