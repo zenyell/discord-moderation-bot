@@ -124,12 +124,12 @@
     <form method="POST" action="{{ url_for('settings') }}">
       <div class="form-group" style="padding:22px 22px 0">
         <label class="form-label">Command Prefix</label>
-        <input type="text" name="prefix" value="{{ config.prefix or '!' }}" placeholder="!">
+        <input class="form-input" type="text" name="prefix" value="{{ config.prefix or '!' }}" placeholder="!">
         <div class="hint">The character used before commands (e.g. <code>!</code>ban)</div>
       </div>
       <div class="form-group" style="padding:0 22px">
         <label class="form-label">Mod Log Channel</label>
-        <select name="mod_log_channel">
+        <select class="form-select" name="mod_log_channel">
           <option value="">— None —</option>
           {% for ch in channels %}
             <option value="{{ ch.id }}" {% if config.mod_log_channel == ch.id|string %}selected{% endif %}>#{{ ch.name }}</option>
@@ -139,7 +139,7 @@
       </div>
       <div class="form-group" style="padding:0 22px">
         <label class="form-label">Mute Role</label>
-        <select name="mute_role">
+        <select class="form-select" name="mute_role">
           <option value="">— None —</option>
           {% for role in roles %}
             <option value="{{ role.id }}" {% if config.mute_role == role.id|string %}selected{% endif %}>{{ role.name }}</option>
@@ -147,26 +147,33 @@
         </select>
         <div class="hint">Role assigned when a user is muted</div>
       </div>
-      <div class="toggle-row">
+
+      <!-- Toggle: DM on Punishment -->
+      <div class="toggle-row" style="padding:14px 22px;">
         <div class="toggle-info">
           <h4>DM on Punishment</h4>
           <p>Send a DM to users when they are banned, kicked, or warned</p>
         </div>
-        <label class="toggle">
+        <label class="ios-toggle">
           <input type="checkbox" name="dm_on_punish" {% if config.dm_on_punish %}checked{% endif %}>
-          <span class="toggle-track"></span>
+          <span class="ios-toggle-track"></span>
+          <span class="ios-toggle-thumb"></span>
         </label>
       </div>
-      <div class="toggle-row">
+
+      <!-- Toggle: Delete Command Messages -->
+      <div class="toggle-row" style="padding:14px 22px;">
         <div class="toggle-info">
           <h4>Delete Command Messages</h4>
           <p>Automatically delete the command message after execution</p>
         </div>
-        <label class="toggle">
+        <label class="ios-toggle">
           <input type="checkbox" name="delete_commands" {% if config.delete_commands %}checked{% endif %}>
-          <span class="toggle-track"></span>
+          <span class="ios-toggle-track"></span>
+          <span class="ios-toggle-thumb"></span>
         </label>
       </div>
+
       <div class="submit-row" style="padding:16px 22px 22px">
         <button type="submit" class="btn btn-primary">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -188,7 +195,6 @@
   const picker = document.getElementById('themePicker');
   if (!picker) return;
 
-  // Mark active swatch
   function setActive(val) {
     picker.querySelectorAll('.theme-swatch').forEach(sw => {
       sw.classList.toggle('active', sw.dataset.theme === val);
@@ -204,7 +210,6 @@
       document.documentElement.setAttribute('data-theme', val);
       localStorage.setItem('mp-theme', val);
       setActive(val);
-      // spring feedback
       sw.style.transform = 'scale(0.94)';
       setTimeout(() => {
         sw.style.transition = 'transform 400ms cubic-bezier(0.34,1.56,0.64,1)';
