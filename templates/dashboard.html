@@ -428,9 +428,9 @@
 {% set guild_id     = guild.id   if guild else '' %}
 {% set total_actions = (stats.bans or 0) + (stats.kicks or 0) + (stats.timeouts or 0) + (stats.warnings or 0) %}
 
-<!-- ═══════════════════════════════════════════════
+<!-- ═══════════════════════════════════════════════════
      HERO BANNER
-═══════════════════════════════════════════════ -->
+═══════════════════════════════════════════════════ -->
 <div class="dash-hero">
   <div class="dash-hero-content">
 
@@ -465,9 +465,9 @@
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════
+<!-- ═══════════════════════════════════════════════════
      QUICK ACTIONS
-═══════════════════════════════════════════════ -->
+═══════════════════════════════════════════════════ -->
 <div class="section-heading">Quick Actions</div>
 <div class="quick-actions">
   <a href="{{ url_for('moderation') }}" class="btn btn-primary">
@@ -488,9 +488,9 @@
   </a>
 </div>
 
-<!-- ═══════════════════════════════════════════════
+<!-- ═══════════════════════════════════════════════════
      STAT CARDS
-═══════════════════════════════════════════════ -->
+═══════════════════════════════════════════════════ -->
 <div class="section-heading">Overview</div>
 <div class="stat-grid">
   <div class="stat-card" style="animation-delay:60ms">
@@ -519,9 +519,9 @@
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════
+<!-- ═══════════════════════════════════════════════════
      MAIN TWO-COLUMN GRID
-═══════════════════════════════════════════════ -->
+═══════════════════════════════════════════════════ -->
 <div class="dash-main-grid">
 
   <!-- Recent Actions -->
@@ -593,13 +593,13 @@
         <span class="server-info-value" data-count="{{ total_members or 0 }}" style="font-variant-numeric:tabular-nums;">{{ total_members or 0 }}</span>
       </div>
 
-      <!-- Warnings -->
+      <!-- Server Created -->
       <div class="server-info-row">
-        <span class="server-info-label">Warnings</span>
-        <span class="server-info-value" data-count="{{ stats.warnings or 0 }}" style="font-variant-numeric:tabular-nums;">{{ stats.warnings or 0 }}</span>
+        <span class="server-info-label">Created</span>
+        <span class="server-info-value" style="font-size:12px;">{{ guild.created_at.strftime('%b %d, %Y') if guild and guild.created_at else '—' }}</span>
       </div>
 
-      <!-- Total Actions (animated) -->
+      <!-- Total Actions -->
       <div class="server-info-row">
         <span class="server-info-label">Total Actions</span>
         <span class="server-info-value" data-count="{{ total_actions }}" style="font-variant-numeric:tabular-nums;">{{ total_actions }}</span>
@@ -622,9 +622,9 @@
 
 </div>
 
-<!-- ═══════════════════════════════════════════════
+<!-- ═══════════════════════════════════════════════════
      FEATURE CARDS
-═══════════════════════════════════════════════ -->
+═══════════════════════════════════════════════════ -->
 <div class="section-heading">Features</div>
 <div class="feature-grid">
 
