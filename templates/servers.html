@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23bf5af2' opacity='.18'/%3E%3Cpath d='M16 6a10 10 0 1 0 0 20A10 10 0 0 0 16 6zm0 3a7 7 0 1 1 0 14A7 7 0 0 1 16 9zm-1 3v5.27l4 2.4-.78 1.33L13 18V12h2z' fill='%23bf5af2'/%3E%3C/svg%3E">
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='ahjin main.png') }}">
 
   <style>
     /* ═══════════════════════════════════════════════
@@ -162,10 +162,11 @@
     }
     .brand-icon {
       width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0;
-      display: flex; align-items: center; justify-content: center;
-      background: linear-gradient(135deg, var(--ios-purple), var(--ios-blue));
+      overflow: hidden;
       box-shadow: 0 4px 16px rgba(191,90,242,0.45);
-      color: #fff;
+    }
+    .brand-icon img {
+      width: 32px; height: 32px; object-fit: cover; border-radius: 9px;
     }
     .brand-name { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
     .topbar-right { display: flex; align-items: center; gap: 8px; }
@@ -436,7 +437,7 @@
 <header class="topbar">
   <a class="topbar-brand" href="{{ url_for('index') }}">
     <div class="brand-icon">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <img src="{{ url_for('static', filename='ahjin main.png') }}" alt="Mask" width="32" height="32">
     </div>
     <span class="brand-name">Mask</span>
   </a>
