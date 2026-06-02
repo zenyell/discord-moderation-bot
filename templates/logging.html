@@ -10,6 +10,26 @@
 
 <form method="POST">
 
+  <!-- Master Switch -->
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-title">
+      <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
+      Logging Master Switch
+    </div>
+    <div class="toggle-grid">
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <h4>Enable Logging</h4>
+          <p>Master switch — disabling this stops all log events from being sent, without changing your individual settings.</p>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" name="logging_enabled" id="logging_enabled" {% if cfg.get('logging_enabled', True) %}checked{% endif %}>
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+    </div>
+  </div>
+
   <!-- Message Logs -->
   <div class="card">
     <div class="card-title">
