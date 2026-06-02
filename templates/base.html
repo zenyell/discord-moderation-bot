@@ -16,7 +16,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23bf5af2' opacity='.18'/%3E%3Cpath d='M16 6a10 10 0 1 0 0 20A10 10 0 0 0 16 6zm0 3a7 7 0 1 1 0 14A7 7 0 0 1 16 9zm-1 3v5.27l4 2.4-.78 1.33L13 18V12h2z' fill='%23bf5af2'/%3E%3C/svg%3E">
+  <!-- Mask favicon: blue shield smiley -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='sg' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2373b8ff'/%3E%3Cstop offset='100%25' stop-color='%233a8ee8'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M16 2 L28 7 L28 16 C28 23 22 28.5 16 30 C10 28.5 4 23 4 16 L4 7 Z' fill='%23a8d4ff' rx='4'/%3E%3Cpath d='M16 4 L26 8.5 L26 16 C26 22 21 26.8 16 28.2 C11 26.8 6 22 6 16 L6 8.5 Z' fill='url(%23sg)'/%3E%3Ccircle cx='12.5' cy='14' r='1.8' fill='white'/%3E%3Ccircle cx='19.5' cy='14' r='1.8' fill='white'/%3E%3Cpath d='M11.5 19.5 Q16 22.5 20.5 19.5' stroke='white' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
 
   <style>
     /* ═══════════════════════════════════════════════
@@ -230,9 +231,7 @@
     .brand-icon {
       width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
-      background: linear-gradient(135deg, var(--ios-purple), var(--ios-blue));
-      box-shadow: 0 4px 16px rgba(191,90,242,0.45);
-      color: #fff;
+      overflow: hidden;
     }
     .brand-name { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
     .brand-sub  { font-size: 11px; color: var(--text-2); margin-top: 1px; }
@@ -965,7 +964,24 @@
   <aside class="sidebar" id="sidebar">
     <a class="sidebar-brand" href="{{ url_for('index') }}">
       <div class="brand-icon">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <!-- Mask logo: blue shield with smiley face -->
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Mask">
+          <!-- Outer halo/glow ring -->
+          <path d="M18 2.5 L31 7.5 L31 18 C31 26.5 25 32.5 18 34.5 C11 32.5 5 26.5 5 18 L5 7.5 Z" fill="#a8d4ff" rx="5"/>
+          <!-- Main shield body -->
+          <defs>
+            <linearGradient id="maskShield" x1="5" y1="2.5" x2="31" y2="34.5" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#5bb8ff"/>
+              <stop offset="100%" stop-color="#2b8ee8"/>
+            </linearGradient>
+          </defs>
+          <path d="M18 5 L29 9.5 L29 18 C29 25.5 24 31 18 32.8 C12 31 7 25.5 7 18 L7 9.5 Z" fill="url(#maskShield)"/>
+          <!-- Eyes -->
+          <circle cx="13.5" cy="17" r="2" fill="white"/>
+          <circle cx="22.5" cy="17" r="2" fill="white"/>
+          <!-- Smile -->
+          <path d="M13 22.5 Q18 26 23 22.5" stroke="white" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+        </svg>
       </div>
       <div>
         <div class="brand-name">Mask</div>
@@ -1144,48 +1160,117 @@
   /* ── Responsive menu button ── */
   (function(){
     const btn = document.getElementById('menuBtn');
-    function check() { btn.style.display = window.innerWidth <= 768 ? 'flex' : 'none'; }
+    function check(){ btn.style.display = window.innerWidth <= 768 ? 'flex' : 'none'; }
     check(); window.addEventListener('resize', check);
   })();
 
-  /* ── Nav item staggered animation ── */
-  document.querySelectorAll('.nav-item').forEach((el, i) => {
-    el.style.animationDelay = (80 + i * 28) + 'ms';
+  /* ── Liquid Glass ripple on buttons ── */
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.btn');
+    if (!btn) return;
+    const r = document.createElement('span');
+    r.className = 'lg-ripple';
+    const rect = btn.getBoundingClientRect();
+    r.style.left = (e.clientX - rect.left) + 'px';
+    r.style.top  = (e.clientY - rect.top)  + 'px';
+    btn.appendChild(r);
+    r.addEventListener('animationend', () => r.remove());
   });
 
-  /* ── Nav item magnetic glow ── */
+  /* ── Nav item mouse glow ── */
   document.querySelectorAll('.nav-item').forEach(item => {
     item.addEventListener('mousemove', e => {
       const r = item.getBoundingClientRect();
-      const x = ((e.clientX - r.left) / r.width * 100).toFixed(1);
-      const y = ((e.clientY - r.top)  / r.height * 100).toFixed(1);
-      item.style.setProperty('--mx', x + '%');
-      item.style.setProperty('--my', y + '%');
+      item.style.setProperty('--mx', ((e.clientX-r.left)/r.width*100)+'%');
+      item.style.setProperty('--my', ((e.clientY-r.top)/r.height*100)+'%');
     });
   });
 
-  /* ── Liquid glass ripple on buttons ── */
-  document.addEventListener('click', e => {
-    const btn = e.target.closest('.btn');
-    if (!btn) return;
-    const r = btn.getBoundingClientRect();
-    const ripple = document.createElement('span');
-    ripple.className = 'lg-ripple';
-    ripple.style.left = (e.clientX - r.left) + 'px';
-    ripple.style.top  = (e.clientY - r.top)  + 'px';
-    btn.appendChild(ripple);
-    ripple.addEventListener('animationend', () => ripple.remove());
+  /* ── Page leave transition ── */
+  document.querySelectorAll('a[href]').forEach(a => {
+    const href = a.getAttribute('href');
+    if (!href || href.startsWith('#') || href.startsWith('javascript') || a.target === '_blank') return;
+    a.addEventListener('click', function(e) {
+      if (e.metaKey || e.ctrlKey || e.shiftKey) return;
+      e.preventDefault();
+      document.body.classList.add('leaving');
+      setTimeout(() => { window.location.href = href; }, 180);
+    });
+  });
+
+  /* ── Staggered nav animation ── */
+  document.querySelectorAll('.nav-item').forEach((item, i) => {
+    item.style.animationDelay = (120 + i * 28) + 'ms';
   });
 
   /* ── Cursor glow ── */
   const glow = document.getElementById('cursor-glow');
-  if (glow) {
-    document.addEventListener('mousemove', e => {
-      glow.style.left = e.clientX + 'px';
-      glow.style.top  = e.clientY + 'px';
-    });
-  }
+  document.addEventListener('mousemove', e => {
+    glow.style.left = e.clientX + 'px';
+    glow.style.top  = e.clientY + 'px';
+  });
+
+  /* ── Orb particles ── */
+  (function(){
+    const layer = document.getElementById('orb-layer');
+    const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+    const colors = theme === 'midnight'
+      ? ['rgba(0,150,255,0.22)','rgba(0,80,200,0.18)','rgba(0,200,255,0.14)']
+      : theme === 'space'
+      ? ['rgba(120,100,255,0.14)','rgba(80,60,200,0.10)','rgba(160,140,255,0.10)']
+      : ['rgba(191,90,242,0.22)','rgba(10,132,255,0.18)','rgba(50,173,230,0.14)'];
+    for (let i = 0; i < 5; i++) {
+      const orb = document.createElement('div');
+      orb.className = 'orb-particle';
+      const size = 180 + Math.random() * 220;
+      orb.style.cssText = `
+        width:${size}px;height:${size}px;
+        background:${colors[i % colors.length]};
+        left:${Math.random()*100}%;top:${Math.random()*100}%;
+        --tx:${(Math.random()-0.5)*200}px;
+        --ty:${(Math.random()-0.5)*200}px;
+        animation-duration:${12+Math.random()*16}s;
+        animation-delay:${-Math.random()*12}s;
+      `;
+      layer.appendChild(orb);
+    }
+  })();
+
+  /* ── Star field (space theme) ── */
+  (function(){
+    const canvas = document.getElementById('star-canvas');
+    const ctx = canvas.getContext('2d');
+    let stars = [];
+    function resize(){
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    function init(){
+      resize();
+      stars = Array.from({length:180}, () => ({
+        x: Math.random()*canvas.width,
+        y: Math.random()*canvas.height,
+        r: Math.random()*1.2+0.2,
+        a: Math.random(),
+        da: (Math.random()-0.5)*0.005
+      }));
+    }
+    function draw(){
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      stars.forEach(s => {
+        s.a = Math.max(0.05, Math.min(1, s.a + s.da));
+        if (s.a <= 0.05 || s.a >= 1) s.da *= -1;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+        ctx.fillStyle = `rgba(220,215,255,${s.a})`;
+        ctx.fill();
+      });
+      requestAnimationFrame(draw);
+    }
+    init();
+    draw();
+    window.addEventListener('resize', init);
+  })();
 </script>
-{% block extra_js %}{% endblock %}
 </body>
 </html>
