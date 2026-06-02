@@ -3,42 +3,48 @@
 {% block content %}
 
 <style>
-  /* ── Profile page scoped fixes ── */
-  .profile-card-wrap {
-    overflow: visible;
+  /* ── Profile card ── */
+  .profile-card {
+    /* Card handles its own overflow — avatar sits inside */
+    overflow: hidden;
+    padding: 0;
     position: relative;
   }
 
-  /* Banner: clip the image to rounded top corners, no overflow bleed */
+  /* Banner */
   .profile-banner {
-    position: relative;
     height: 130px;
-    border-radius: var(--r-lg) var(--r-lg) 0 0;
     background-size: cover;
     background-position: center;
-    /* Hard clip so nothing bleeds outside the banner box */
-    overflow: hidden;
+    position: relative;
+    /* No border-radius here — card's own radius handles the top corners */
   }
 
-  /* Avatar container: sits outside the banner, perfectly centered left */
+  /* The seam section: holds the avatar + name side by side */
+  .profile-seam {
+    position: relative;
+    padding: 0 20px;
+    /* Negative margin pulls this section up so avatar overlaps banner */
+    margin-top: -40px;
+    display: flex;
+    align-items: flex-end;
+    gap: 14px;
+    pointer-events: none; /* let children handle events */
+  }
+
+  /* Avatar wrapper — sits inside the card, overlaps banner via negative margin-top */
   .profile-avatar-wrap {
-    position: absolute;
-    bottom: -46px;
-    left: 22px;
-    z-index: 5;
-    /* The wrap provides the ring + clipping context */
-    width: 88px;
-    height: 88px;
+    pointer-events: auto;
+    flex-shrink: 0;
+    width: 82px;
+    height: 82px;
     border-radius: 50%;
-    /* Glass ring border */
-    border: 3px solid var(--glass-border-strong);
+    overflow: hidden;          /* clips image to circle */
+    border: 3px solid rgba(191,90,242,0.70);
     box-shadow:
-      0 0 0 3px rgba(191,90,242,0.30),
-      0 6px 24px rgba(0,0,0,0.55);
-    background: var(--glass-bg);
-    overflow: hidden; /* clips the img to the circle — no bleed */
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+      0 0 0 2px rgba(191,90,242,0.25),
+      0 6px 20px rgba(0,0,0,0.60);
+    background: #1a0d35;
   }
 
   .profile-avatar-wrap img {
@@ -47,25 +53,36 @@
     object-fit: cover;
     object-position: center;
     display: block;
-    border-radius: 0; /* parent clips it */
   }
 
-  /* Body: push content below avatar */
-  .profile-body {
-    padding: 54px 22px 22px;
+  /* Name area sits next to avatar, aligned to bottom */
+  .profile-seam-name {
+    pointer-events: auto;
+    padding-bottom: 8px;
+    flex: 1;
+    min-width: 0;
   }
 
   .profile-username {
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 700;
     letter-spacing: -0.3px;
-    line-height: 1.2;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .profile-handle {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--text-2);
     margin-top: 2px;
   }
+
+  /* Body below seam */
+  .profile-body {
+    padding: 14px 20px 20px;
+  }
+
   .profile-badges {
     display: flex;
     gap: 6px;
@@ -102,22 +119,30 @@
 
 <div class="profile-grid">
   <div>
-    <div class="card profile-card-wrap" style="padding:0;">
+    <div class="card profile-card">
+
       <!-- Banner -->
       <div class="profile-banner"
         {% if profile.banner_url %}style="background-image:url('{{ profile.banner_url }}')"
-        {% else %}style="background:linear-gradient(135deg,{{ profile.accent_color }}44,#1a1d27)"{% endif %}>
-      </div>
-      <!-- Avatar sits below banner, clipped inside its own container -->
-      <div class="profile-avatar-wrap">
-        <img src="{{ profile.avatar_url }}" alt="{{ profile.username }}'s avatar"
-             width="88" height="88" loading="lazy"
-             onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
+        {% else %}style="background:linear-gradient(135deg,{{ profile.accent_color }}66,#1a1d27)"{% endif %}>
       </div>
 
+      <!-- Avatar + name overlapping banner seam -->
+      <div class="profile-seam">
+        <div class="profile-avatar-wrap">
+          <img src="{{ profile.avatar_url }}"
+               alt="{{ profile.username }}'s avatar"
+               width="82" height="82" loading="lazy"
+               onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
+        </div>
+        <div class="profile-seam-name">
+          <div class="profile-username">{{ profile.global_name or profile.username }}</div>
+          <div class="profile-handle">@{{ profile.username }}{% if profile.discriminator and profile.discriminator != '0' %}#{{ profile.discriminator }}{% endif %}</div>
+        </div>
+      </div>
+
+      <!-- Body -->
       <div class="profile-body">
-        <div class="profile-username">{{ profile.global_name or profile.username }}</div>
-        <div class="profile-handle">@{{ profile.username }}{% if profile.discriminator and profile.discriminator != '0' %}#{{ profile.discriminator }}{% endif %}</div>
         {% if profile.badges %}
         <div class="profile-badges">
           {% for name, icon in profile.badges %}
@@ -126,38 +151,38 @@
         </div>
         {% endif %}
         {% if profile.bio %}
-        <p style="font-size:13px;color:var(--text-2);margin-top:12px;line-height:1.5">{{ profile.bio }}</p>
+        <p style="font-size:13px;color:var(--text-2);margin-top:10px;line-height:1.5">{{ profile.bio }}</p>
         {% endif %}
-        <div style="margin-top:16px;display:grid;gap:8px;font-size:12.5px">
-          <div style="display:flex;justify-content:space-between">
-            <span style="color:var(--text-2)">USER ID</span>
-            <code style="color:var(--ios-purple)">{{ profile.id }}</code>
+        <div style="margin-top:14px;display:grid;gap:8px;font-size:12.5px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="color:var(--text-2);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">USER ID</span>
+            <code style="color:var(--ios-purple);background:rgba(191,90,242,0.12);padding:3px 10px;border-radius:999px;font-size:12px">{{ profile.id }}</code>
           </div>
           {% if profile.nick %}
-          <div style="display:flex;justify-content:space-between">
-            <span style="color:var(--text-2)">NICKNAME</span>
-            <span>{{ profile.nick }}</span>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="color:var(--text-2);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">NICKNAME</span>
+            <span style="font-size:13px">{{ profile.nick }}</span>
           </div>
           {% endif %}
-          <div style="display:flex;justify-content:space-between">
-            <span style="color:var(--text-2)">JOINED SERVER</span>
-            <span>{{ profile.joined_at or 'Unknown' }}</span>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="color:var(--text-2);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">JOINED SERVER</span>
+            <span style="font-size:13px">{{ profile.joined_at or 'Unknown' }}</span>
           </div>
-          <div style="display:flex;justify-content:space-between">
-            <span style="color:var(--text-2)">ACCENT</span>
-            <span style="display:flex;align-items:center;gap:6px">
-              <span style="width:12px;height:12px;border-radius:3px;background:{{ profile.accent_color }};display:inline-block"></span>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="color:var(--text-2);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">ACCENT</span>
+            <span style="display:flex;align-items:center;gap:6px;font-size:13px">
+              <span style="width:13px;height:13px;border-radius:3px;background:{{ profile.accent_color }};display:inline-block;flex-shrink:0"></span>
               {{ profile.accent_color }}
             </span>
           </div>
         </div>
         {% if profile.roles %}
-        <div style="margin-top:16px">
+        <div style="margin-top:14px">
           <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-2);margin-bottom:8px">ROLES — {{ profile.roles | length }}</div>
           <div style="display:flex;flex-wrap:wrap;gap:5px">
             {% for role in profile.roles %}
             <span class="role-pill" style="color:{{ role.color }};border-color:{{ role.color }}22;background:{{ role.color }}18">
-              <span style="width:8px;height:8px;border-radius:50%;background:{{ role.color }};display:inline-block"></span>
+              <span style="width:8px;height:8px;border-radius:50%;background:{{ role.color }};display:inline-block;flex-shrink:0"></span>
               {{ role.name }}
             </span>
             {% endfor %}
