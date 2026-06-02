@@ -165,9 +165,37 @@ async def log_stats(guild_id):
     return {"total": total, "kicks": counts.get("kick",0), "bans": counts.get("ban",0),
             "timeouts": counts.get("timeout",0), "warnings": counts.get("warn",0), "purges": counts.get("purge",0)}
 
+async def all_logs(guild_id, page=1, per_page=50, search="", action_filter=""):
+    """Paginated mod logs with optional search (target_id / moderator_id / reason) and action filter."""
+    offset = (page - 1) * per_page
+    args = [guild_id]
+    where = "WHERE guild_id=?"
+
+    if action_filter:
+        where += " AND action=?"
+        args.append(action_filter)
+
+    if search:
+        like = f"%{search}%"
+        where += " AND (target_id LIKE ? OR moderator_id LIKE ? OR reason LIKE ?)"
+        args += [like, like, like]
+
+    count_rs = await _exec(f"SELECT COUNT(*) as cnt FROM mod_logs {where}", args)
+    total = (_one(count_rs) or {}).get("cnt", 0)
+
+    args_page = args + [per_page, offset]
+    rs = await _exec(
+        f"SELECT * FROM mod_logs {where} ORDER BY created_at DESC LIMIT ? OFFSET ?",
+        args_page
+    )
+    return {"logs": _rows(rs), "total": total, "page": page, "per_page": per_page,
+            "pages": max(1, -(-total // per_page))}  # ceiling division
+
 def recent_logs_sync(guild_id, limit=20):      return _sync(recent_logs(guild_id, limit))
 def logs_for_user_sync(guild_id, uid, lim=50): return _sync(logs_for_user(guild_id, uid, lim))
 def log_stats_sync(guild_id):                  return _sync(log_stats(guild_id))
+def all_logs_sync(guild_id, page=1, per_page=50, search="", action_filter=""):
+    return _sync(all_logs(guild_id, page, per_page, search, action_filter))
 
 
 # ── settings ───────────────────────────────────────────────────────────────
