@@ -470,19 +470,19 @@
 ═══════════════════════════════════════════════════ -->
 <div class="section-heading">Quick Actions</div>
 <div class="quick-actions">
-  <a href="{{ url_for('moderation') }}" class="btn btn-primary">
+  <a href="{{ url_for('moderation') }}" class="btn btn-primary" data-spa data-spa-title="Moderation">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
     Moderation
   </a>
-  <a href="{{ url_for('user_lookup') }}" class="btn btn-glass">
+  <a href="{{ url_for('user_lookup') }}" class="btn btn-glass" data-spa data-spa-title="User Lookup">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     User Lookup
   </a>
-  <a href="{{ url_for('audit_log') }}" class="btn btn-glass">
+  <a href="{{ url_for('audit_log') }}" class="btn btn-glass" data-spa data-spa-title="Audit Log">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
     View Logs
   </a>
-  <a href="{{ url_for('settings') }}" class="btn btn-glass">
+  <a href="{{ url_for('settings') }}" class="btn btn-glass" data-spa data-spa-title="Settings">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     Settings
   </a>
@@ -552,7 +552,7 @@
         {% endfor %}
       </tbody>
     </table>
-    <a href="{{ url_for('audit_log') }}" class="view-all-link">
+    <a href="{{ url_for('audit_log') }}" class="view-all-link" data-spa data-spa-title="Audit Log">
       View all logs
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
     </a>
@@ -614,7 +614,7 @@
       {% endif %}
 
     </div>
-    <a href="{{ url_for('settings') }}" class="view-all-link">
+    <a href="{{ url_for('settings') }}" class="view-all-link" data-spa data-spa-title="Settings">
       Server settings
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
     </a>
@@ -628,42 +628,42 @@
 <div class="section-heading">Features</div>
 <div class="feature-grid">
 
-  <a href="{{ url_for('moderation') }}" class="feature-card" style="animation-delay:80ms">
+  <a href="{{ url_for('moderation') }}" class="feature-card" style="animation-delay:80ms" data-spa data-spa-title="Moderation">
     <div class="feature-icon-wrap" style="background:rgba(255,69,58,0.18);">🛡️</div>
     <h3>Moderation</h3>
     <p>Modlogs, timed punishments, full infraction history — everything your mod team needs.</p>
     <div class="feature-card-link">Manage <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
   </a>
 
-  <a href="{{ url_for('logging_page') }}" class="feature-card" style="animation-delay:140ms">
+  <a href="{{ url_for('logging_page') }}" class="feature-card" style="animation-delay:140ms" data-spa data-spa-title="Logging">
     <div class="feature-icon-wrap" style="background:rgba(10,132,255,0.18);">📄</div>
     <h3>Logging</h3>
     <p>Track message edits, deletes, joins, leaves, role changes and more — fully configurable.</p>
     <div class="feature-card-link">Configure <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
   </a>
 
-  <a href="{{ url_for('autoroles') }}" class="feature-card" style="animation-delay:200ms">
+  <a href="{{ url_for('autoroles') }}" class="feature-card" style="animation-delay:200ms" data-spa data-spa-title="Auto Roles">
     <div class="feature-icon-wrap" style="background:rgba(48,209,88,0.18);">👥</div>
     <h3>Auto Roles</h3>
     <p>Automatically assign roles to new members when they join your server.</p>
     <div class="feature-card-link">Configure <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
   </a>
 
-  <a href="{{ url_for('reaction_roles') }}" class="feature-card" style="animation-delay:260ms">
+  <a href="{{ url_for('reaction_roles') }}" class="feature-card" style="animation-delay:260ms" data-spa data-spa-title="Reaction Roles">
     <div class="feature-icon-wrap" style="background:rgba(191,90,242,0.18);">😀</div>
     <h3>Reaction Roles</h3>
     <p>Let members self-assign roles by reacting to messages with configurable emoji.</p>
     <div class="feature-card-link">Configure <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
   </a>
 
-  <a href="{{ url_for('greetings') }}" class="feature-card" style="animation-delay:320ms">
+  <a href="{{ url_for('greetings') }}" class="feature-card" style="animation-delay:320ms" data-spa data-spa-title="Greetings">
     <div class="feature-icon-wrap" style="background:rgba(255,159,10,0.18);">💌</div>
     <h3>Greetings</h3>
     <p>Custom welcome and farewell messages with embeds and user mention support.</p>
     <div class="feature-card-link">Configure <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
   </a>
 
-  <a href="{{ url_for('tags') }}" class="feature-card" style="animation-delay:380ms">
+  <a href="{{ url_for('tags') }}" class="feature-card" style="animation-delay:380ms" data-spa data-spa-title="Tags &amp; Commands">
     <div class="feature-icon-wrap" style="background:rgba(50,173,230,0.18);">🏷️</div>
     <h3>Tags &amp; Commands</h3>
     <p>Create custom commands and tags for quick, reusable responses in your server.</p>
