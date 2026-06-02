@@ -2,47 +2,149 @@
 {% block title %}{{ profile.username }}{% endblock %}
 {% block content %}
 
+<style>
+  /* ── Profile page scoped fixes ── */
+  .profile-card-wrap {
+    overflow: visible;
+    position: relative;
+  }
+
+  /* Banner: clip the image to rounded top corners, no overflow bleed */
+  .profile-banner {
+    position: relative;
+    height: 130px;
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    background-size: cover;
+    background-position: center;
+    /* Hard clip so nothing bleeds outside the banner box */
+    overflow: hidden;
+  }
+
+  /* Avatar container: sits outside the banner, perfectly centered left */
+  .profile-avatar-wrap {
+    position: absolute;
+    bottom: -46px;
+    left: 22px;
+    z-index: 5;
+    /* The wrap provides the ring + clipping context */
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    /* Glass ring border */
+    border: 3px solid var(--glass-border-strong);
+    box-shadow:
+      0 0 0 3px rgba(191,90,242,0.30),
+      0 6px 24px rgba(0,0,0,0.55);
+    background: var(--glass-bg);
+    overflow: hidden; /* clips the img to the circle — no bleed */
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .profile-avatar-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    border-radius: 0; /* parent clips it */
+  }
+
+  /* Body: push content below avatar */
+  .profile-body {
+    padding: 54px 22px 22px;
+  }
+
+  .profile-username {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    line-height: 1.2;
+  }
+  .profile-handle {
+    font-size: 13px;
+    color: var(--text-2);
+    margin-top: 2px;
+  }
+  .profile-badges {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+
+  .profile-grid {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+
+  .role-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid;
+  }
+
+  @media (max-width: 900px) {
+    .profile-grid { grid-template-columns: 1fr; }
+  }
+</style>
+
 <div style="margin-bottom:16px">
   <a href="/user-lookup" class="btn btn-ghost btn-sm">← Back to User Lookup</a>
 </div>
 
 <div class="profile-grid">
   <div>
-    <div class="card" style="overflow:visible;position:relative">
+    <div class="card profile-card-wrap" style="padding:0;">
+      <!-- Banner -->
       <div class="profile-banner"
-        {% if profile.banner_url %}style="background-image:url('{{ profile.banner_url }}')"{% else %}style="background:linear-gradient(135deg,{{ profile.accent_color }}44,#1a1d27)"{% endif %}>
-        <img class="profile-avatar" src="{{ profile.avatar_url }}" alt="{{ profile.username }}'s avatar" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
+        {% if profile.banner_url %}style="background-image:url('{{ profile.banner_url }}')"
+        {% else %}style="background:linear-gradient(135deg,{{ profile.accent_color }}44,#1a1d27)"{% endif %}>
       </div>
+      <!-- Avatar sits below banner, clipped inside its own container -->
+      <div class="profile-avatar-wrap">
+        <img src="{{ profile.avatar_url }}" alt="{{ profile.username }}'s avatar"
+             width="88" height="88" loading="lazy"
+             onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
+      </div>
+
       <div class="profile-body">
         <div class="profile-username">{{ profile.global_name or profile.username }}</div>
         <div class="profile-handle">@{{ profile.username }}{% if profile.discriminator and profile.discriminator != '0' %}#{{ profile.discriminator }}{% endif %}</div>
         {% if profile.badges %}
         <div class="profile-badges">
           {% for name, icon in profile.badges %}
-          <img src="{{ icon }}" alt="{{ name }}" title="{{ name }}" width="22" height="22">
+          <img src="{{ icon }}" alt="{{ name }}" title="{{ name }}" width="22" height="22" loading="lazy">
           {% endfor %}
         </div>
         {% endif %}
         {% if profile.bio %}
-        <p style="font-size:13px;color:var(--text-muted);margin-top:12px;line-height:1.5">{{ profile.bio }}</p>
+        <p style="font-size:13px;color:var(--text-2);margin-top:12px;line-height:1.5">{{ profile.bio }}</p>
         {% endif %}
         <div style="margin-top:16px;display:grid;gap:8px;font-size:12.5px">
           <div style="display:flex;justify-content:space-between">
-            <span style="color:var(--text-muted)">USER ID</span>
-            <code style="color:var(--accent)">{{ profile.id }}</code>
+            <span style="color:var(--text-2)">USER ID</span>
+            <code style="color:var(--ios-purple)">{{ profile.id }}</code>
           </div>
           {% if profile.nick %}
           <div style="display:flex;justify-content:space-between">
-            <span style="color:var(--text-muted)">NICKNAME</span>
+            <span style="color:var(--text-2)">NICKNAME</span>
             <span>{{ profile.nick }}</span>
           </div>
           {% endif %}
           <div style="display:flex;justify-content:space-between">
-            <span style="color:var(--text-muted)">JOINED SERVER</span>
+            <span style="color:var(--text-2)">JOINED SERVER</span>
             <span>{{ profile.joined_at or 'Unknown' }}</span>
           </div>
           <div style="display:flex;justify-content:space-between">
-            <span style="color:var(--text-muted)">ACCENT</span>
+            <span style="color:var(--text-2)">ACCENT</span>
             <span style="display:flex;align-items:center;gap:6px">
               <span style="width:12px;height:12px;border-radius:3px;background:{{ profile.accent_color }};display:inline-block"></span>
               {{ profile.accent_color }}
@@ -51,7 +153,7 @@
         </div>
         {% if profile.roles %}
         <div style="margin-top:16px">
-          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-muted);margin-bottom:8px">ROLES — {{ profile.roles | length }}</div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-2);margin-bottom:8px">ROLES — {{ profile.roles | length }}</div>
           <div style="display:flex;flex-wrap:wrap;gap:5px">
             {% for role in profile.roles %}
             <span class="role-pill" style="color:{{ role.color }};border-color:{{ role.color }}22;background:{{ role.color }}18">
@@ -73,11 +175,11 @@
       <div class="card-body" style="display:flex;gap:32px">
         <div style="text-align:center">
           <div style="font-size:28px;font-weight:800;color:#fff">{{ warns | length }}</div>
-          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-muted)">Warnings</div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-2)">Warnings</div>
         </div>
         <div style="text-align:center">
           <div style="font-size:28px;font-weight:800;color:#fff">{{ logs | length }}</div>
-          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-muted)">Mod Actions</div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-2)">Mod Actions</div>
         </div>
       </div>
     </div>
@@ -91,10 +193,10 @@
           <tbody>
           {% for w in warns %}
           <tr>
-            <td style="color:var(--warning);font-weight:700">{{ loop.index }}</td>
+            <td style="color:var(--ios-orange);font-weight:700">{{ loop.index }}</td>
             <td>{{ w.reason or '—' }}</td>
-            <td style="color:var(--text-muted)">{{ w.warned_by or '—' }}</td>
-            <td style="color:var(--text-muted)">{{ w.timestamp[:10] if w.timestamp else '—' }}</td>
+            <td style="color:var(--text-2)">{{ w.warned_by or '—' }}</td>
+            <td style="color:var(--text-2)">{{ w.timestamp[:10] if w.timestamp else '—' }}</td>
           </tr>
           {% endfor %}
           </tbody>
@@ -116,9 +218,9 @@
               {% set a = log.action | lower %}
               <span class="badge {% if 'ban' in a and 'unban' not in a %}badge-danger{% elif 'kick' in a %}badge-warning{% elif 'timeout' in a %}badge-info{% elif 'warn' in a %}badge-warning{% elif 'unban' in a %}badge-success{% else %}badge-neutral{% endif %}">{{ log.action }}</span>
             </td>
-            <td style="color:var(--text-muted)">{{ log.reason[:50] if log.reason else '—' }}</td>
-            <td style="color:var(--text-muted)">{{ log.moderator_id or '—' }}</td>
-            <td style="color:var(--text-muted)">{{ log.timestamp[:10] if log.timestamp else '—' }}</td>
+            <td style="color:var(--text-2)">{{ log.reason[:50] if log.reason else '—' }}</td>
+            <td style="color:var(--text-2)">{{ log.moderator_id or '—' }}</td>
+            <td style="color:var(--text-2)">{{ log.timestamp[:10] if log.timestamp else '—' }}</td>
           </tr>
           {% endfor %}
           </tbody>
