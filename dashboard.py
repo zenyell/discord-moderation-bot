@@ -601,8 +601,16 @@ def index():
     except Exception:
         logs = []
     total_members = _fetch_guild_member_count(guild_id)
+
+    # Build cfg for logging status widget used in dashboard.html
+    raw_master = db.get_setting_sync(_gkey(guild_id, "logging_enabled"), None)
+    cfg = {
+        "logging_enabled": "0" if raw_master == "0" else "1",
+        "log_channel_id":  db.get_setting_sync(_gkey(guild_id, "log_channel_id"), ""),
+    }
+
     return render_template("dashboard.html", stats=stats, logs=logs,
-                           total_members=total_members, guild_id=guild_id)
+                           total_members=total_members, guild_id=guild_id, cfg=cfg)
 
 
 @app.route("/api/status")
