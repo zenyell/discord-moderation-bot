@@ -53,10 +53,10 @@
       --shadow-lg:  0 20px 60px rgba(0,0,0,0.55);
       --shadow-glass: 0 8px 32px rgba(0,0,0,0.45), inset 0 1.5px 0 rgba(255,255,255,0.22);
 
-      --r-sm: 4px;
-      --r-md: 6px;
-      --r-lg: 8px;
-      --r-xl: 10px;
+      --r-sm: 10px;
+      --r-md: 16px;
+      --r-lg: 22px;
+      --r-xl: 30px;
 
       /* Bottom tab bar height — used for padding compensation */
       --tabbar-h: 82px;
@@ -219,7 +219,7 @@
       display: flex; align-items: center; gap: 8px;
     }
     .topbar-btn {
-      width: 34px; height: 34px; border-radius: var(--r-md);
+      width: 34px; height: 34px; border-radius: 9px;
       display: flex; align-items: center; justify-content: center;
       background: var(--glass-bg-light);
       border: 1px solid var(--glass-border);
@@ -279,7 +279,7 @@
       align-items: center;
       gap: 4px;
       padding: 8px 10px;
-      border-radius: var(--r-xl);
+      border-radius: 999px;
 
       /* Liquid glass surface */
       background: rgba(28, 18, 48, 0.62);
@@ -341,7 +341,7 @@
       gap: 3px;
       width: 60px;
       height: 54px;
-      border-radius: var(--r-lg);
+      border-radius: 999px;
       color: var(--text-3);
       transition:
         color var(--t-ease),
@@ -368,7 +368,7 @@
     .tab-item.active::before {
       content: '';
       position: absolute; inset: 0;
-      border-radius: var(--r-lg);
+      border-radius: 999px;
       background: linear-gradient(135deg, rgba(191,90,242,0.30), rgba(10,132,255,0.22));
       border: 1px solid rgba(191,90,242,0.38);
       box-shadow:
@@ -574,7 +574,7 @@
     }
 
     .more-item-icon {
-      width: 32px; height: 32px; border-radius: var(--r-sm);
+      width: 32px; height: 32px; border-radius: 9px;
       display: flex; align-items: center; justify-content: center;
       background: rgba(255,255,255,0.08);
       color: var(--text-2);
@@ -644,7 +644,7 @@
       justify-content: center;
       gap: 7px;
       padding: 9px 20px;
-      border-radius: var(--r-md);
+      border-radius: 980px;
       font-family: var(--font-body);
       font-size: 13px;
       font-weight: 650;
@@ -967,7 +967,7 @@
       <div style="display:flex;align-items:center;gap:10px">
         <!-- Brand pill -->
         <a href="{{ url_for('index') }}" style="display:flex;align-items:center;gap:8px;padding:4px 10px 4px 4px;background:var(--glass-bg-light);border:1px solid var(--glass-border);border-radius:var(--r-xl);box-shadow:var(--glass-inset);text-decoration:none;">
-          <img src="{{ url_for('static', filename='ahjin main.png') }}" alt="Mask" width="26" height="26" style="width:26px;height:26px;object-fit:contain;border-radius:var(--r-sm);">
+          <img src="{{ url_for('static', filename='ahjin main.png') }}" alt="Mask" width="26" height="26" style="width:26px;height:26px;object-fit:contain;border-radius:7px;">
           <span style="font-size:13px;font-weight:700;letter-spacing:-0.2px;">Mask</span>
         </a>
         <span class="topbar-title" style="font-size:14px;color:var(--text-2);">{% block topbar_title %}Dashboard{% endblock %}</span>
@@ -977,9 +977,9 @@
         {% if current_user.logged_in %}
         <div style="display:flex;align-items:center;gap:8px;padding:4px 10px 4px 4px;background:var(--glass-bg-light);border:1px solid var(--glass-border);border-radius:var(--r-xl);box-shadow:var(--glass-inset);">
           {% if current_user.avatar %}
-          <img src="{{ current_user.avatar }}" alt="{{ current_user.username }}" width="26" height="26" style="border-radius:var(--r-sm);object-fit:cover;">
+          <img src="{{ current_user.avatar }}" alt="{{ current_user.username }}" width="26" height="26" style="border-radius:50%;object-fit:cover;">
           {% else %}
-          <div style="width:26px;height:26px;border-radius:var(--r-sm);background:linear-gradient(135deg,var(--ios-purple),var(--ios-blue));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;">{{ current_user.username[:1].upper() }}</div>
+          <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--ios-purple),var(--ios-blue));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;">{{ current_user.username[:1].upper() }}</div>
           {% endif %}
           <span style="font-size:12px;font-weight:600;color:var(--text-2);">{{ current_user.username }}</span>
         </div>
@@ -1208,8 +1208,10 @@
     const colors = theme === 'midnight'
       ? ['rgba(0,150,255,0.22)','rgba(0,80,200,0.18)','rgba(0,200,255,0.14)']
       : theme === 'space'
-      ? ['rgba(100,80,200,0.16)','rgba(60,40,160,0.12)','rgba(140,120,220,0.10)']
-      : ['rgba(120,50,255,0.20)','rgba(191,90,242,0.16)','rgba(10,132,255,0.14)'];
+      ? ['rgba(120,100,255,0.14)','rgba(80,60,200,0.10)','rgba(160,140,255,0.12)']
+      : theme === 'light'
+      ? ['rgba(160,100,255,0.14)','rgba(191,90,242,0.10)','rgba(10,132,255,0.10)']
+      : ['rgba(191,90,242,0.18)','rgba(10,132,255,0.14)','rgba(50,173,230,0.12)'];
     for (let i = 0; i < 5; i++) {
       const orb = document.createElement('div');
       orb.className = 'orb-particle';
@@ -1227,43 +1229,37 @@
     }
   })();
 
-  /* ── Star field (Space theme) ── */
+  /* ── Star field (space theme) ── */
   (function(){
     const canvas = document.getElementById('star-canvas');
     const ctx = canvas.getContext('2d');
     let stars = [];
-    function resize() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    }
-    function init() {
+    function resize(){ canvas.width=innerWidth; canvas.height=innerHeight; }
+    function init(){
       resize();
-      stars = Array.from({length: 180}, () => ({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        r: Math.random() * 1.2 + 0.2,
+      stars = Array.from({length:200}, () => ({
+        x: Math.random()*canvas.width,
+        y: Math.random()*canvas.height,
+        r: Math.random()*1.2+0.2,
         a: Math.random(),
-        speed: 0.003 + Math.random() * 0.006,
-        phase: Math.random() * Math.PI * 2
+        speed: 0.003+Math.random()*0.008
       }));
     }
-    function draw(t) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    function draw(){
+      ctx.clearRect(0,0,canvas.width,canvas.height);
       stars.forEach(s => {
-        const alpha = s.a * (0.5 + 0.5 * Math.sin(t * s.speed + s.phase));
+        s.a += s.speed;
+        const alpha = 0.3 + 0.5*Math.abs(Math.sin(s.a));
         ctx.beginPath();
-        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(220,210,255,${alpha})`;
+        ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+        ctx.fillStyle = `rgba(220,215,255,${alpha})`;
         ctx.fill();
       });
       requestAnimationFrame(draw);
     }
-    init();
-    window.addEventListener('resize', init);
-    requestAnimationFrame(draw);
+    window.addEventListener('resize', resize);
+    init(); draw();
   })();
 </script>
-
-{% block extra_js %}{% endblock %}
 </body>
 </html>
