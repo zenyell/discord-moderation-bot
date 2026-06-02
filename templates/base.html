@@ -1082,6 +1082,12 @@
     </nav>
 
     <div class="sidebar-footer">
+      <a href="{{ url_for('servers') }}" class="nav-item" style="color:var(--ios-teal);">
+        <span class="nav-item-icon" style="background:rgba(50,173,230,0.12);">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </span>
+        Switch Server
+      </a>
       <a href="{{ url_for('logout') }}" class="nav-item" style="color:var(--ios-red);">
         <span class="nav-item-icon" style="background:rgba(255,69,58,0.12);">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -1101,35 +1107,49 @@
         <button class="topbar-btn" id="menuBtn" onclick="openSidebar()" aria-label="Open menu" style="display:none">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
         </button>
-        <span class="topbar-title">{% block page_title %}Mask{% endblock %}</span>
+        <span class="topbar-title">{% block topbar_title %}Dashboard{% endblock %}</span>
       </div>
       <div class="topbar-right">
-        <div class="bot-status">
+        {% block topbar_right %}
+        <div class="bot-status" id="botStatus">
           <span class="status-dot" id="statusDot"></span>
           <span id="statusText">Checking…</span>
         </div>
-        <button class="topbar-btn" id="themeQuickBtn" aria-label="Cycle theme" onclick="cycleTheme()">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
-        </button>
-        <a href="{{ url_for('settings') }}" class="topbar-btn" aria-label="Settings">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        </a>
+        {% endblock %}
+
+        <!-- Theme picker -->
+        <div style="position:relative">
+          <button class="topbar-btn" id="themeBtn" onclick="toggleThemeMenu()" aria-label="Change theme">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          </button>
+          <div id="themeMenu" style="display:none;position:absolute;right:0;top:calc(100% + 8px);background:var(--glass-bg);backdrop-filter:var(--glass-blur-heavy);-webkit-backdrop-filter:var(--glass-blur-heavy);border:1px solid var(--glass-border);border-radius:var(--r-md);box-shadow:var(--shadow-md);padding:6px;min-width:140px;z-index:200;">
+            <button onclick="setTheme('dark')"     style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;border-radius:8px;font-size:12px;color:var(--text-2);transition:background var(--t-ease);" onmouseover="this.style.background='var(--glass-bg-hover)'" onmouseout="this.style.background='transparent'">🌑 Dark</button>
+            <button onclick="setTheme('light')"    style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;border-radius:8px;font-size:12px;color:var(--text-2);transition:background var(--t-ease);" onmouseover="this.style.background='var(--glass-bg-hover)'" onmouseout="this.style.background='transparent'">☀️ Light</button>
+            <button onclick="setTheme('midnight')" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;border-radius:8px;font-size:12px;color:var(--text-2);transition:background var(--t-ease);" onmouseover="this.style.background='var(--glass-bg-hover)'" onmouseout="this.style.background='transparent'">🌊 Midnight</button>
+            <button onclick="setTheme('space')"    style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;border-radius:8px;font-size:12px;color:var(--text-2);transition:background var(--t-ease);" onmouseover="this.style.background='var(--glass-bg-hover)'" onmouseout="this.style.background='transparent'">🌌 Space</button>
+          </div>
+        </div>
+
+        {% if current_user.logged_in %}
+        <div style="display:flex;align-items:center;gap:8px;padding:4px 10px 4px 4px;background:var(--glass-bg-light);border:1px solid var(--glass-border);border-radius:var(--r-xl);box-shadow:var(--glass-inset);">
+          {% if current_user.avatar %}
+          <img src="{{ current_user.avatar }}" alt="{{ current_user.username }}" width="26" height="26" style="border-radius:50%;object-fit:cover;">
+          {% else %}
+          <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--ios-purple),var(--ios-blue));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;">{{ current_user.username[:1].upper() }}</div>
+          {% endif %}
+          <span style="font-size:12px;font-weight:600;color:var(--text-2);">{{ current_user.username }}</span>
+        </div>
+        {% endif %}
       </div>
     </header>
 
     <main class="main-content">
-      {% with messages = get_flashed_messages(with_categories=true) %}
+      {% with messages = get_flashed_messages() %}
         {% if messages %}
-          {% for category, message in messages %}
-            <div class="flash{% if category == 'error' %} flash-error{% endif %}">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                {% if category == 'error' %}
-                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-                {% else %}
-                  <polyline points="20 6 9 17 4 12"/>
-                {% endif %}
-              </svg>
-              {{ message }}
+          {% for msg in messages %}
+            <div class="flash">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+              {{ msg }}
             </div>
           {% endfor %}
         {% endif %}
@@ -1140,171 +1160,160 @@
 </div>
 
 <script>
-/* ════════════════════════════════════════
-   iOS Liquid Glass — Script Engine
-════════════════════════════════════════ */
-var THEMES = ['dark','light','midnight','space'];
-function applyTheme(t){
-  document.documentElement.setAttribute('data-theme',t);
-  localStorage.setItem('mp-theme',t);
-}
-function cycleTheme(){
-  var cur=document.documentElement.getAttribute('data-theme')||'dark';
-  var next=THEMES[(THEMES.indexOf(cur)+1)%THEMES.length];
-  applyTheme(next);
-  var btn=document.getElementById('themeQuickBtn');
-  if(btn){btn.style.transform='scale(0.88) rotate(30deg)';setTimeout(function(){btn.style.transition='transform 420ms cubic-bezier(0.34,1.56,0.64,1)';btn.style.transform='scale(1) rotate(0deg)';setTimeout(function(){btn.style.transition='';},420);},90);}
-  showThemeToast(next);
-  respawnOrbs(next);
-  manageStarCanvas(next);
-}
-function showThemeToast(name){
-  var el=document.getElementById('theme-toast');
-  if(el)el.remove();
-  var labels={dark:'🌙 Dark',light:'☀️ Light',midnight:'🌊 Midnight',space:'🌌 Space'};
-  var t=document.createElement('div');
-  t.id='theme-toast';
-  t.textContent=labels[name]||name;
-  t.style.cssText='position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--glass-bg);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);border:1px solid var(--glass-border);color:var(--text);padding:9px 22px;border-radius:9999px;font-size:13px;font-weight:600;box-shadow:var(--shadow-glass);z-index:9999;opacity:0;transition:opacity 260ms ease,transform 320ms cubic-bezier(0.34,1.56,0.64,1)';
-  document.body.appendChild(t);
-  requestAnimationFrame(function(){requestAnimationFrame(function(){t.style.opacity='1';t.style.transform='translateX(-50%) translateY(0)';});});
-  setTimeout(function(){t.style.opacity='0';t.style.transform='translateX(-50%) translateY(10px)';setTimeout(function(){t.remove();},320);},1800);
-}
-function toggleSection(h){
-  h.classList.toggle('open');
-  h.nextElementSibling.classList.toggle('open');
-}
-function openSidebar(){document.getElementById('sidebar').classList.add('open');document.getElementById('sidebarOverlay').classList.add('open');}
-function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarOverlay').classList.remove('open');}
-if(window.innerWidth<=768)document.getElementById('menuBtn').style.display='flex';
-
-// Bot status
-fetch('/api/status').then(function(r){return r.json();}).then(function(d){
-  var dot=document.getElementById('statusDot'),txt=document.getElementById('statusText');
-  if(d.online){dot.classList.remove('offline');txt.textContent=d.name||'Online';}
-  else{dot.classList.add('offline');txt.textContent='Offline';}
-}).catch(function(){document.getElementById('statusText').textContent='Unknown';});
-
-// Cursor glow
-var cg=document.getElementById('cursor-glow');
-document.addEventListener('mousemove',function(e){cg.style.left=e.clientX+'px';cg.style.top=e.clientY+'px';});
-
-// Stagger cards
-document.querySelectorAll('.card,.stat-card').forEach(function(c,i){c.style.animationDelay=(80+i*55)+'ms';});
-
-// Stagger nav
-document.querySelectorAll('.nav-item').forEach(function(n,i){n.style.animationDelay=(100+i*38)+'ms';});
-
-// Stat counter
-document.querySelectorAll('.stat-value').forEach(function(el,idx){
-  var target=parseInt(el.textContent.replace(/,/g,''));
-  if(isNaN(target)||target===0)return;
-  el.style.animationDelay=(200+idx*80)+'ms';
-  var start=null,dur=900;
-  var ease=function(t){return 1-Math.pow(2,-10*t)*Math.cos(20*t);};
-  var tick=function(ts){
-    if(!start)start=ts;
-    var p=Math.min((ts-start)/dur,1);
-    el.textContent=Math.round(ease(p)*target).toLocaleString();
-    if(p<1)requestAnimationFrame(tick);
-  };
-  setTimeout(function(){requestAnimationFrame(tick);},200+idx*80);
-});
-
-/* ══ LIQUID GLASS RIPPLE — injected on every .btn click ══ */
-document.addEventListener('click', function(e) {
-  var btn = e.target.closest('.btn');
-  if (!btn) return;
-  var rect = btn.getBoundingClientRect();
-  var ripple = document.createElement('span');
-  ripple.className = 'lg-ripple';
-  ripple.style.left = (e.clientX - rect.left) + 'px';
-  ripple.style.top  = (e.clientY - rect.top)  + 'px';
-  btn.appendChild(ripple);
-  ripple.addEventListener('animationend', function(){ ripple.remove(); });
-}, true);
-
-// Nav item mouse-position glow
-document.querySelectorAll('.nav-item').forEach(function(item){
-  item.addEventListener('mousemove',function(e){
-    var r=item.getBoundingClientRect();
-    var x=((e.clientX-r.left)/r.width*100).toFixed(1)+'%';
-    var y=((e.clientY-r.top)/r.height*100).toFixed(1)+'%';
-    item.style.setProperty('--mx',x);
-    item.style.setProperty('--my',y);
-  });
-});
-
-/* Orb particles */
-var ORB_COLORS={
-  dark:    ['rgba(191,90,242,0.55)','rgba(10,132,255,0.45)','rgba(50,173,230,0.40)','rgba(120,50,255,0.50)'],
-  light:   ['rgba(160,100,255,0.30)','rgba(10,132,255,0.25)','rgba(191,90,242,0.25)','rgba(80,40,200,0.22)'],
-  midnight:['rgba(0,180,255,0.55)','rgba(0,80,200,0.50)','rgba(0,220,255,0.40)','rgba(0,120,220,0.45)'],
-  space:   ['rgba(100,70,200,0.30)','rgba(140,100,255,0.25)','rgba(60,40,160,0.22)','rgba(100,80,220,0.20)']
-};
-function respawnOrbs(theme){
-  var layer=document.getElementById('orb-layer');
-  layer.innerHTML='';
-  var colors=ORB_COLORS[theme]||ORB_COLORS.dark;
-  var count=5;
-  for(var i=0;i<count;i++){
-    var o=document.createElement('div');
-    o.className='orb-particle';
-    var size=120+Math.random()*180;
-    var x=Math.random()*100,y=Math.random()*100;
-    var tx=(Math.random()-0.5)*300,ty=(Math.random()-0.5)*300;
-    var dur=18+Math.random()*22;
-    var delay=-Math.random()*dur;
-    o.style.cssText='width:'+size+'px;height:'+size+'px;left:'+x+'%;top:'+y+'%;background:'+colors[i%colors.length]+';--tx:'+tx+'px;--ty:'+ty+'px;animation-duration:'+dur+'s;animation-delay:'+delay+'s;';
-    layer.appendChild(o);
+  /* ── Nav section collapse ── */
+  function toggleSection(header) {
+    header.classList.toggle('open');
+    const body = header.nextElementSibling;
+    body.classList.toggle('open');
   }
-}
-var _initTheme=document.documentElement.getAttribute('data-theme')||'dark';
-respawnOrbs(_initTheme);
 
-/* Star canvas (space theme) */
-function manageStarCanvas(theme){
-  var canvas=document.getElementById('star-canvas');
-  if(theme!=='space'){canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);return;}
-  drawStars(canvas);
-}
-function drawStars(canvas){
-  canvas.width=window.innerWidth;canvas.height=window.innerHeight;
-  var ctx=canvas.getContext('2d');
-  var stars=[];
-  for(var i=0;i<320;i++){
-    stars.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,r:Math.random()*1.2+0.2,a:Math.random()});
+  /* ── Sidebar mobile ── */
+  function openSidebar() {
+    document.getElementById('sidebar').classList.add('open');
+    document.getElementById('sidebarOverlay').classList.add('open');
   }
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  stars.forEach(function(s){
-    ctx.beginPath();
-    ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
-    ctx.fillStyle='rgba(220,215,255,'+s.a+')';
-    ctx.fill();
-  });
-}
-if(document.documentElement.getAttribute('data-theme')==='space'){
-  drawStars(document.getElementById('star-canvas'));
-}
-window.addEventListener('resize',function(){
-  if(document.documentElement.getAttribute('data-theme')==='space'){
-    drawStars(document.getElementById('star-canvas'));
+  function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebarOverlay').classList.remove('open');
   }
-});
 
-/* Page leave transition */
-document.querySelectorAll('a[href]').forEach(function(a){
-  if(a.hostname!==location.hostname||a.getAttribute('href').startsWith('#'))return;
-  a.addEventListener('click',function(e){
-    var href=a.getAttribute('href');
-    if(e.metaKey||e.ctrlKey||e.shiftKey)return;
-    e.preventDefault();
-    document.body.classList.add('leaving');
-    setTimeout(function(){window.location.href=href;},200);
+  /* ── Responsive menu button ── */
+  (function(){
+    const btn = document.getElementById('menuBtn');
+    function check() { btn.style.display = window.innerWidth <= 768 ? 'flex' : 'none'; }
+    check(); window.addEventListener('resize', check);
+  })();
+
+  /* ── Nav item staggered animation ── */
+  document.querySelectorAll('.nav-item').forEach((el, i) => {
+    el.style.animationDelay = (80 + i * 28) + 'ms';
   });
-});
+
+  /* ── Nav item magnetic glow ── */
+  document.querySelectorAll('.nav-item').forEach(el => {
+    el.addEventListener('mousemove', e => {
+      const r = el.getBoundingClientRect();
+      el.style.setProperty('--mx', ((e.clientX - r.left) / r.width * 100) + '%');
+      el.style.setProperty('--my', ((e.clientY - r.top) / r.height * 100) + '%');
+    });
+  });
+
+  /* ── Page transition ── */
+  document.querySelectorAll('a[href]').forEach(a => {
+    const href = a.getAttribute('href');
+    if (!href || href.startsWith('#') || href.startsWith('http') || href.startsWith('mailto')) return;
+    a.addEventListener('click', e => {
+      const url = a.href;
+      if (url === window.location.href) return;
+      e.preventDefault();
+      document.body.classList.add('leaving');
+      setTimeout(() => { window.location.href = url; }, 180);
+    });
+  });
+
+  /* ── Cursor glow ── */
+  const glow = document.getElementById('cursor-glow');
+  document.addEventListener('mousemove', e => {
+    glow.style.left = e.clientX + 'px';
+    glow.style.top  = e.clientY + 'px';
+  });
+
+  /* ── Orb particles ── */
+  (function(){
+    const layer = document.getElementById('orb-layer');
+    const colors = ['rgba(191,90,242,0.18)','rgba(10,132,255,0.14)','rgba(50,173,230,0.12)','rgba(191,90,242,0.10)'];
+    for (let i = 0; i < 5; i++) {
+      const orb = document.createElement('div');
+      orb.className = 'orb-particle';
+      const size = 120 + Math.random() * 180;
+      orb.style.cssText = `
+        width:${size}px;height:${size}px;
+        background:${colors[i % colors.length]};
+        left:${Math.random()*100}%;top:${Math.random()*100}%;
+        --tx:${(Math.random()-0.5)*200}px;--ty:${(Math.random()-0.5)*200}px;
+        animation-duration:${12 + Math.random()*18}s;
+        animation-delay:-${Math.random()*20}s;
+      `;
+      layer.appendChild(orb);
+    }
+  })();
+
+  /* ── Star canvas (space theme) ── */
+  (function(){
+    const canvas = document.getElementById('star-canvas');
+    const ctx = canvas.getContext('2d');
+    let stars = [];
+    function resize() {
+      canvas.width  = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    function initStars() {
+      stars = Array.from({length: 200}, () => ({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: Math.random() * 1.2 + 0.2,
+        a: Math.random(),
+        s: (Math.random() - 0.5) * 0.002,
+      }));
+    }
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      stars.forEach(s => {
+        s.a = Math.max(0.05, Math.min(1, s.a + s.s));
+        if (s.a <= 0.05 || s.a >= 1) s.s *= -1;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(235,230,255,${s.a})`;
+        ctx.fill();
+      });
+      requestAnimationFrame(draw);
+    }
+    resize(); initStars(); draw();
+    window.addEventListener('resize', () => { resize(); initStars(); });
+  })();
+
+  /* ── Theme switcher ── */
+  function setTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    localStorage.setItem('mp-theme', t);
+    document.getElementById('themeMenu').style.display = 'none';
+  }
+  function toggleThemeMenu() {
+    const m = document.getElementById('themeMenu');
+    m.style.display = m.style.display === 'none' ? 'block' : 'none';
+  }
+  document.addEventListener('click', e => {
+    const m = document.getElementById('themeMenu');
+    const b = document.getElementById('themeBtn');
+    if (!m.contains(e.target) && e.target !== b) m.style.display = 'none';
+  });
+
+  /* ── Bot status ── */
+  (function(){
+    const dot  = document.getElementById('statusDot');
+    const text = document.getElementById('statusText');
+    if (!dot || !text) return;
+    fetch('/api/status')
+      .then(r => r.json())
+      .then(d => {
+        if (d.online) { dot.classList.remove('offline'); text.textContent = d.name || 'Online'; }
+        else          { dot.classList.add('offline');    text.textContent = 'Offline'; }
+      })
+      .catch(() => { dot.classList.add('offline'); text.textContent = 'Offline'; });
+  })();
+
+  /* ── Liquid glass ripple on buttons ── */
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('.btn');
+    if (!btn) return;
+    const r   = btn.getBoundingClientRect();
+    const rip = document.createElement('span');
+    rip.className = 'lg-ripple';
+    rip.style.left = (e.clientX - r.left) + 'px';
+    rip.style.top  = (e.clientY - r.top)  + 'px';
+    btn.appendChild(rip);
+    setTimeout(() => rip.remove(), 520);
+  });
 </script>
-
-{% block extra_scripts %}{% endblock %}
 </body>
 </html>
