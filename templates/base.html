@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='sg' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2373b8ff'/%3E%3Cstop offset='100%25' stop-color='%233a8ee8'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M16 2 L28 7 L28 16 C28 23 22 28.5 16 30 C10 28.5 4 23 4 16 L4 7 Z' fill='%23a8d4ff' rx='4'/%3E%3Cpath d='M16 4 L26 8.5 L26 16 C26 22 21 26.8 16 28.2 C11 26.8 6 22 6 16 L6 8.5 Z' fill='url(%23sg)'/%3E%3Ccircle cx='12.5' cy='14' r='1.8' fill='white'/%3E%3Ccircle cx='19.5' cy='14' r='1.8' fill='white'/%3E%3Cpath d='M11.5 19.5 Q16 22.5 20.5 19.5' stroke='white' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='sg' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2373b8ff'/%3E%3Cstop offset='100%25' stop-color='%233a8ee8'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M16 2 L28 7 L28 16 C28 23 22 28.5 16 30 C10 28.5 4 23 4 16 L4 7 Z' fill='%23a8d4ff' rx='4'/%3E%3Cpath d='M16 4 L26 8.5 L26 16 C26 22 21 26.8 16 28.2 C11 26.8 6 22 6 16 L6 8.5 Z' fill='url(%23sg)'/%3E%3Ccircle cx='12.5' cy='14' r='1.8' fill='white'/%3E%3Ccircle cx='19.5' cy='14' r='1.8' fill='white'/%3E%3Cpath d='M11.5 19.5 Q16 22.5 20.5 19.5' stroke='white' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E'>
 
   <style>
     /* ═══════════════════════════════════════════════
@@ -58,7 +58,6 @@
       --r-lg: 22px;
       --r-xl: 30px;
 
-      /* Bottom tab bar height — used for padding compensation */
       --tabbar-h: 82px;
 
       --t-spring: 420ms cubic-bezier(0.34,1.36,0.64,1);
@@ -192,9 +191,6 @@
       min-height: 100dvh;
     }
 
-    /* ══════════════════════════════════════
-       TOPBAR
-    ══════════════════════════════════════ */
     .main-wrap {
       flex: 1;
       display: flex; flex-direction: column;
@@ -232,13 +228,22 @@
       box-shadow: var(--shadow-sm);
     }
 
-    /* ══════════════════════════════════════
-       MAIN CONTENT
-    ══════════════════════════════════════ */
     .main-content {
       flex: 1;
       padding: 28px 28px calc(var(--tabbar-h) + 24px);
       animation: page-enter 420ms cubic-bezier(0.34,1.20,0.64,1) both;
+    }
+
+    /* SPA content swap transition */
+    .main-content.spa-out {
+      animation: none !important;
+      opacity: 0;
+      transform: translateY(-6px) scale(0.99);
+      transition: opacity 140ms ease, transform 140ms ease;
+      pointer-events: none;
+    }
+    .main-content.spa-in {
+      animation: page-enter 380ms cubic-bezier(0.34,1.20,0.64,1) both !important;
     }
 
     /* ── Glass cards ── */
@@ -268,7 +273,6 @@
        LIQUID GLASS BOTTOM TAB BAR
     ══════════════════════════════════════ */
 
-    /* ── Floating pill container ── */
     .tab-bar {
       position: fixed;
       bottom: 20px;
@@ -280,8 +284,6 @@
       gap: 4px;
       padding: 8px 10px;
       border-radius: 999px;
-
-      /* Liquid glass surface */
       background: rgba(28, 18, 48, 0.62);
       backdrop-filter: blur(40px) saturate(200%);
       -webkit-backdrop-filter: blur(40px) saturate(200%);
@@ -291,15 +293,12 @@
         inset 0 -1px 0 rgba(0,0,0,0.18),
         0 8px 40px rgba(0,0,0,0.55),
         0 2px 12px rgba(0,0,0,0.35);
-
-      /* Glass highlight at top edge */
       background-image: linear-gradient(
         180deg,
         rgba(255,255,255,0.10) 0%,
         rgba(255,255,255,0.02) 30%,
         rgba(0,0,0,0.04) 100%
       );
-
       animation: tabbar-rise 480ms cubic-bezier(0.34,1.36,0.64,1) 100ms both;
     }
 
@@ -331,7 +330,6 @@
         0 2px 12px rgba(140,120,255,0.10);
     }
 
-    /* ── Individual tab button ── */
     .tab-item {
       position: relative;
       display: flex;
@@ -361,7 +359,6 @@
       transition-duration: 80ms;
     }
 
-    /* Active pill background */
     .tab-item.active {
       color: var(--text);
     }
@@ -420,7 +417,6 @@
     }
     .tab-item:not(.active) .tab-item-label { opacity: 0.55; }
 
-    /* Dot indicator on active icon */
     .tab-item.active .tab-dot {
       position: absolute;
       bottom: -2px; left: 50%; transform: translateX(-50%);
@@ -431,7 +427,6 @@
     [data-theme="midnight"] .tab-item.active .tab-dot { background: var(--ios-blue); }
     [data-theme="space"]    .tab-item.active .tab-dot { background: var(--ios-purple); }
 
-    /* ── Divider between tab groups ── */
     .tab-divider {
       width: 1px;
       height: 28px;
@@ -473,7 +468,6 @@
       transition:
         opacity 280ms cubic-bezier(0.16,1,0.3,1),
         transform 320ms cubic-bezier(0.34,1.36,0.64,1);
-
       background-image: linear-gradient(
         180deg,
         rgba(255,255,255,0.07) 0%,
@@ -593,7 +587,6 @@
       color: var(--ios-purple);
     }
 
-    /* Footer actions row in sheet */
     .more-sheet-footer {
       display: flex; gap: 8px;
       padding-top: 8px;
@@ -932,11 +925,6 @@
       to   { opacity: 1; }
     }
 
-    body.leaving .main-content {
-      animation: none; transition: opacity 180ms ease, transform 180ms ease;
-      opacity: 0; transform: translateY(-8px) scale(0.99);
-    }
-
     @media (max-width: 480px) {
       .tab-bar { bottom: 14px; }
       .tab-item { width: 52px; height: 50px; }
@@ -966,11 +954,11 @@
     <header class="topbar">
       <div style="display:flex;align-items:center;gap:10px">
         <!-- Brand pill -->
-        <a href="{{ url_for('index') }}" style="display:flex;align-items:center;gap:8px;padding:4px 10px 4px 4px;background:var(--glass-bg-light);border:1px solid var(--glass-border);border-radius:var(--r-xl);box-shadow:var(--glass-inset);text-decoration:none;">
+        <a href="{{ url_for('index') }}" data-spa style="display:flex;align-items:center;gap:8px;padding:4px 10px 4px 4px;background:var(--glass-bg-light);border:1px solid var(--glass-border);border-radius:var(--r-xl);box-shadow:var(--glass-inset);text-decoration:none;">
           <img src="{{ url_for('static', filename='ahjin main.png') }}" alt="Mask" width="26" height="26" style="width:26px;height:26px;object-fit:contain;border-radius:7px;">
           <span style="font-size:13px;font-weight:700;letter-spacing:-0.2px;">Mask</span>
         </a>
-        <span class="topbar-title" style="font-size:14px;color:var(--text-2);">{% block topbar_title %}Dashboard{% endblock %}</span>
+        <span class="topbar-title" id="spaTopbarTitle" style="font-size:14px;color:var(--text-2);">{% block topbar_title %}Dashboard{% endblock %}</span>
       </div>
       <div class="topbar-right">
         {% block topbar_right %}
@@ -988,7 +976,7 @@
       </div>
     </header>
 
-    <main class="main-content">
+    <main class="main-content" id="spaContent">
       {% with messages = get_flashed_messages() %}
         {% if messages %}
           {% for msg in messages %}
@@ -1004,11 +992,14 @@
   </div>
 
   <!-- ═══ LIQUID GLASS BOTTOM TAB BAR ═══ -->
-  <nav class="tab-bar" role="navigation" aria-label="Main navigation">
+  <nav class="tab-bar" role="navigation" aria-label="Main navigation" id="spaTabBar">
 
     <!-- Dashboard -->
     <a href="{{ url_for('index') }}"
        class="tab-item{% if request.endpoint == 'index' %} active{% endif %}"
+       data-spa
+       data-spa-endpoints="index"
+       data-spa-title="Dashboard"
        aria-label="Dashboard">
       <span class="tab-item-icon">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
@@ -1020,6 +1011,9 @@
     <!-- Moderation -->
     <a href="{{ url_for('moderation') }}"
        class="tab-item{% if request.endpoint == 'moderation' %} active{% endif %}"
+       data-spa
+       data-spa-endpoints="moderation"
+       data-spa-title="Moderation"
        aria-label="Moderation">
       <span class="tab-item-icon">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
@@ -1031,6 +1025,9 @@
     <!-- User Lookup -->
     <a href="{{ url_for('user_lookup') }}"
        class="tab-item{% if request.endpoint in ['user_lookup','user_profile'] %} active{% endif %}"
+       data-spa
+       data-spa-endpoints="user_lookup,user_profile"
+       data-spa-title="User Lookup"
        aria-label="User Lookup">
       <span class="tab-item-icon">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -1044,6 +1041,9 @@
     <!-- Settings shortcut -->
     <a href="{{ url_for('settings') }}"
        class="tab-item{% if request.endpoint == 'settings' %} active{% endif %}"
+       data-spa
+       data-spa-endpoints="settings"
+       data-spa-title="Settings"
        aria-label="Settings">
       <span class="tab-item-icon">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -1077,22 +1077,22 @@
     <div class="more-sheet-title">Configuration</div>
     <div class="more-sheet-grid">
 
-      <a href="{{ url_for('logging_page') }}" class="more-item{% if request.endpoint == 'logging_page' %} active{% endif %}">
+      <a href="{{ url_for('logging_page') }}" class="more-item{% if request.endpoint == 'logging_page' %} active{% endif %}" data-spa data-spa-endpoints="logging_page" data-spa-title="Logging">
         <span class="more-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
         Logging
       </a>
 
-      <a href="{{ url_for('greetings') }}" class="more-item{% if request.endpoint == 'greetings' %} active{% endif %}">
+      <a href="{{ url_for('greetings') }}" class="more-item{% if request.endpoint == 'greetings' %} active{% endif %}" data-spa data-spa-endpoints="greetings" data-spa-title="Greetings">
         <span class="more-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></span>
         Greetings
       </a>
 
-      <a href="{{ url_for('autoroles') }}" class="more-item{% if request.endpoint == 'autoroles' %} active{% endif %}">
+      <a href="{{ url_for('autoroles') }}" class="more-item{% if request.endpoint == 'autoroles' %} active{% endif %}" data-spa data-spa-endpoints="autoroles" data-spa-title="Auto Roles">
         <span class="more-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
         Auto Roles
       </a>
 
-      <a href="{{ url_for('reaction_roles') }}" class="more-item{% if request.endpoint == 'reaction_roles' %} active{% endif %}">
+      <a href="{{ url_for('reaction_roles') }}" class="more-item{% if request.endpoint == 'reaction_roles' %} active{% endif %}" data-spa data-spa-endpoints="reaction_roles" data-spa-title="Reaction Roles">
         <span class="more-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></span>
         React Roles
       </a>
@@ -1102,27 +1102,27 @@
     <div class="more-sheet-title" style="margin-top:4px;">Features</div>
     <div class="more-sheet-grid">
 
-      <a href="{{ url_for('tags') }}" class="more-item{% if request.endpoint == 'tags' %} active{% endif %}">
+      <a href="{{ url_for('tags') }}" class="more-item{% if request.endpoint == 'tags' %} active{% endif %}" data-spa data-spa-endpoints="tags" data-spa-title="Tags">
         <span class="more-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span>
         Tags
       </a>
 
-      <a href="{{ url_for('triggers') }}" class="more-item{% if request.endpoint == 'triggers' %} active{% endif %}">
+      <a href="{{ url_for('triggers') }}" class="more-item{% if request.endpoint == 'triggers' %} active{% endif %}" data-spa data-spa-endpoints="triggers" data-spa-title="Triggers">
         <span class="more-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
         Triggers
       </a>
 
-      <a href="{{ url_for('starboard') }}" class="more-item{% if request.endpoint == 'starboard' %} active{% endif %}">
+      <a href="{{ url_for('starboard') }}" class="more-item{% if request.endpoint == 'starboard' %} active{% endif %}" data-spa data-spa-endpoints="starboard" data-spa-title="Starboard">
         <span class="more-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
         Starboard
       </a>
 
-      <a href="{{ url_for('suggestions') }}" class="more-item{% if request.endpoint == 'suggestions' %} active{% endif %}">
+      <a href="{{ url_for('suggestions') }}" class="more-item{% if request.endpoint == 'suggestions' %} active{% endif %}" data-spa data-spa-endpoints="suggestions" data-spa-title="Suggestions">
         <span class="more-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
         Suggestions
       </a>
 
-      <a href="{{ url_for('command_settings') }}" class="more-item{% if request.endpoint == 'command_settings' %} active{% endif %}">
+      <a href="{{ url_for('command_settings') }}" class="more-item{% if request.endpoint == 'command_settings' %} active{% endif %}" data-spa data-spa-endpoints="command_settings" data-spa-title="Commands">
         <span class="more-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></span>
         Commands
       </a>
@@ -1144,13 +1144,182 @@
 </div>
 
 <script>
+  /* ══════════════════════════════════════════════════════
+     SPA NAVIGATION — fetch + swap, no full page reloads
+  ══════════════════════════════════════════════════════ */
+  (function() {
+    var content    = document.getElementById('spaContent');
+    var titleEl    = document.getElementById('spaTopbarTitle');
+    var tabBar     = document.getElementById('spaTabBar');
+    var navigating = false;
+
+    /* Resolve which tab item is "active" for a given pathname */
+    function setActiveTab(pathname) {
+      document.querySelectorAll('.tab-item[data-spa-endpoints]').forEach(function(tab) {
+        tab.classList.remove('active');
+        /* remove old dot */
+        var dot = tab.querySelector('.tab-dot');
+        if (dot) dot.remove();
+      });
+      document.querySelectorAll('.more-item[data-spa-endpoints]').forEach(function(item) {
+        item.classList.remove('active');
+        var icon = item.querySelector('.more-item-icon');
+        if (icon) icon.style.background = '';
+      });
+
+      /* Match by href pathname */
+      var allSpa = document.querySelectorAll('[data-spa-endpoints]');
+      allSpa.forEach(function(el) {
+        var href = el.getAttribute('href');
+        if (!href) return;
+        var elPath = new URL(href, location.origin).pathname;
+        if (elPath === pathname) {
+          el.classList.add('active');
+          /* inject dot for tab-items */
+          if (el.classList.contains('tab-item')) {
+            var iconWrap = el.querySelector('.tab-item-icon');
+            if (iconWrap && !iconWrap.querySelector('.tab-dot')) {
+              var dot = document.createElement('span');
+              dot.className = 'tab-dot';
+              iconWrap.appendChild(dot);
+            }
+          }
+          /* activate more-tab button if a more-item is active */
+          if (el.classList.contains('more-item')) {
+            var moreBtn = document.getElementById('moreTabBtn');
+            if (moreBtn) {
+              moreBtn.classList.add('active');
+              var moreIcon = moreBtn.querySelector('.tab-item-icon');
+              if (moreIcon && !moreIcon.querySelector('.tab-dot')) {
+                var mdot = document.createElement('span');
+                mdot.className = 'tab-dot';
+                moreIcon.appendChild(mdot);
+              }
+            }
+          }
+        }
+      });
+    }
+
+    /* Core navigate function */
+    function navigate(url, pushState) {
+      if (navigating) return;
+      navigating = true;
+
+      /* Fade out */
+      content.classList.add('spa-out');
+
+      fetch(url, { headers: { 'X-SPA-Request': '1' }, credentials: 'same-origin' })
+        .then(function(res) {
+          /* If server redirected us (e.g. login), follow it */
+          if (res.redirected) {
+            window.location.href = res.url;
+            return null;
+          }
+          return res.text();
+        })
+        .then(function(html) {
+          if (!html) return;
+
+          /* Parse the returned full page and pull out #spaContent inner HTML */
+          var parser = new DOMParser();
+          var doc    = parser.parseFromString(html, 'text/html');
+          var newMain = doc.getElementById('spaContent');
+          if (!newMain) {
+            /* Fallback: server returned something unexpected, do hard nav */
+            window.location.href = url;
+            return;
+          }
+
+          /* Swap content with enter animation */
+          setTimeout(function() {
+            content.classList.remove('spa-out');
+            content.innerHTML = newMain.innerHTML;
+            content.classList.add('spa-in');
+            content.scrollTop = 0;
+            window.scrollTo(0, 0);
+
+            /* Re-run any inline scripts in the new content */
+            content.querySelectorAll('script').forEach(function(oldScript) {
+              var s = document.createElement('script');
+              if (oldScript.src) { s.src = oldScript.src; s.async = false; }
+              else { s.textContent = oldScript.textContent; }
+              oldScript.parentNode.replaceChild(s, oldScript);
+            });
+
+            content.addEventListener('animationend', function handler() {
+              content.classList.remove('spa-in');
+              content.removeEventListener('animationend', handler);
+            }, { once: true });
+
+            /* Update topbar title from data-spa-title attribute on matched link */
+            var parsedPath = new URL(url, location.origin).pathname;
+            var matchedEl  = null;
+            document.querySelectorAll('[data-spa-endpoints]').forEach(function(el) {
+              var href = el.getAttribute('href');
+              if (!href) return;
+              if (new URL(href, location.origin).pathname === parsedPath) matchedEl = el;
+            });
+            if (matchedEl && matchedEl.dataset.spaTitle && titleEl) {
+              titleEl.textContent = matchedEl.dataset.spaTitle;
+            }
+
+            /* Update <title> */
+            var newTitle = doc.querySelector('title');
+            if (newTitle) document.title = newTitle.textContent;
+
+            /* Update active tab */
+            setActiveTab(parsedPath);
+
+            /* Close more sheet if open */
+            closeMoreSheet();
+
+            /* pushState */
+            if (pushState !== false) {
+              history.pushState({ spaUrl: url }, document.title, url);
+            }
+
+            navigating = false;
+          }, 140); /* wait for spa-out transition */
+        })
+        .catch(function() {
+          /* Network error — fall back to hard navigation */
+          window.location.href = url;
+          navigating = false;
+        });
+    }
+
+    /* Intercept all [data-spa] clicks */
+    document.addEventListener('click', function(e) {
+      var link = e.target.closest('[data-spa]');
+      if (!link) return;
+      var href = link.getAttribute('href');
+      if (!href || href === '#' || href.startsWith('javascript') || link.target === '_blank') return;
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      e.preventDefault();
+      var url = new URL(href, location.origin).href;
+      if (url === location.href) return; /* already here */
+      navigate(url, true);
+    });
+
+    /* Handle browser back/forward */
+    window.addEventListener('popstate', function(e) {
+      if (e.state && e.state.spaUrl) {
+        navigate(e.state.spaUrl, false);
+      }
+    });
+
+    /* Seed initial history entry */
+    history.replaceState({ spaUrl: location.href }, document.title, location.href);
+  })();
+
   /* ── More sheet ── */
   function toggleMoreSheet(e) {
     e.stopPropagation();
-    const sheet   = document.getElementById('moreSheet');
-    const overlay = document.getElementById('moreSheetOverlay');
-    const btn     = document.getElementById('moreTabBtn');
-    const isOpen  = sheet.classList.contains('open');
+    var sheet   = document.getElementById('moreSheet');
+    var overlay = document.getElementById('moreSheetOverlay');
+    var btn     = document.getElementById('moreTabBtn');
+    var isOpen  = sheet.classList.contains('open');
     if (isOpen) {
       closeMoreSheet();
     } else {
@@ -1160,99 +1329,93 @@
     }
   }
   function closeMoreSheet() {
-    const sheet   = document.getElementById('moreSheet');
-    const overlay = document.getElementById('moreSheetOverlay');
-    const btn     = document.getElementById('moreTabBtn');
+    var sheet   = document.getElementById('moreSheet');
+    var overlay = document.getElementById('moreSheetOverlay');
+    var btn     = document.getElementById('moreTabBtn');
+    if (!sheet) return;
     sheet.classList.remove('open');
     overlay.classList.remove('open');
     btn.setAttribute('aria-expanded', 'false');
   }
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMoreSheet(); });
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeMoreSheet(); });
 
   /* ── Liquid Glass ripple on buttons ── */
   document.addEventListener('click', function(e) {
-    const btn = e.target.closest('.btn');
+    var btn = e.target.closest('.btn');
     if (!btn) return;
-    const r = document.createElement('span');
+    var r = document.createElement('span');
     r.className = 'lg-ripple';
-    const rect = btn.getBoundingClientRect();
+    var rect = btn.getBoundingClientRect();
     r.style.left = (e.clientX - rect.left) + 'px';
     r.style.top  = (e.clientY - rect.top)  + 'px';
     btn.appendChild(r);
-    r.addEventListener('animationend', () => r.remove());
-  });
-
-  /* ── Page leave transition ── */
-  document.querySelectorAll('a[href]').forEach(a => {
-    const href = a.getAttribute('href');
-    if (!href || href.startsWith('#') || href.startsWith('javascript') || a.target === '_blank') return;
-    a.addEventListener('click', function(e) {
-      if (e.metaKey || e.ctrlKey || e.shiftKey) return;
-      e.preventDefault();
-      document.body.classList.add('leaving');
-      setTimeout(() => { window.location.href = href; }, 180);
-    });
+    r.addEventListener('animationend', function() { r.remove(); });
   });
 
   /* ── Cursor glow ── */
-  const glow = document.getElementById('cursor-glow');
-  document.addEventListener('mousemove', e => {
+  var glow = document.getElementById('cursor-glow');
+  document.addEventListener('mousemove', function(e) {
     glow.style.left = e.clientX + 'px';
     glow.style.top  = e.clientY + 'px';
   });
 
   /* ── Orb particles ── */
   (function(){
-    const layer = document.getElementById('orb-layer');
-    const theme = document.documentElement.getAttribute('data-theme') || 'dark';
-    const colors = theme === 'midnight'
+    var layer = document.getElementById('orb-layer');
+    var theme = document.documentElement.getAttribute('data-theme') || 'dark';
+    var colors = theme === 'midnight'
       ? ['rgba(0,150,255,0.22)','rgba(0,80,200,0.18)','rgba(0,200,255,0.14)']
       : theme === 'space'
       ? ['rgba(120,100,255,0.14)','rgba(80,60,200,0.10)','rgba(160,140,255,0.12)']
       : theme === 'light'
       ? ['rgba(160,100,255,0.14)','rgba(191,90,242,0.10)','rgba(10,132,255,0.10)']
       : ['rgba(191,90,242,0.18)','rgba(10,132,255,0.14)','rgba(50,173,230,0.12)'];
-    for (let i = 0; i < 5; i++) {
-      const orb = document.createElement('div');
+    for (var i = 0; i < 5; i++) {
+      var orb = document.createElement('div');
       orb.className = 'orb-particle';
-      const size = 180 + Math.random() * 220;
-      orb.style.cssText = `
-        width:${size}px; height:${size}px;
-        left:${Math.random()*100}%; top:${Math.random()*100}%;
-        background:${colors[i % colors.length]};
-        --tx:${(Math.random()-0.5)*160}px;
-        --ty:${(Math.random()-0.5)*160}px;
-        animation-duration:${18+Math.random()*22}s;
-        animation-delay:${-Math.random()*20}s;
-      `;
+      var size = 180 + Math.random() * 220;
+      orb.style.cssText = [
+        'width:' + size + 'px',
+        'height:' + size + 'px',
+        'left:' + (Math.random()*100) + '%',
+        'top:' + (Math.random()*100) + '%',
+        'background:' + colors[i % colors.length],
+        '--tx:' + ((Math.random()-0.5)*160) + 'px',
+        '--ty:' + ((Math.random()-0.5)*160) + 'px',
+        'animation-duration:' + (18+Math.random()*22) + 's',
+        'animation-delay:-' + (Math.random()*20) + 's'
+      ].join(';');
       layer.appendChild(orb);
     }
   })();
 
   /* ── Star field (space theme) ── */
   (function(){
-    const canvas = document.getElementById('star-canvas');
-    const ctx = canvas.getContext('2d');
-    let stars = [];
+    var canvas = document.getElementById('star-canvas');
+    var ctx = canvas.getContext('2d');
+    var stars = [];
     function resize(){ canvas.width=innerWidth; canvas.height=innerHeight; }
     function init(){
       resize();
-      stars = Array.from({length:200}, () => ({
-        x: Math.random()*canvas.width,
-        y: Math.random()*canvas.height,
-        r: Math.random()*1.2+0.2,
-        a: Math.random(),
-        speed: 0.003+Math.random()*0.008
-      }));
+      stars = [];
+      for (var i = 0; i < 200; i++) {
+        stars.push({
+          x: Math.random()*canvas.width,
+          y: Math.random()*canvas.height,
+          r: Math.random()*1.2+0.2,
+          a: Math.random(),
+          speed: 0.003+Math.random()*0.008
+        });
+      }
     }
     function draw(){
       ctx.clearRect(0,0,canvas.width,canvas.height);
-      stars.forEach(s => {
+      stars.forEach(function(s) {
         s.a += s.speed;
-        const alpha = 0.3 + 0.5*Math.abs(Math.sin(s.a));
+        var alpha = 0.3 + 0.5*Math.abs(Math.sin(s.a));
         ctx.beginPath();
         ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
-        ctx.fillStyle = `rgba(220,215,255,${alpha})`;
+        ctx.fillStyle = 'rgba(220,215,255,'+alpha+')';
         ctx.fill();
       });
       requestAnimationFrame(draw);
