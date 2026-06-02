@@ -5,7 +5,6 @@
 <style>
   /* ── Profile card ── */
   .profile-card {
-    /* Card handles its own overflow — avatar sits inside */
     overflow: hidden;
     padding: 0;
     position: relative;
@@ -17,29 +16,27 @@
     background-size: cover;
     background-position: center;
     position: relative;
-    /* No border-radius here — card's own radius handles the top corners */
   }
 
   /* The seam section: holds the avatar + name side by side */
   .profile-seam {
     position: relative;
     padding: 0 20px;
-    /* Negative margin pulls this section up so avatar overlaps banner */
     margin-top: -40px;
     display: flex;
     align-items: flex-end;
     gap: 14px;
-    pointer-events: none; /* let children handle events */
+    pointer-events: none;
   }
 
-  /* Avatar wrapper — sits inside the card, overlaps banner via negative margin-top */
+  /* Avatar wrapper */
   .profile-avatar-wrap {
     pointer-events: auto;
     flex-shrink: 0;
     width: 82px;
     height: 82px;
     border-radius: 50%;
-    overflow: hidden;          /* clips image to circle */
+    overflow: hidden;
     border: 3px solid rgba(191,90,242,0.70);
     box-shadow:
       0 0 0 2px rgba(191,90,242,0.25),
@@ -55,7 +52,6 @@
     display: block;
   }
 
-  /* Name area sits next to avatar, aligned to bottom */
   .profile-seam-name {
     pointer-events: auto;
     padding-bottom: 8px;
@@ -78,7 +74,6 @@
     margin-top: 2px;
   }
 
-  /* Body below seam */
   .profile-body {
     padding: 14px 20px 20px;
   }
@@ -102,7 +97,7 @@
     align-items: center;
     gap: 5px;
     padding: 3px 10px;
-    border-radius: 999px;
+    border-radius: var(--r-sm);
     font-size: 12px;
     font-weight: 600;
     border: 1px solid;
@@ -156,7 +151,7 @@
         <div style="margin-top:14px;display:grid;gap:8px;font-size:12.5px">
           <div style="display:flex;justify-content:space-between;align-items:center">
             <span style="color:var(--text-2);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">USER ID</span>
-            <code style="color:var(--ios-purple);background:rgba(191,90,242,0.12);padding:3px 10px;border-radius:999px;font-size:12px">{{ profile.id }}</code>
+            <code style="color:var(--ios-purple);background:rgba(191,90,242,0.12);padding:3px 10px;border-radius:var(--r-sm);font-size:12px">{{ profile.id }}</code>
           </div>
           {% if profile.nick %}
           <div style="display:flex;justify-content:space-between;align-items:center">
@@ -171,7 +166,7 @@
           <div style="display:flex;justify-content:space-between;align-items:center">
             <span style="color:var(--text-2);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">ACCENT</span>
             <span style="display:flex;align-items:center;gap:6px;font-size:13px">
-              <span style="width:13px;height:13px;border-radius:3px;background:{{ profile.accent_color }};display:inline-block;flex-shrink:0"></span>
+              <span style="width:13px;height:13px;border-radius:var(--r-sm);background:{{ profile.accent_color }};display:inline-block;flex-shrink:0"></span>
               {{ profile.accent_color }}
             </span>
           </div>
