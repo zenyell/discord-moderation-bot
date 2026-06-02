@@ -749,13 +749,22 @@ def logging_page():
     if not guild_id:
         return redirect(url_for("servers"))
     if request.method == "POST":
+        # Master switch — saved separately so it doesn't interfere with individual toggles
+        master = "1" if request.form.get("logging_enabled") else "0"
+        db.set_setting_sync(_gkey(guild_id, "logging_enabled"), master)
         db.set_setting_sync(_gkey(guild_id, "log_channel_id"), request.form.get("log_channel_id", ""))
         for key in LOG_TOGGLE_KEYS:
             val = "1" if request.form.get(key) else "0"
             db.set_setting_sync(_gkey(guild_id, key), val)
         flash("Log settings saved.")
         return redirect(url_for("logging_page"))
-    cfg = {"log_channel_id": db.get_setting_sync(_gkey(guild_id, "log_channel_id"), "")}
+    # Load master switch — default True (on) for new guilds
+    raw_master = db.get_setting_sync(_gkey(guild_id, "logging_enabled"), None)
+    logging_enabled = (raw_master != "0")  # True unless explicitly disabled
+    cfg = {
+        "logging_enabled": logging_enabled,
+        "log_channel_id":  db.get_setting_sync(_gkey(guild_id, "log_channel_id"), ""),
+    }
     for key in LOG_TOGGLE_KEYS:
         raw = db.get_setting_sync(_gkey(guild_id, key), None)
         cfg[key] = (raw == "1") if raw is not None else True

@@ -30,6 +30,9 @@
     </div>
   </div>
 
+  <!-- Wrapper dimmed when master switch is off -->
+  <div id="log-options-wrapper" style="transition:opacity .2s;">
+
   <!-- Message Logs -->
   <div class="card">
     <div class="card-title">
@@ -223,10 +226,25 @@
     </div>
   </div>
 
+  </div><!-- /#log-options-wrapper -->
+
   <button type="submit" class="btn btn-primary">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
     Save Log Settings
   </button>
 
 </form>
+
+<script>
+(function () {
+  var master  = document.getElementById('logging_enabled');
+  var wrapper = document.getElementById('log-options-wrapper');
+  function sync() {
+    wrapper.style.opacity         = master.checked ? '1' : '0.4';
+    wrapper.style.pointerEvents   = master.checked ? ''  : 'none';
+  }
+  master.addEventListener('change', sync);
+  sync();
+})();
+</script>
 {% endblock %}
