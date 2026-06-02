@@ -762,6 +762,36 @@ def logging_page():
     return render_template("logging.html", cfg=cfg)
 
 
+# ── Audit Log ──────────────────────────────────────────────────────────────
+
+@app.route("/audit-log")
+@login_required
+def audit_log():
+    guild_id = _active_guild_id()
+    if not guild_id:
+        return redirect(url_for("servers"))
+
+    page          = max(1, int(request.args.get("page", 1)))
+    per_page      = int(request.args.get("per_page", 50))
+    per_page      = per_page if per_page in (25, 50, 100) else 50
+    search        = request.args.get("q", "").strip()
+    action_filter = request.args.get("action", "").strip().lower()
+
+    try:
+        result = db.all_logs_sync(guild_id, page=page, per_page=per_page,
+                                  search=search, action_filter=action_filter)
+    except Exception:
+        result = {"logs": [], "total": 0, "page": 1, "per_page": per_page, "pages": 1}
+
+    return render_template(
+        "audit_log.html",
+        result=result,
+        search=search,
+        action_filter=action_filter,
+        per_page=per_page,
+    )
+
+
 # ── Reaction Roles ─────────────────────────────────────────────────────────
 
 @app.route("/reaction-roles", methods=["GET", "POST"])
