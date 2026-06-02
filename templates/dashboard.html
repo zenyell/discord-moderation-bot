@@ -358,11 +358,11 @@
 
 /* ── Server info side card ── */
 .server-info-card {
-  display: flex; flex-direction: column; gap: 14px;
+  display: flex; flex-direction: column; gap: 0;
 }
 .server-info-row {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 0;
+  padding: 11px 0;
   border-bottom: 1px solid var(--glass-border);
 }
 .server-info-row:last-child { border-bottom: none; padding-bottom: 0; }
@@ -381,6 +381,20 @@
   border-radius: 999px;
   font-size: 11px; font-weight: 600;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+}
+.server-info-name {
+  font-size: 13px; font-weight: 700; color: var(--text);
+  max-width: 160px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* ── Automod toggle pulse ── */
+@keyframes automod-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,159,10,0.5); }
+  50%       { box-shadow: 0 0 0 5px rgba(255,159,10,0); }
+}
+.dot-pulse-warn {
+  animation: automod-pulse 1.6s ease-in-out infinite;
 }
 
 /* ── Empty state ── */
@@ -417,6 +431,18 @@
 .view-all-link:hover svg { transform: translateX(3px); }
 </style>
 
+{# ── Compute derived values ── #}
+{% set guild        = active_guild %}
+{% set guild_name   = guild.name if guild else 'Unknown Server' %}
+{% set guild_id     = guild.id   if guild else '' %}
+{% set total_actions = (stats.bans or 0) + (stats.kicks or 0) + (stats.timeouts or 0) + (stats.warnings or 0) %}
+
+{# ── Auto-mod: on if either bad_words or spam_limit is configured ── #}
+{% set automod_on = (automod_bad_words|trim != '') or (automod_spam|trim not in ('', '0')) %}
+
+{# ── Logging: on if log_channel is set ── #}
+{% set logging_on = log_channel_id|trim != '' %}
+
 <!-- ═══════════════════════════════════════════════
      HERO BANNER
 ═══════════════════════════════════════════════ -->
@@ -435,10 +461,17 @@
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
           Shield Active
         </div>
+        {% if automod_on %}
         <div class="hero-badge">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span class="hero-badge-dot" style="background:var(--ios-blue); box-shadow:0 0 6px var(--ios-blue);"></span>
           Auto-Mod On
         </div>
+        {% else %}
+        <a href="{{ url_for('settings') }}" class="hero-badge" style="border-color:rgba(255,159,10,0.55); background:rgba(255,159,10,0.15); text-decoration:none;">
+          <span class="hero-badge-dot dot-pulse-warn" style="background:var(--ios-orange);"></span>
+          Auto-Mod Off
+        </a>
+        {% endif %}
       </div>
     </div>
 
@@ -560,6 +593,14 @@
       Server Info
     </div>
     <div class="server-info-card" style="padding:16px 20px 20px;">
+
+      <!-- Server Name -->
+      <div class="server-info-row">
+        <span class="server-info-label">Server</span>
+        <span class="server-info-name" title="{{ guild_name }}">{{ guild_name }}</span>
+      </div>
+
+      <!-- Bot Status -->
       <div class="server-info-row">
         <span class="server-info-label">Bot Status</span>
         <span class="server-info-badge">
@@ -567,30 +608,53 @@
           Online
         </span>
       </div>
+
+      <!-- Auto-Mod (dynamic) -->
       <div class="server-info-row">
         <span class="server-info-label">Auto-Mod</span>
+        {% if automod_on %}
         <span class="server-info-badge">
           <span style="width:6px;height:6px;border-radius:50%;background:var(--ios-blue);flex-shrink:0;"></span>
           Active
         </span>
+        {% else %}
+        <a href="{{ url_for('settings') }}" class="server-info-badge" style="border-color:rgba(255,159,10,0.5);background:rgba(255,159,10,0.12);color:var(--ios-orange);text-decoration:none;">
+          <span class="dot-pulse-warn" style="width:6px;height:6px;border-radius:50%;background:var(--ios-orange);flex-shrink:0;"></span>
+          Off — Configure
+        </a>
+        {% endif %}
       </div>
+
+      <!-- Logging (dynamic) -->
       <div class="server-info-row">
         <span class="server-info-label">Logging</span>
+        {% if logging_on %}
         <span class="server-info-badge">
           <span style="width:6px;height:6px;border-radius:50%;background:var(--ios-purple);flex-shrink:0;"></span>
           Enabled
         </span>
+        {% else %}
+        <a href="{{ url_for('logging_page') }}" class="server-info-badge" style="border-color:rgba(255,159,10,0.5);background:rgba(255,159,10,0.12);color:var(--ios-orange);text-decoration:none;">
+          <span style="width:6px;height:6px;border-radius:50%;background:var(--ios-orange);flex-shrink:0;"></span>
+          Off — Set up
+        </a>
+        {% endif %}
       </div>
+
+      <!-- Total Actions (animated) -->
       <div class="server-info-row">
         <span class="server-info-label">Total Actions</span>
-        <span class="server-info-value" style="font-variant-numeric:tabular-nums;">{{ (stats.bans or 0) + (stats.kicks or 0) + (stats.timeouts or 0) + (stats.warnings or 0) }}</span>
+        <span class="server-info-value" data-count="{{ total_actions }}" style="font-variant-numeric:tabular-nums;">{{ total_actions }}</span>
       </div>
-      {% if session.get('guild_id') %}
+
+      <!-- Server ID -->
+      {% if guild_id %}
       <div class="server-info-row">
         <span class="server-info-label">Server ID</span>
-        <span class="server-info-value" style="font-size:11px; color:var(--text-2); font-variant-numeric:tabular-nums;">{{ session['guild_id'] }}</span>
+        <span class="server-info-value" style="font-size:11px; color:var(--text-2); font-variant-numeric:tabular-nums;">{{ guild_id }}</span>
       </div>
       {% endif %}
+
     </div>
     <a href="{{ url_for('settings') }}" class="view-all-link">
       Server settings
@@ -651,9 +715,9 @@
 </div>
 
 <script>
-/* Animated stat counter */
+/* Animated counters — stat cards + total actions */
 function animateCounters() {
-  document.querySelectorAll('.stat-value[data-count]').forEach(el => {
+  document.querySelectorAll('[data-count]').forEach(el => {
     const target = parseInt(el.dataset.count, 10) || 0;
     if (target === 0) return;
     const duration = 900;
