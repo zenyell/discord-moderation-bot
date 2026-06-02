@@ -11,7 +11,6 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
 
-    /* ═══ TOKENS ═══ */
     :root {
       --ios-purple: #bf5af2;
       --ios-blue:   #0a84ff;
@@ -81,10 +80,7 @@
     [data-theme="midnight"] body { background: #020c1a; }
     [data-theme="space"]    body { background: #06010f; }
 
-    /* ═══ AMBIENT ═══ */
-    .ambient {
-      position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden;
-    }
+    .ambient { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
     .orb {
       position: absolute; border-radius: 50%;
       filter: blur(80px);
@@ -100,20 +96,18 @@
     .star-canvas.visible { opacity: 1; }
     .cursor-glow {
       position: fixed; pointer-events: none; z-index: 1;
-      width: 400px; height: 400px;
-      border-radius: 50%;
+      width: 400px; height: 400px; border-radius: 50%;
       background: radial-gradient(circle, rgba(191,90,242,0.07) 0%, transparent 70%);
       transform: translate(-50%,-50%);
       transition: left 80ms linear, top 80ms linear;
     }
     [data-theme="midnight"] .cursor-glow { background: radial-gradient(circle, rgba(10,132,255,0.07) 0%, transparent 70%); }
 
-    /* ═══ TOPNAV ═══ */
+    /* TOPNAV */
     .topnav {
       position: fixed; top: 0; left: 0; right: 0; z-index: 100;
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0 28px;
-      height: 58px;
+      padding: 0 28px; height: 58px;
       background: var(--glass-bg);
       backdrop-filter: var(--glass-blur);
       -webkit-backdrop-filter: var(--glass-blur);
@@ -127,10 +121,11 @@
     }
     .brand-icon {
       width: 30px; height: 30px; border-radius: 9px;
-      background: linear-gradient(135deg, var(--ios-purple), var(--ios-blue));
+      overflow: hidden;
       display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 2px 10px rgba(191,90,242,0.35);
-      color: #fff;
+    }
+    .brand-icon img {
+      width: 30px; height: 30px; object-fit: cover; border-radius: 9px;
     }
     .nav-right { display: flex; align-items: center; gap: 8px; }
     .nav-btn {
@@ -142,7 +137,7 @@
     }
     .nav-btn:hover { background: var(--glass-bg-hover); color: var(--text); }
 
-    /* ═══ BUTTONS ═══ */
+    /* BUTTONS */
     .btn {
       position: relative; overflow: hidden;
       display: inline-flex; align-items: center; gap: 7px;
@@ -150,12 +145,10 @@
       font-family: inherit; font-size: 14px; font-weight: 600;
       cursor: pointer; text-decoration: none;
       border: 1px solid var(--glass-border);
-      background: var(--glass-bg-light);
-      color: var(--text);
+      background: var(--glass-bg-light); color: var(--text);
       box-shadow: var(--glass-inset), var(--shadow-sm);
       backdrop-filter: blur(20px);
-      transition: background var(--t-ease), border-color var(--t-ease),
-                  box-shadow var(--t-ease), transform var(--t-ease);
+      transition: background var(--t-ease), border-color var(--t-ease), box-shadow var(--t-ease), transform var(--t-ease);
     }
     .btn:hover { background: var(--glass-bg-hover); transform: translateY(-1px); box-shadow: var(--glass-inset), var(--shadow-md); }
     .btn:active { transform: translateY(0) scale(0.98); }
@@ -174,178 +167,113 @@
     }
     @keyframes ripple-out { to { transform: translate(-50%,-50%) scale(60); opacity: 0; } }
 
-    /* ═══ HERO ═══ */
+    /* HERO */
     .page { position: relative; z-index: 1; }
     .hero {
       min-height: 100dvh;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
-      text-align: center;
-      padding: 120px 24px 80px;
+      text-align: center; padding: 120px 24px 80px;
     }
     .hero-status-badge {
       display: inline-flex; align-items: center; gap: 7px;
       padding: 7px 14px;
-      background: rgba(255,255,255,0.10);
-      border: 1px solid rgba(255,255,255,0.20);
-      border-radius: 999px;
-      font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.90);
+      background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.20);
+      border-radius: 999px; font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.90);
       box-shadow: inset 0 1.5px 0 rgba(255,255,255,0.18), 0 2px 8px rgba(0,0,0,0.18);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
       transition: all 220ms cubic-bezier(0.16,1,0.3,1);
     }
-    .hero-status-badge:hover {
-      background: rgba(255,255,255,0.18);
-      transform: translateY(-1px);
-    }
-    [data-theme="light"] .hero-status-badge {
-      background: rgba(120,60,220,0.12);
-      border-color: rgba(120,60,220,0.22);
-      color: rgba(80,20,180,0.95);
-    }
+    .hero-status-badge:hover { background: rgba(255,255,255,0.18); transform: translateY(-1px); }
+    [data-theme="light"] .hero-status-badge { background: rgba(120,60,220,0.12); border-color: rgba(120,60,220,0.22); color: rgba(80,20,180,0.95); }
     .hero-badge {
       display: inline-flex; align-items: center; gap: 7px;
       padding: 6px 14px;
-      background: var(--glass-bg-light);
-      border: 1px solid var(--glass-border);
-      border-radius: 9999px;
-      font-size: 12px; font-weight: 600; color: var(--text-2);
-      letter-spacing: 0.2px;
-      margin-bottom: 20px;
-      box-shadow: var(--glass-inset);
-      backdrop-filter: blur(20px);
+      background: var(--glass-bg-light); border: 1px solid var(--glass-border);
+      border-radius: 9999px; font-size: 12px; font-weight: 600; color: var(--text-2);
+      letter-spacing: 0.2px; margin-bottom: 20px;
+      box-shadow: var(--glass-inset); backdrop-filter: blur(20px);
       animation: fade-up 560ms cubic-bezier(0.34,1.46,0.64,1) 120ms both;
     }
     .hero-badge-dot {
       width: 7px; height: 7px; border-radius: 50%;
-      background: var(--ios-green);
-      box-shadow: 0 0 8px var(--ios-green);
+      background: var(--ios-green); box-shadow: 0 0 8px var(--ios-green);
       animation: pulse-dot 2.4s ease-in-out infinite;
     }
     @keyframes pulse-dot { 0%,100%{box-shadow:0 0 6px var(--ios-green)}50%{box-shadow:0 0 14px var(--ios-green)} }
     .hero-title {
-      font-size: clamp(2.4rem, 6vw, 5.2rem);
-      font-weight: 800;
-      letter-spacing: -0.04em;
-      line-height: 1.08;
-      margin-bottom: 20px;
+      font-size: clamp(2.4rem, 6vw, 5.2rem); font-weight: 800;
+      letter-spacing: -0.04em; line-height: 1.08; margin-bottom: 20px;
       animation: fade-up 560ms cubic-bezier(0.34,1.46,0.64,1) 200ms both;
     }
     .grad {
       background: linear-gradient(135deg, var(--ios-purple) 0%, var(--ios-blue) 100%);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      background-clip: text;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
     }
     .hero-sub {
-      font-size: clamp(1rem, 2vw, 1.2rem);
-      color: var(--text-2);
-      max-width: 52ch;
-      line-height: 1.65;
-      margin-bottom: 36px;
+      font-size: clamp(1rem, 2vw, 1.2rem); color: var(--text-2);
+      max-width: 52ch; line-height: 1.65; margin-bottom: 36px;
       animation: fade-up 560ms cubic-bezier(0.34,1.46,0.64,1) 280ms both;
     }
     .hero-actions {
       display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
       animation: fade-up 560ms cubic-bezier(0.34,1.46,0.64,1) 360ms both;
     }
-    @keyframes fade-up {
-      from { opacity: 0; transform: translateY(18px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
+    @keyframes fade-up { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* ═══ FEATURES STRIP ═══ */
+    /* FEATURES STRIP */
     .features-strip {
       display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;
-      padding: 0 24px 80px;
-      max-width: 900px; margin: 0 auto;
+      padding: 0 24px 80px; max-width: 900px; margin: 0 auto;
       animation: fade-up 560ms cubic-bezier(0.34,1.46,0.64,1) 440ms both;
     }
     .feat-pill {
-      display: inline-flex; align-items: center; gap: 7px;
-      padding: 7px 14px;
-      background: var(--glass-bg);
-      border: 1px solid var(--glass-border);
-      border-radius: 999px;
-      font-size: 12px; font-weight: 600; color: var(--text-2);
-      backdrop-filter: blur(16px);
-      box-shadow: var(--glass-inset);
+      display: inline-flex; align-items: center; gap: 7px; padding: 7px 14px;
+      background: var(--glass-bg); border: 1px solid var(--glass-border);
+      border-radius: 999px; font-size: 12px; font-weight: 600; color: var(--text-2);
+      backdrop-filter: blur(16px); box-shadow: var(--glass-inset);
       transition: background var(--t-ease), color var(--t-ease), transform var(--t-ease), box-shadow var(--t-ease);
       cursor: default;
     }
     .feat-pill:hover { background: var(--glass-bg-hover); color: var(--text); transform: translateY(-2px); box-shadow: var(--shadow-md); }
     .feat-pill-icon { color: var(--ios-purple); flex-shrink: 0; }
     [data-theme="midnight"] .feat-pill-icon { color: var(--ios-blue); }
-    [data-theme="space"]    .feat-pill-icon { color: var(--ios-purple); }
 
-    /* ═══ STATS ═══ */
+    /* STATS */
     .stats-row {
       display: flex; flex-wrap: wrap; justify-content: center; gap: 16px;
-      padding: 0 24px 80px;
-      max-width: 800px; margin: 0 auto;
+      padding: 0 24px 80px; max-width: 800px; margin: 0 auto;
     }
     .stat-glass {
       flex: 1; min-width: 150px;
-      background: var(--glass-bg);
-      border: 1px solid var(--glass-border);
-      border-radius: var(--r-lg);
-      padding: 24px 20px;
-      text-align: center;
-      backdrop-filter: var(--glass-blur);
-      box-shadow: var(--glass-inset), var(--shadow-sm);
+      background: var(--glass-bg); border: 1px solid var(--glass-border);
+      border-radius: var(--r-lg); padding: 24px 20px; text-align: center;
+      backdrop-filter: var(--glass-blur); box-shadow: var(--glass-inset), var(--shadow-sm);
       animation: fade-up 560ms cubic-bezier(0.34,1.46,0.64,1) both;
     }
     .stat-num {
-      display: block;
-      font-size: 2.2rem; font-weight: 800; letter-spacing: -0.04em;
+      display: block; font-size: 2.2rem; font-weight: 800; letter-spacing: -0.04em;
       background: linear-gradient(135deg, #fff 0%, var(--text-2) 100%);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      background-clip: text;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
     }
     .stat-label { font-size: 12px; color: var(--text-3); font-weight: 600; letter-spacing: 0.3px; margin-top: 4px; display: block; }
 
-    /* ═══ SECTION ═══ */
-    .section {
-      max-width: 1100px; margin: 0 auto;
-      padding: 0 24px 100px;
-    }
-    .section-label {
-      font-size: 11px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 1.2px;
-      color: var(--ios-purple); margin-bottom: 14px;
-    }
+    /* SECTION */
+    .section { max-width: 1100px; margin: 0 auto; padding: 0 24px 100px; }
+    .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--ios-purple); margin-bottom: 14px; }
     [data-theme="midnight"] .section-label { color: var(--ios-blue); }
-    .section-title {
-      font-size: clamp(1.8rem, 4vw, 3rem);
-      font-weight: 800; letter-spacing: -0.04em;
-      line-height: 1.12; margin-bottom: 16px;
-    }
-    .section-sub {
-      font-size: 1rem; color: var(--text-2);
-      max-width: 52ch; line-height: 1.65; margin-bottom: 52px;
-    }
+    .section-title { font-size: clamp(1.8rem, 4vw, 3rem); font-weight: 800; letter-spacing: -0.04em; line-height: 1.12; margin-bottom: 16px; }
+    .section-sub { font-size: 1rem; color: var(--text-2); max-width: 52ch; line-height: 1.65; margin-bottom: 52px; }
 
-    /* ═══ CARDS GRID ═══ */
-    .cards-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 16px;
-    }
+    /* CARDS */
+    .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
     .feat-card {
-      background: var(--glass-bg);
-      border: 1px solid var(--glass-border);
-      border-radius: var(--r-lg);
-      padding: 28px 26px;
-      backdrop-filter: var(--glass-blur);
-      box-shadow: var(--glass-inset), var(--shadow-sm);
-      opacity: 0;
-      animation: fade-up 560ms cubic-bezier(0.34,1.46,0.64,1) both;
+      background: var(--glass-bg); border: 1px solid var(--glass-border);
+      border-radius: var(--r-lg); padding: 28px 26px;
+      backdrop-filter: var(--glass-blur); box-shadow: var(--glass-inset), var(--shadow-sm);
+      opacity: 0; animation: fade-up 560ms cubic-bezier(0.34,1.46,0.64,1) both;
       transition: border-color var(--t-ease), box-shadow var(--t-ease), transform var(--t-ease);
     }
-    .feat-card:hover {
-      border-color: var(--glass-border-strong);
-      box-shadow: var(--glass-inset), var(--shadow-md);
-      transform: translateY(-3px);
-    }
+    .feat-card:hover { border-color: var(--glass-border-strong); box-shadow: var(--glass-inset), var(--shadow-md); transform: translateY(-3px); }
     .feat-card-icon {
       width: 42px; height: 42px; border-radius: 12px;
       background: linear-gradient(135deg, rgba(191,90,242,0.20), rgba(10,132,255,0.14));
@@ -358,61 +286,40 @@
     .feat-card h3 { font-size: 15px; font-weight: 700; letter-spacing: -0.2px; margin-bottom: 8px; }
     .feat-card p  { font-size: 13px; color: var(--text-2); line-height: 1.65; }
 
-    /* ═══ CTA ═══ */
-    .cta-section {
-      padding: 0 24px 100px;
-    }
+    /* CTA */
+    .cta-section { padding: 0 24px 100px; }
     .cta-card {
       max-width: 680px; margin: 0 auto;
-      background: linear-gradient(140deg,
-        rgba(191,90,242,0.22) 0%,
-        rgba(10,132,255,0.16) 50%,
-        rgba(50,173,230,0.12) 100%);
-      border: 1px solid rgba(191,90,242,0.25);
-      border-radius: 28px;
-      padding: 56px 40px;
-      text-align: center;
+      background: linear-gradient(140deg, rgba(191,90,242,0.22) 0%, rgba(10,132,255,0.16) 50%, rgba(50,173,230,0.12) 100%);
+      border: 1px solid rgba(191,90,242,0.25); border-radius: 28px;
+      padding: 56px 40px; text-align: center;
       backdrop-filter: var(--glass-blur);
       box-shadow: 0 24px 72px rgba(191,90,242,0.18), var(--glass-inset);
       position: relative; overflow: hidden;
     }
     .cta-card::before {
-      content: '';
-      position: absolute; inset: 0; pointer-events: none;
+      content: ''; position: absolute; inset: 0; pointer-events: none;
       background: radial-gradient(ellipse 70% 60% at 50% 0%, rgba(191,90,242,0.18) 0%, transparent 70%);
     }
-    .cta-icon {
-      width: 56px; height: 56px; border-radius: 16px;
-      background: rgba(255,255,255,0.10);
-      border: 1px solid rgba(255,255,255,0.20);
-      display: flex; align-items: center; justify-content: center;
-      color: #fff; margin: 0 auto 20px;
-      box-shadow: inset 0 2px 0 rgba(255,255,255,0.22);
+    .cta-logo {
+      width: 72px; height: 72px; border-radius: 50%;
+      overflow: hidden; margin: 0 auto 20px;
+      border: 2px solid rgba(255,255,255,0.18);
+      box-shadow: 0 0 32px rgba(191,90,242,0.35);
     }
-    .cta-title {
-      font-size: clamp(1.6rem, 4vw, 2.4rem);
-      font-weight: 800; letter-spacing: -0.04em;
-      margin-bottom: 12px;
-    }
-    .cta-sub {
-      font-size: 14px; color: var(--text-2);
-      max-width: 42ch; margin: 0 auto 28px;
-      line-height: 1.65;
-    }
+    .cta-logo img { width: 100%; height: 100%; object-fit: cover; }
+    .cta-title { font-size: clamp(1.6rem, 4vw, 2.4rem); font-weight: 800; letter-spacing: -0.04em; margin-bottom: 12px; }
+    .cta-sub { font-size: 14px; color: var(--text-2); max-width: 42ch; margin: 0 auto 28px; line-height: 1.65; }
     .cta-btns { display: flex; gap: 10px; justify-content: center; }
 
-    /* ═══ FOOTER ═══ */
+    /* FOOTER */
     .footer {
-      padding: 32px 28px;
-      display: flex; align-items: center; justify-content: space-between;
+      padding: 32px 28px; display: flex; align-items: center; justify-content: space-between;
       border-top: 1px solid var(--glass-border);
-      font-size: 13px; color: var(--text-3);
-      flex-wrap: wrap; gap: 12px;
+      font-size: 13px; color: var(--text-3); flex-wrap: wrap; gap: 12px;
     }
-    .footer-brand {
-      display: flex; align-items: center; gap: 7px;
-      font-weight: 700; color: var(--text-2);
-    }
+    .footer-brand { display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--text-2); }
+    .footer-brand img { width: 22px; height: 22px; border-radius: 6px; object-fit: cover; }
     .footer-links { display: flex; gap: 20px; }
     .footer-links a { color: var(--text-3); text-decoration: none; transition: color var(--t-ease); }
     .footer-links a:hover { color: var(--text); }
@@ -428,7 +335,6 @@
 </head>
 <body>
 
-<!-- Ambient -->
 <div class="ambient" id="ambient">
   <div class="orb" style="width:700px;height:700px;top:-200px;left:-150px;background:radial-gradient(circle,rgba(191,90,242,0.18),transparent 70%);animation-duration:20s;"></div>
   <div class="orb" style="width:600px;height:600px;bottom:-100px;right:-100px;background:radial-gradient(circle,rgba(10,132,255,0.14),transparent 70%);animation-duration:16s;animation-delay:-5s;"></div>
@@ -437,19 +343,13 @@
 <canvas class="star-canvas" id="starCanvas"></canvas>
 <div class="cursor-glow" id="cursor-glow"></div>
 
-<!-- ═══ TOPNAV ═══ -->
+<!-- TOPNAV -->
 <nav class="topnav">
   <a class="nav-brand" href="{{ url_for('landing') }}">
     <div class="brand-icon">
-      <!-- Mask icon: theatrical face mask -->
-      <svg width="18" height="16" viewBox="0 0 24 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Mask logo">
-        <path d="M2 4 C2 2 4 1 6 2 L12 4 L18 2 C20 1 22 2 22 4 L22 10 C22 16 18 19 12 19 C6 19 2 16 2 10 Z"/>
-        <path d="M7 9 C7 7.5 8 7 9 7.5" stroke-width="1.5"/>
-        <path d="M17 9 C17 7.5 16 7 15 7.5" stroke-width="1.5"/>
-        <path d="M9 13 C10 14.5 14 14.5 15 13" stroke-width="1.5"/>
-      </svg>
+      <img src="{{ url_for('static', filename='ahjin main.png') }}" alt="Mask" width="30" height="30">
     </div>
-    <span class="brand-name">Mask</span>
+    <span>Mask</span>
   </a>
   <div class="nav-right">
     <button class="nav-btn" id="themeQuickBtn" aria-label="Cycle theme" onclick="cycleTheme()">
@@ -462,7 +362,6 @@
   </div>
 </nav>
 
-<!-- ═══ PAGE ═══ -->
 <div class="page">
 
   <!-- HERO -->
@@ -477,9 +376,7 @@
         Bot Online
       </div>
       <div class="hero-status-badge">
-        <svg width="12" height="11" viewBox="0 0 24 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M2 4 C2 2 4 1 6 2 L12 4 L18 2 C20 1 22 2 22 4 L22 10 C22 16 18 19 12 19 C6 19 2 16 2 10 Z"/>
-        </svg>
+        <img src="{{ url_for('static', filename='ahjin main.png') }}" alt="Mask" width="14" height="14" style="border-radius:3px;object-fit:cover;flex-shrink:0;">
         Mask Active
       </div>
       <div class="hero-status-badge">
@@ -520,22 +417,10 @@
 
   <!-- STATS -->
   <div class="stats-row">
-    <div class="stat-glass" style="animation-delay:80ms">
-      <span class="stat-num" data-count="14">14</span>
-      <span class="stat-label">Dashboard Pages</span>
-    </div>
-    <div class="stat-glass" style="animation-delay:140ms">
-      <span class="stat-num" data-count="100">100%</span>
-      <span class="stat-label">Discord OAuth</span>
-    </div>
-    <div class="stat-glass" style="animation-delay:200ms">
-      <span class="stat-num" data-count="4">4</span>
-      <span class="stat-label">Visual Themes</span>
-    </div>
-    <div class="stat-glass" style="animation-delay:260ms">
-      <span class="stat-num" data-count="24">24/7</span>
-      <span class="stat-label">Bot Uptime</span>
-    </div>
+    <div class="stat-glass" style="animation-delay:80ms"><span class="stat-num" data-count="14">14</span><span class="stat-label">Dashboard Pages</span></div>
+    <div class="stat-glass" style="animation-delay:140ms"><span class="stat-num" data-count="100">100%</span><span class="stat-label">Discord OAuth</span></div>
+    <div class="stat-glass" style="animation-delay:200ms"><span class="stat-num" data-count="4">4</span><span class="stat-label">Visual Themes</span></div>
+    <div class="stat-glass" style="animation-delay:260ms"><span class="stat-num" data-count="24">24/7</span><span class="stat-label">Bot Uptime</span></div>
   </div>
 
   <!-- FEATURES GRID -->
@@ -544,57 +429,44 @@
     <h2 class="section-title">Everything you need to run<br>a professional server</h2>
     <p class="section-sub">Mask comes with a built-in control panel. Configure every feature without touching a single line of code.</p>
     <div class="cards-grid">
-
       <div class="feat-card" style="animation-delay:80ms">
         <div class="feat-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></div>
         <h3>Live Dashboard</h3>
         <p>See Mask's status, server stats, and recent activity at a glance. Real-time updates with no refresh needed.</p>
       </div>
-
       <div class="feat-card" style="animation-delay:140ms">
         <div class="feat-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg></div>
         <h3>Moderation</h3>
         <p>Ban, kick, mute, and warn members. View full moderation history and manage active cases from one page.</p>
       </div>
-
       <div class="feat-card" style="animation-delay:200ms">
         <div class="feat-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
         <h3>Logging</h3>
         <p>Track message edits, deletes, voice events, and member joins. Route each event type to a dedicated channel.</p>
       </div>
-
       <div class="feat-card" style="animation-delay:260ms">
         <div class="feat-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
         <h3>Greetings</h3>
         <p>Set a warm welcome message and farewell message with dynamic placeholders like {mention}, {server}, and {count}.</p>
       </div>
-
       <div class="feat-card" style="animation-delay:320ms">
         <div class="feat-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
         <h3>Auto &amp; Reaction Roles</h3>
         <p>Assign roles automatically on join, or let members self-assign by reacting to a message &mdash; fully configurable.</p>
       </div>
-
       <div class="feat-card" style="animation-delay:380ms">
         <div class="feat-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
         <h3>User Lookup</h3>
         <p>Search any member to view their profile, join history, roles, and full moderation log in seconds.</p>
       </div>
-
     </div>
   </section>
 
   <!-- CTA -->
   <section class="cta-section">
     <div class="cta-card">
-      <div class="cta-icon">
-        <!-- Mask icon large -->
-        <svg width="28" height="25" viewBox="0 0 24 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-label="Mask">
-          <path d="M2 4 C2 2 4 1 6 2 L12 4 L18 2 C20 1 22 2 22 4 L22 10 C22 16 18 19 12 19 C6 19 2 16 2 10 Z"/>
-          <path d="M7 9 C7 7.5 8 7 9 7.5" stroke-width="1.4"/>
-          <path d="M17 9 C17 7.5 16 7 15 7.5" stroke-width="1.4"/>
-          <path d="M9 13 C10 14.5 14 14.5 15 13" stroke-width="1.4"/>
-        </svg>
+      <div class="cta-logo">
+        <img src="{{ url_for('static', filename='ahjin main.png') }}" alt="Mask" width="72" height="72">
       </div>
       <h2 class="cta-title">Add Mask to your server</h2>
       <p class="cta-sub">Log in with Discord to access Mask's full dashboard and start configuring your server in minutes.</p>
@@ -610,12 +482,7 @@
   <!-- FOOTER -->
   <footer class="footer">
     <div class="footer-brand">
-      <svg width="16" height="14" viewBox="0 0 24 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Mask">
-        <path d="M2 4 C2 2 4 1 6 2 L12 4 L18 2 C20 1 22 2 22 4 L22 10 C22 16 18 19 12 19 C6 19 2 16 2 10 Z"/>
-        <path d="M7 9 C7 7.5 8 7 9 7.5" stroke-width="1.5"/>
-        <path d="M17 9 C17 7.5 16 7 15 7.5" stroke-width="1.5"/>
-        <path d="M9 13 C10 14.5 14 14.5 15 13" stroke-width="1.5"/>
-      </svg>
+      <img src="{{ url_for('static', filename='ahjin main.png') }}" alt="Mask" width="22" height="22" loading="lazy">
       Mask
     </div>
     <div class="footer-links">
@@ -624,17 +491,15 @@
     </div>
   </footer>
 
-</div><!-- .page -->
+</div>
 
 <script>
-/* ── Theme ── */
 var THEMES=['dark','light','midnight','space'];
 function applyTheme(t){document.documentElement.setAttribute('data-theme',t);localStorage.setItem('mp-theme',t);}
 function cycleTheme(){
   var cur=document.documentElement.getAttribute('data-theme')||'dark';
   var next=THEMES[(THEMES.indexOf(cur)+1)%THEMES.length];
-  applyTheme(next);
-  showThemeToast(next); respawnOrbs(next); manageStarCanvas(next);
+  applyTheme(next); showThemeToast(next); respawnOrbs(next); manageStarCanvas(next);
   var btn=document.getElementById('themeQuickBtn');
   if(btn){btn.style.transform='scale(0.88) rotate(30deg)';setTimeout(function(){btn.style.transition='transform 420ms cubic-bezier(0.34,1.56,0.64,1)';btn.style.transform='scale(1) rotate(0deg)';setTimeout(function(){btn.style.transition='';},420);},90);}
 }
@@ -647,12 +512,8 @@ function showThemeToast(name){
   requestAnimationFrame(function(){requestAnimationFrame(function(){t.style.opacity='1';t.style.transform='translateX(-50%) translateY(0)';});});
   setTimeout(function(){t.style.opacity='0';t.style.transform='translateX(-50%) translateY(10px)';setTimeout(function(){t.remove();},320);},1800);
 }
-
-/* ── Cursor glow ── */
 var cg=document.getElementById('cursor-glow');
 document.addEventListener('mousemove',function(e){cg.style.left=e.clientX+'px';cg.style.top=e.clientY+'px';});
-
-/* ── Ripple ── */
 document.addEventListener('click',function(e){
   var btn=e.target.closest('.btn'); if(!btn)return;
   var rect=btn.getBoundingClientRect();
@@ -660,108 +521,54 @@ document.addEventListener('click',function(e){
   r.style.left=(e.clientX-rect.left)+'px'; r.style.top=(e.clientY-rect.top)+'px';
   btn.appendChild(r); r.addEventListener('animationend',function(){r.remove();});
 },true);
-
-/* ── Stat counters ── */
 document.querySelectorAll('.stat-num[data-count]').forEach(function(el,idx){
-  var raw=el.dataset.count;
-  var num=parseInt(raw);
+  var raw=el.dataset.count; var num=parseInt(raw);
   if(isNaN(num)||num===0){return;}
-  var suffix=raw.replace(String(num),'');
-  var duration=1200;
-  var start=performance.now();
+  var suffix=raw.replace(String(num),''); var duration=1200; var start=performance.now();
   function update(now){
-    var elapsed=now-start;
-    var progress=Math.min(elapsed/duration,1);
-    var eased=1-Math.pow(1-progress,3);
-    el.textContent=Math.round(eased*num)+suffix;
+    var elapsed=now-start; var progress=Math.min(elapsed/duration,1);
+    var eased=1-Math.pow(1-progress,3); el.textContent=Math.round(eased*num)+suffix;
     if(progress<1)requestAnimationFrame(update);
   }
   setTimeout(function(){requestAnimationFrame(update);},idx*80);
 });
-
-/* ── Orbs ── */
 function respawnOrbs(theme){
-  var amb=document.getElementById('ambient');
-  amb.innerHTML='';
-  var configs={
-    dark:[
-      {w:700,h:700,t:-200,l:-150,c:'rgba(191,90,242,0.18)',d:20},
-      {w:600,h:600,b:-100,r:-100,c:'rgba(10,132,255,0.14)',d:16,dl:-5},
-      {w:400,h:400,tp:40,lp:50,c:'rgba(50,173,230,0.08)',d:24,dl:-10}
-    ],
-    light:[
-      {w:700,h:700,t:-200,l:-150,c:'rgba(140,60,220,0.10)',d:20},
-      {w:600,h:600,b:-100,r:-100,c:'rgba(10,100,255,0.08)',d:16,dl:-5}
-    ],
-    midnight:[
-      {w:800,h:800,t:-300,l:-200,c:'rgba(0,100,200,0.20)',d:22},
-      {w:600,h:600,b:-100,r:-100,c:'rgba(0,180,255,0.14)',d:18,dl:-6}
-    ],
-    space:[
-      {w:700,h:700,t:-200,r:-100,c:'rgba(120,60,220,0.18)',d:20},
-      {w:500,h:500,b:-50,l:-50,c:'rgba(180,100,255,0.12)',d:15,dl:-8}
-    ]
-  };
+  var amb=document.getElementById('ambient'); amb.innerHTML='';
+  var configs={dark:[{w:700,h:700,t:-200,l:-150,c:'rgba(191,90,242,0.18)',d:20},{w:600,h:600,b:-100,r:-100,c:'rgba(10,132,255,0.14)',d:16,dl:-5},{w:400,h:400,tp:40,lp:50,c:'rgba(50,173,230,0.08)',d:24,dl:-10}],light:[{w:700,h:700,t:-200,l:-150,c:'rgba(140,60,220,0.10)',d:20},{w:600,h:600,b:-100,r:-100,c:'rgba(10,100,255,0.08)',d:16,dl:-5}],midnight:[{w:800,h:800,t:-300,l:-200,c:'rgba(0,100,200,0.20)',d:22},{w:600,h:600,b:-100,r:-100,c:'rgba(0,180,255,0.14)',d:18,dl:-6}],space:[{w:700,h:700,t:-200,r:-100,c:'rgba(120,60,220,0.18)',d:20},{w:500,h:500,b:-50,l:-50,c:'rgba(180,100,255,0.12)',d:15,dl:-8}]};
   var list=configs[theme]||configs.dark;
   list.forEach(function(cfg){
-    var o=document.createElement('div');
-    o.className='orb';
+    var o=document.createElement('div'); o.className='orb';
     var s='width:'+cfg.w+'px;height:'+cfg.h+'px;background:radial-gradient(circle,'+cfg.c+',transparent 70%);animation-duration:'+cfg.d+'s;';
-    if(cfg.t!==undefined)s+='top:'+cfg.t+'px;';
-    if(cfg.b!==undefined)s+='bottom:'+cfg.b+'px;';
-    if(cfg.l!==undefined)s+='left:'+cfg.l+'px;';
-    if(cfg.r!==undefined)s+='right:'+cfg.r+'px;';
-    if(cfg.tp!==undefined)s+='top:'+cfg.tp+'%;';
-    if(cfg.lp!==undefined)s+='left:'+cfg.lp+'%;';
-    if(cfg.dl)s+='animation-delay:'+cfg.dl+'s;';
-    o.style.cssText=s;
-    amb.appendChild(o);
+    if(cfg.t!==undefined)s+='top:'+cfg.t+'px;'; if(cfg.b!==undefined)s+='bottom:'+cfg.b+'px;';
+    if(cfg.l!==undefined)s+='left:'+cfg.l+'px;'; if(cfg.r!==undefined)s+='right:'+cfg.r+'px;';
+    if(cfg.tp!==undefined)s+='top:'+cfg.tp+'%;'; if(cfg.lp!==undefined)s+='left:'+cfg.lp+'%;';
+    if(cfg.dl)s+='animation-delay:'+cfg.dl+'s;'; o.style.cssText=s; amb.appendChild(o);
   });
 }
-
-/* ── Star canvas ── */
 function manageStarCanvas(theme){
   var canvas=document.getElementById('starCanvas');
-  if(theme==='space'||theme==='midnight'){
-    canvas.classList.add('visible');
-    drawStars(canvas,theme);
-  } else {
-    canvas.classList.remove('visible');
-  }
+  if(theme==='space'||theme==='midnight'){canvas.classList.add('visible');drawStars(canvas,theme);}else{canvas.classList.remove('visible');}
 }
 function drawStars(canvas,theme){
   canvas.width=window.innerWidth; canvas.height=window.innerHeight;
-  var ctx=canvas.getContext('2d');
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+  var ctx=canvas.getContext('2d'); ctx.clearRect(0,0,canvas.width,canvas.height);
   var count=theme==='space'?200:120;
   for(var i=0;i<count;i++){
-    var x=Math.random()*canvas.width;
-    var y=Math.random()*canvas.height;
-    var r=Math.random()*1.2+0.2;
-    var alpha=Math.random()*0.7+0.2;
-    ctx.beginPath();
-    ctx.arc(x,y,r,0,Math.PI*2);
-    ctx.fillStyle='rgba(255,255,255,'+alpha+')';
-    ctx.fill();
+    var x=Math.random()*canvas.width; var y=Math.random()*canvas.height;
+    var r=Math.random()*1.2+0.2; var alpha=Math.random()*0.7+0.2;
+    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
+    ctx.fillStyle='rgba(255,255,255,'+alpha+')'; ctx.fill();
   }
 }
-
-/* ── Init ── */
 (function(){
   var saved=localStorage.getItem('mp-theme')||'dark';
   document.documentElement.setAttribute('data-theme',saved);
-  respawnOrbs(saved);
-  manageStarCanvas(saved);
-
-  /* Scroll reveal for feat-cards */
+  respawnOrbs(saved); manageStarCanvas(saved);
   var observer=new IntersectionObserver(function(entries){
-    entries.forEach(function(e){
-      if(e.isIntersecting){e.target.style.opacity='1';e.target.style.animationPlayState='running';}
-    });
+    entries.forEach(function(e){if(e.isIntersecting){e.target.style.opacity='1';e.target.style.animationPlayState='running';}});
   },{threshold:0.12});
   document.querySelectorAll('.feat-card,.stat-glass').forEach(function(el){
-    el.style.animationPlayState='paused';
-    observer.observe(el);
+    el.style.animationPlayState='paused'; observer.observe(el);
   });
 })();
 </script>
