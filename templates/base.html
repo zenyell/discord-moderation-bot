@@ -548,6 +548,13 @@
       animation: lg-ripple 520ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
+    /* ── Small variant ── */
+    .btn-sm {
+      padding: 6px 14px;
+      font-size: 12px;
+      gap: 5px;
+    }
+
     .btn-primary {
       background-color: rgba(191, 90, 242, 0.30);
       background-image: linear-gradient(
@@ -1173,49 +1180,64 @@
   });
 
   /* ── Nav item magnetic glow ── */
-  document.querySelectorAll('.nav-item').forEach(el => {
-    el.addEventListener('mousemove', e => {
-      const r = el.getBoundingClientRect();
-      el.style.setProperty('--mx', ((e.clientX - r.left) / r.width * 100) + '%');
-      el.style.setProperty('--my', ((e.clientY - r.top) / r.height * 100) + '%');
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('mousemove', e => {
+      const r = item.getBoundingClientRect();
+      const x = ((e.clientX - r.left) / r.width * 100).toFixed(1);
+      const y = ((e.clientY - r.top)  / r.height * 100).toFixed(1);
+      item.style.setProperty('--mx', x + '%');
+      item.style.setProperty('--my', y + '%');
     });
   });
 
-  /* ── Page transition ── */
-  document.querySelectorAll('a[href]').forEach(a => {
-    const href = a.getAttribute('href');
-    if (!href || href.startsWith('#') || href.startsWith('http') || href.startsWith('mailto')) return;
-    a.addEventListener('click', e => {
-      const url = a.href;
-      if (url === window.location.href) return;
-      e.preventDefault();
-      document.body.classList.add('leaving');
-      setTimeout(() => { window.location.href = url; }, 180);
-    });
+  /* ── Liquid glass ripple on buttons ── */
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('.btn');
+    if (!btn) return;
+    const r = btn.getBoundingClientRect();
+    const ripple = document.createElement('span');
+    ripple.className = 'lg-ripple';
+    ripple.style.left = (e.clientX - r.left) + 'px';
+    ripple.style.top  = (e.clientY - r.top)  + 'px';
+    btn.appendChild(ripple);
+    ripple.addEventListener('animationend', () => ripple.remove());
   });
 
   /* ── Cursor glow ── */
   const glow = document.getElementById('cursor-glow');
-  document.addEventListener('mousemove', e => {
-    glow.style.left = e.clientX + 'px';
-    glow.style.top  = e.clientY + 'px';
-  });
+  if (glow) {
+    document.addEventListener('mousemove', e => {
+      glow.style.left = e.clientX + 'px';
+      glow.style.top  = e.clientY + 'px';
+    });
+  }
 
   /* ── Orb particles ── */
   (function(){
     const layer = document.getElementById('orb-layer');
-    const colors = ['rgba(191,90,242,0.18)','rgba(10,132,255,0.14)','rgba(50,173,230,0.12)','rgba(191,90,242,0.10)'];
+    if (!layer) return;
+    const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+    const palettes = {
+      dark:     ['rgba(191,90,242,0.55)','rgba(10,132,255,0.45)','rgba(50,173,230,0.35)','rgba(155,89,245,0.40)'],
+      light:    ['rgba(191,90,242,0.30)','rgba(10,132,255,0.22)','rgba(50,173,230,0.18)','rgba(155,89,245,0.25)'],
+      midnight: ['rgba(0,180,255,0.50)','rgba(0,100,200,0.40)','rgba(0,220,255,0.30)','rgba(0,60,160,0.35)'],
+      space:    ['rgba(180,160,255,0.45)','rgba(100,180,255,0.38)','rgba(140,110,255,0.30)','rgba(80,160,255,0.35)'],
+    };
+    const colors = palettes[theme] || palettes.dark;
     for (let i = 0; i < 5; i++) {
       const orb = document.createElement('div');
       orb.className = 'orb-particle';
-      const size = 120 + Math.random() * 180;
+      const size = 180 + Math.random() * 220;
+      const tx = (Math.random() - 0.5) * 200;
+      const ty = (Math.random() - 0.5) * 200;
       orb.style.cssText = `
-        width:${size}px;height:${size}px;
+        width:${size}px; height:${size}px;
+        left:${Math.random()*90}%;
+        top:${Math.random()*90}%;
         background:${colors[i % colors.length]};
-        left:${Math.random()*100}%;top:${Math.random()*100}%;
-        --tx:${(Math.random()-0.5)*200}px;--ty:${(Math.random()-0.5)*200}px;
-        animation-duration:${12 + Math.random()*18}s;
-        animation-delay:-${Math.random()*20}s;
+        --tx:${tx}px; --ty:${ty}px;
+        animation-duration:${14 + Math.random()*12}s;
+        animation-delay:${-Math.random()*14}s;
       `;
       layer.appendChild(orb);
     }
@@ -1224,63 +1246,73 @@
   /* ── Star canvas (space theme) ── */
   (function(){
     const canvas = document.getElementById('star-canvas');
+    if (!canvas) return;
+    const theme = document.documentElement.getAttribute('data-theme');
+    if (theme !== 'space') return;
     const ctx = canvas.getContext('2d');
-    let stars = [];
-    function resize() {
-      canvas.width  = window.innerWidth;
-      canvas.height = window.innerHeight;
-    }
-    function initStars() {
-      stars = Array.from({length: 200}, () => ({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        r: Math.random() * 1.2 + 0.2,
-        a: Math.random(),
-        s: (Math.random() - 0.5) * 0.002,
-      }));
-    }
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const stars = Array.from({length: 180}, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      r: Math.random() * 1.2 + 0.2,
+      a: Math.random(),
+      speed: 0.003 + Math.random() * 0.006,
+    }));
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       stars.forEach(s => {
-        s.a = Math.max(0.05, Math.min(1, s.a + s.s));
-        if (s.a <= 0.05 || s.a >= 1) s.s *= -1;
+        s.a += s.speed;
+        const alpha = (Math.sin(s.a) * 0.5 + 0.5) * 0.85 + 0.10;
         ctx.beginPath();
         ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(235,230,255,${s.a})`;
+        ctx.fillStyle = `rgba(220,235,255,${alpha.toFixed(2)})`;
         ctx.fill();
       });
       requestAnimationFrame(draw);
     }
-    resize(); initStars(); draw();
-    window.addEventListener('resize', () => { resize(); initStars(); });
+    draw();
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
   })();
 
-  /* ── Bot status ── */
+  /* ── Page transition ── */
+  document.querySelectorAll('a[href]').forEach(a => {
+    if (a.target === '_blank' || a.href.startsWith('#') || a.href.startsWith('javascript')) return;
+    a.addEventListener('click', e => {
+      const url = a.href;
+      if (!url || url === window.location.href) return;
+      e.preventDefault();
+      document.body.classList.add('leaving');
+      setTimeout(() => { window.location.href = url; }, 200);
+    });
+  });
+
+  /* ── Bot status check ── */
   (function(){
-    const dot  = document.getElementById('statusDot');
-    const text = document.getElementById('statusText');
-    if (!dot || !text) return;
-    fetch('/api/status')
+    const dot = document.getElementById('statusDot');
+    const txt = document.getElementById('statusText');
+    if (!dot || !txt) return;
+    fetch('/api/bot-status')
       .then(r => r.json())
       .then(d => {
-        if (d.online) { dot.classList.remove('offline'); text.textContent = d.name || 'Online'; }
-        else          { dot.classList.add('offline');    text.textContent = 'Offline'; }
+        if (d.online) {
+          dot.classList.remove('offline');
+          txt.textContent = d.name ? d.name + ' • Online' : 'Online';
+        } else {
+          dot.classList.add('offline');
+          txt.textContent = 'Offline';
+        }
       })
-      .catch(() => { dot.classList.add('offline'); text.textContent = 'Offline'; });
+      .catch(() => {
+        dot.classList.add('offline');
+        txt.textContent = 'Offline';
+      });
   })();
-
-  /* ── Liquid glass ripple on buttons ── */
-  document.addEventListener('click', e => {
-    const btn = e.target.closest('.btn');
-    if (!btn) return;
-    const r   = btn.getBoundingClientRect();
-    const rip = document.createElement('span');
-    rip.className = 'lg-ripple';
-    rip.style.left = (e.clientX - r.left) + 'px';
-    rip.style.top  = (e.clientY - r.top)  + 'px';
-    btn.appendChild(rip);
-    setTimeout(() => rip.remove(), 520);
-  });
 </script>
+
+{% block extra_js %}{% endblock %}
 </body>
 </html>
