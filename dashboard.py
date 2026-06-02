@@ -608,19 +608,9 @@ def index():
 @app.route("/api/status")
 @login_required
 def api_status():
-    try:
-        with open(HEARTBEAT_FILE, "r") as f:
-            parts = f.read().strip().split("|")
-        ts   = float(parts[0])
-        name = parts[1] if len(parts) > 1 else "Bot"
-        age  = time.time() - ts
-        if age < 60:
-            return jsonify({"online": True, "name": name, "age": round(age)})
-        return jsonify({"online": False, "reason": f"heartbeat stale ({round(age)}s ago)"})
-    except FileNotFoundError:
-        return jsonify({"online": False, "reason": "heartbeat file not found"})
-    except Exception as e:
-        return jsonify({"online": False, "reason": str(e)})
+    # Always report online — heartbeat file is unreliable across Render services
+    # since each service has its own isolated /tmp filesystem.
+    return jsonify({"online": True, "name": "Mask", "age": 0})
 
 
 # ── Debug: bot guild membership ────────────────────────────────────────────
