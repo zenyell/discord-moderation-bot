@@ -28,7 +28,6 @@ HEARTBEAT_FILE = os.getenv("HEARTBEAT_PATH", "/tmp/bot_heartbeat")
 DISCORD_CLIENT_ID     = os.getenv("DISCORD_CLIENT_ID", "")
 DISCORD_CLIENT_SECRET = os.getenv("DISCORD_CLIENT_SECRET", "")
 DISCORD_REDIRECT_URI  = os.getenv("DISCORD_REDIRECT_URI", "http://localhost:5000/callback")
-print(f"[OAuth] DISCORD_REDIRECT_URI={DISCORD_REDIRECT_URI!r}", flush=True)
 
 # Bot invite URL
 BOT_INVITE_URL = (
@@ -70,171 +69,198 @@ def _gkey(guild_id, key):
     return f"{guild_id}:{key}"
 
 
+# ── Context processor ──────────────────────────────────────────────────────
+
 @app.context_processor
 def inject_globals():
-    guild_id = session.get("active_guild", "")
-    cfg = {}
-    if guild_id:
-        cfg = {
-            "prefix":            db.get_setting_sync(_gkey(guild_id, "prefix"),          "!"),
-            "mod_log_channel":   db.get_setting_sync(_gkey(guild_id, "mod_log_channel"), ""),
-            "mute_role":         db.get_setting_sync(_gkey(guild_id, "mute_role"),        ""),
-            "dm_on_punish":      db.get_setting_sync(_gkey(guild_id, "dm_on_punish"),     "0") == "1",
-            "delete_commands":   db.get_setting_sync(_gkey(guild_id, "delete_commands"),  "0") == "1",
+    current_user = {"username": "", "avatar": "", "logged_in": False, "discord_id": ""}
+    if session.get("logged_in"):
+        current_user = {
+            "username":   session.get("username", ""),
+            "avatar":     session.get("avatar", ""),
+            "logged_in":  True,
+            "discord_id": session.get("discord_id", ""),
         }
-    return dict(
-        session=session,
-        guild_id=guild_id,
-        config=cfg,
-        bot_invite_url=BOT_INVITE_URL,
-    )
+    active_guild = session.get("active_guild")
+    return {
+        "current_user": current_user,
+        "active_guild": active_guild,
+        "bot_invite_url": BOT_INVITE_URL,
+        "admin_token": ADMIN_TOKEN,
+    }
 
+
+# ── Error handlers ─────────────────────────────────────────────────────────
 
 @app.errorhandler(500)
 def internal_error(e):
     tb = traceback.format_exc()
-    print(f"[500] {tb}", flush=True)
-    return render_template("500.html", traceback=tb) if app.debug else (
-        "<h1>500 — Internal Server Error</h1><p>Something went wrong.</p>", 500
-    )
+    return (f"""<!DOCTYPE html><html><head><title>500</title>
+<style>body{{font-family:monospace;background:#1e2124;color:#dcddde;padding:32px}}
+pre{{background:#2f3136;border:1px solid rgba(255,255,255,.08);border-radius:8px;
+padding:20px;overflow-x:auto;white-space:pre-wrap;font-size:13px;line-height:1.6}}
+h2{{color:#ed4245;margin-bottom:16px}}p{{color:#72767d;margin-bottom:12px;font-size:13px}}
+</style></head><body><h2>&#x26A0; 500 Internal Server Error</h2><p>Traceback:</p>
+<pre>{tb}</pre></body></html>""", 500)
 
 
 @app.errorhandler(Exception)
 def unhandled_exception(e):
     tb = traceback.format_exc()
-    print(f"[Unhandled] {tb}", flush=True)
-    short = str(e)
-    return render_template(
-        "error.html", error=short, traceback=tb
-    ) if app.debug else (f"<h2>Error</h2><pre>{short}</pre>", 500)
+    return (f"""<!DOCTYPE html><html><head><title>Error</title>
+<style>body{{font-family:monospace;background:#1e2124;color:#dcddde;padding:32px}}
+pre{{background:#2f3136;border:1px solid rgba(255,255,255,.08);border-radius:8px;
+padding:20px;overflow-x:auto;white-space:pre-wrap;font-size:13px;line-height:1.6}}
+h2{{color:#ed4245;margin-bottom:16px}}p{{color:#72767d;margin-bottom:12px;font-size:13px}}
+</style></head><body><h2>&#x26A0; {type(e).__name__}</h2><p>Traceback:</p>
+<pre>{tb}</pre></body></html>""", 500)
 
+
+# ── Discord Bot API helpers ────────────────────────────────────────────────
 
 def _bot_headers():
     return {
         "Authorization": f"Bot {BOT_TOKEN}",
-        "Content-Type":  "application/json",
-        "User-Agent":    _UA,
+        "Content-Type": "application/json",
+        "User-Agent": _UA,
     }
 
 
 def _bot_guilds() -> set:
-    """Return set of guild IDs the bot is currently in."""
     if not BOT_TOKEN:
         return set()
-    try:
-        req = urllib.request.Request(
-            f"{DISCORD_API}/users/@me/guilds",
-            headers=_bot_headers(),
-        )
-        with urllib.request.urlopen(req, timeout=8) as resp:
-            data = json.loads(resp.read())
-        return {g["id"] for g in data}
-    except Exception as exc:
-        print(f"[_bot_guilds] {exc}", flush=True)
-        return set()
+    guild_ids = set()
+    after = None
+    page = 0
+    while True:
+        page += 1
+        url = f"{DISCORD_API}/users/@me/guilds?limit=200"
+        if after:
+            url += f"&after={after}"
+        try:
+            req = urllib.request.Request(url, headers=_bot_headers())
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                batch = json.loads(resp.read())
+        except urllib.error.HTTPError as e:
+            body = ""
+            try: body = e.read().decode()
+            except Exception: pass
+            print(f"[_bot_guilds] HTTP {e.code} on page {page}: {body}", flush=True)
+            break
+        except Exception as ex:
+            print(f"[_bot_guilds] Error on page {page}: {ex}", flush=True)
+            break
+        if not batch:
+            break
+        for g in batch:
+            guild_ids.add(g["id"])
+        if len(batch) < 200:
+            break
+        after = batch[-1]["id"]
+    return guild_ids
 
 
 def _bot_guilds_detailed() -> list:
-    """Return list of guild dicts the bot is currently in."""
+    """Return list of guild dicts (with id, name, approximate_member_count)."""
     if not BOT_TOKEN:
         return []
-    try:
-        req = urllib.request.Request(
-            f"{DISCORD_API}/users/@me/guilds",
-            headers=_bot_headers(),
-        )
-        with urllib.request.urlopen(req, timeout=8) as resp:
-            data = json.loads(resp.read())
-        return data
-    except Exception as exc:
-        print(f"[_bot_guilds_detailed] {exc}", flush=True)
-        return []
+    guilds = []
+    after = None
+    while True:
+        url = f"{DISCORD_API}/users/@me/guilds?limit=200"
+        if after:
+            url += f"&after={after}"
+        try:
+            req = urllib.request.Request(url, headers=_bot_headers())
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                batch = json.loads(resp.read())
+        except Exception:
+            break
+        if not batch:
+            break
+        guilds.extend(batch)
+        if len(batch) < 200:
+            break
+        after = batch[-1]["id"]
+    return guilds
 
 
 def _send_channel_message(channel_id: str, content: str) -> tuple[bool, str]:
+    """Send a message to a channel via the bot. Returns (success, info)."""
     if not BOT_TOKEN:
-        return False, "No bot token configured."
+        return False, "BOT_TOKEN not set"
+    payload = json.dumps({"content": content}).encode()
     try:
-        payload = json.dumps({"content": content}).encode()
         req = urllib.request.Request(
             f"{DISCORD_API}/channels/{channel_id}/messages",
-            data=payload,
-            headers=_bot_headers(),
-            method="POST",
-        )
+            data=payload, headers=_bot_headers(), method="POST")
         with urllib.request.urlopen(req, timeout=10) as resp:
-            resp.read()
-        return True, ""
+            data = json.loads(resp.read())
+            return True, f"Message sent. ID: {data.get('id', '?')}"
     except urllib.error.HTTPError as e:
         body = ""
         try: body = e.read().decode()
         except Exception: pass
         return False, f"HTTP {e.code}: {body}"
-    except Exception as exc:
-        return False, str(exc)
+    except Exception as ex:
+        return False, f"{type(ex).__name__}: {ex}"
 
 
 def _create_dm_channel(user_id: str) -> tuple[str, str]:
+    """Create a DM channel with a user. Returns (channel_id, error)."""
     if not BOT_TOKEN:
-        return "", "No bot token configured."
+        return "", "BOT_TOKEN not set"
+    payload = json.dumps({"recipient_id": user_id}).encode()
     try:
-        payload = json.dumps({"recipient_id": user_id}).encode()
         req = urllib.request.Request(
             f"{DISCORD_API}/users/@me/channels",
-            data=payload,
-            headers=_bot_headers(),
-            method="POST",
-        )
+            data=payload, headers=_bot_headers(), method="POST")
         with urllib.request.urlopen(req, timeout=10) as resp:
             data = json.loads(resp.read())
-        return data.get("id", ""), ""
+            return data.get("id", ""), ""
     except urllib.error.HTTPError as e:
         body = ""
         try: body = e.read().decode()
         except Exception: pass
         return "", f"HTTP {e.code}: {body}"
-    except Exception as exc:
-        return "", str(exc)
+    except Exception as ex:
+        return "", f"{type(ex).__name__}: {ex}"
 
 
 def _leave_guild(guild_id: str) -> tuple[bool, str]:
+    """Make the bot leave a guild."""
     if not BOT_TOKEN:
-        return False, "No bot token configured."
+        return False, "BOT_TOKEN not set"
     try:
         req = urllib.request.Request(
             f"{DISCORD_API}/users/@me/guilds/{guild_id}",
-            headers=_bot_headers(),
-            method="DELETE",
-        )
+            headers=_bot_headers(), method="DELETE")
         with urllib.request.urlopen(req, timeout=10) as resp:
-            resp.read()
-        return True, ""
+            return True, f"Left guild {guild_id}"
     except urllib.error.HTTPError as e:
         body = ""
         try: body = e.read().decode()
         except Exception: pass
         return False, f"HTTP {e.code}: {body}"
-    except Exception as exc:
-        return False, str(exc)
+    except Exception as ex:
+        return False, f"{type(ex).__name__}: {ex}"
 
 
 def _fetch_discord_user(user_id: str) -> tuple[dict, str]:
     if not BOT_TOKEN:
-        return {}, "No bot token."
+        return {}, "DISCORD_BOT_TOKEN not set"
     try:
         req = urllib.request.Request(
-            f"{DISCORD_API}/users/{user_id}",
-            headers=_bot_headers(),
-        )
-        with urllib.request.urlopen(req, timeout=8) as resp:
+            f"{DISCORD_API}/users/{user_id}", headers=_bot_headers())
+        with urllib.request.urlopen(req, timeout=5) as resp:
             return json.loads(resp.read()), ""
     except urllib.error.HTTPError as e:
         body = ""
         try: body = e.read().decode()
         except Exception: pass
-        return {}, f"HTTP {e.code}: {body}"
-    except Exception as exc:
-        return {}, str(exc)
+        return {}, f"Discord API HTTP {e.code}: {body}"
+    except Exception as e:
+        return {}, f"{type(e).__name__}: {e}"
 
 
 def _fetch_guild_member(guild_id: str, user_id: str) -> dict:
@@ -243,26 +269,19 @@ def _fetch_guild_member(guild_id: str, user_id: str) -> dict:
     try:
         req = urllib.request.Request(
             f"{DISCORD_API}/guilds/{guild_id}/members/{user_id}",
-            headers=_bot_headers(),
-        )
-        with urllib.request.urlopen(req, timeout=8) as resp:
+            headers=_bot_headers())
+        with urllib.request.urlopen(req, timeout=5) as resp:
             return json.loads(resp.read())
     except Exception:
         return {}
 
 
 def _fetch_guild_roles(guild_id: str) -> list:
-    if not BOT_TOKEN:
-        return []
     try:
         req = urllib.request.Request(
-            f"{DISCORD_API}/guilds/{guild_id}/roles",
-            headers=_bot_headers(),
-        )
-        with urllib.request.urlopen(req, timeout=8) as resp:
-            roles = json.loads(resp.read())
-        roles.sort(key=lambda r: -r.get("position", 0))
-        return roles
+            f"{DISCORD_API}/guilds/{guild_id}/roles", headers=_bot_headers())
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            return json.loads(resp.read())
     except Exception:
         return []
 
@@ -273,25 +292,23 @@ def _fetch_guild_member_count(guild_id: str) -> int:
     try:
         req = urllib.request.Request(
             f"{DISCORD_API}/guilds/{guild_id}?with_counts=true",
-            headers=_bot_headers(),
-        )
-        with urllib.request.urlopen(req, timeout=8) as resp:
+            headers=_bot_headers())
+        with urllib.request.urlopen(req, timeout=5) as resp:
             data = json.loads(resp.read())
-        return data.get("approximate_member_count", 0)
+            return data.get("approximate_member_count") or data.get("member_count") or 0
     except Exception:
         return 0
 
 
 def _search_guild_members(guild_id: str, query: str) -> list:
-    if not BOT_TOKEN or not query:
+    if not BOT_TOKEN:
         return []
     try:
-        q = urllib.parse.urlencode({"query": query, "limit": 10})
+        encoded = urllib.parse.quote(query)
         req = urllib.request.Request(
-            f"{DISCORD_API}/guilds/{guild_id}/members/search?{q}",
-            headers=_bot_headers(),
-        )
-        with urllib.request.urlopen(req, timeout=8) as resp:
+            f"{DISCORD_API}/guilds/{guild_id}/members/search?query={encoded}&limit=10",
+            headers=_bot_headers())
+        with urllib.request.urlopen(req, timeout=5) as resp:
             return json.loads(resp.read())
     except Exception:
         return []
@@ -299,68 +316,60 @@ def _search_guild_members(guild_id: str, query: str) -> list:
 
 def _avatar_url(user_data: dict, member_data: dict, guild_id: str = "") -> str:
     uid = user_data.get("id", "")
-    # guild avatar
-    if guild_id and member_data:
-        ga = member_data.get("avatar", "")
-        if ga:
-            ext = "gif" if ga.startswith("a_") else "png"
-            return f"https://cdn.discordapp.com/guilds/{guild_id}/users/{uid}/avatars/{ga}.{ext}?size=256"
-    # user avatar
+    if guild_id:
+        guild_av = member_data.get("avatar", "")
+        if guild_av:
+            ext = "gif" if guild_av.startswith("a_") else "png"
+            return f"https://cdn.discordapp.com/guilds/{guild_id}/users/{uid}/avatars/{guild_av}.{ext}?size=256"
     av = user_data.get("avatar", "")
     if av:
         ext = "gif" if av.startswith("a_") else "png"
         return f"https://cdn.discordapp.com/avatars/{uid}/{av}.{ext}?size=256"
-    # default
     disc = user_data.get("discriminator", "0")
-    idx  = (int(uid) >> 22) % 6 if disc in ("0", "") else int(disc) % 5
+    idx  = (int(disc) % 5) if disc and disc != "0" else ((int(uid) >> 22) % 6) if uid else 0
     return f"https://cdn.discordapp.com/embed/avatars/{idx}.png"
 
 
 def _banner_url(user_data: dict, member_data: dict, guild_id: str = "") -> str:
     uid = user_data.get("id", "")
-    # guild banner
-    if guild_id and member_data:
-        gb = member_data.get("banner", "")
-        if gb:
-            ext = "gif" if gb.startswith("a_") else "png"
-            return f"https://cdn.discordapp.com/guilds/{guild_id}/users/{uid}/banners/{gb}.{ext}?size=480"
-    # user banner
-    b = user_data.get("banner", "")
-    if b:
-        ext = "gif" if b.startswith("a_") else "png"
-        return f"https://cdn.discordapp.com/banners/{uid}/{b}.{ext}?size=480"
+    if guild_id:
+        guild_banner = member_data.get("banner", "") or ""
+        if guild_banner:
+            ext = "gif" if guild_banner.startswith("a_") else "png"
+            return f"https://cdn.discordapp.com/guilds/{guild_id}/users/{uid}/banners/{guild_banner}.{ext}?size=1024"
+    banner = user_data.get("banner", "") or ""
+    if banner:
+        ext = "gif" if banner.startswith("a_") else "png"
+        return f"https://cdn.discordapp.com/banners/{uid}/{banner}.{ext}?size=1024"
     return ""
 
 
 def _accent_hex(user_data: dict) -> str:
-    c = user_data.get("accent_color")
-    if c:
-        return f"#{c:06x}"
-    return ""
+    color = user_data.get("accent_color")
+    return f"#{color:06x}" if color else "#5865F2"
 
 
 def _bio(user_data: dict) -> str:
-    return user_data.get("bio", "") or ""
+    return user_data.get("bio") or ""
+
+
+BADGE_MAP = {
+    1:       ("Discord Staff",         "https://cdn.discordapp.com/badge-icons/5e74e9b61934fc1f67c65515d1f7e60d.png"),
+    2:       ("Partnered Server Owner", "https://cdn.discordapp.com/badge-icons/3f9748e53446a137a052f3454e2de41e.png"),
+    4:       ("HypeSquad Events",       "https://cdn.discordapp.com/badge-icons/bf01d1073931f921909045f3a39fd264.png"),
+    8:       ("Bug Hunter Level 1",     "https://cdn.discordapp.com/badge-icons/2717692c7dca7289b35297368a940dd0.png"),
+    64:      ("HypeSquad Bravery",      "https://cdn.discordapp.com/badge-icons/8a88d63823d8a71cd5e390baa45efa02.png"),
+    128:     ("HypeSquad Brilliance",   "https://cdn.discordapp.com/badge-icons/011940fd013082d99d0e62f73b7f08d6.png"),
+    256:     ("HypeSquad Balance",      "https://cdn.discordapp.com/badge-icons/3aa41de486fa12454c3761e8e223442e.png"),
+    512:     ("Early Supporter",        "https://cdn.discordapp.com/badge-icons/7060786766c9c840eb3019e725d2b358.png"),
+    16384:   ("Bug Hunter Level 2",     "https://cdn.discordapp.com/badge-icons/848f79194d4be5ff5f81505cbd0ce1e6.png"),
+    131072:  ("Verified Bot Developer", "https://cdn.discordapp.com/badge-icons/6df5892e0f35b051f8b61eace34f4967.png"),
+    4194304: ("Active Developer",       "https://cdn.discordapp.com/badge-icons/6bdc42827a38498929a4920da12695d9.png"),
+}
 
 
 def _get_badges(public_flags: int) -> list:
-    BADGE_MAP = {
-        1 << 0:  ("Staff",                  "discord-staff"),
-        1 << 1:  ("Partner",                "partnered-server-owner"),
-        1 << 2:  ("HypeSquad Events",       "hypesquad-events"),
-        1 << 3:  ("Bug Hunter Lvl 1",       "bug-hunter"),
-        1 << 6:  ("HypeSquad Bravery",      "bravery"),
-        1 << 7:  ("HypeSquad Brilliance",   "brilliance"),
-        1 << 8:  ("HypeSquad Balance",      "balance"),
-        1 << 9:  ("Early Supporter",        "early-supporter"),
-        1 << 14: ("Bug Hunter Lvl 2",       "bug-hunter-2"),
-        1 << 17: ("Early Verified Bot Dev", "verified-bot-developer"),
-        1 << 18: ("Moderator Alumni",       "moderator-alumni"),
-        1 << 22: ("Active Developer",       "active-developer"),
-    }
-    return [{"label": label, "key": key}
-            for flag, (label, key) in BADGE_MAP.items()
-            if public_flags & flag]
+    return [(name, icon) for bit, (name, icon) in BADGE_MAP.items() if public_flags & bit]
 
 
 # ── Auth decorators ────────────────────────────────────────────────────────
@@ -375,11 +384,16 @@ def login_required(f):
 
 
 def superadmin_required(f):
+    """Only the hardcoded SUPERADMIN_ID can access this route."""
     @wraps(f)
     def decorated(*args, **kwargs):
-        token = kwargs.get("token") or request.view_args.get("token", "")
-        if not ADMIN_TOKEN or token != ADMIN_TOKEN:
-            abort(403)
+        if not session.get("logged_in"):
+            return redirect(url_for("login"))
+        if session.get("discord_id") != SUPERADMIN_ID:
+            abort(404)
+        token = kwargs.pop("token", None)
+        if token != ADMIN_TOKEN:
+            abort(404)
         return f(*args, **kwargs)
     return decorated
 
@@ -387,35 +401,31 @@ def superadmin_required(f):
 def guild_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        guild_id = session.get("active_guild", "")
+        if not session.get("logged_in"):
+            return redirect(url_for("login"))
+        guild_id = (
+            kwargs.get("guild_id")
+            or request.args.get("guild_id")
+            or session.get("active_guild", {}).get("id")
+        )
         if not guild_id:
             return redirect(url_for("servers"))
-        # verify the bot is still in the guild
-        bot_guild_ids = _bot_guilds()
-        if bot_guild_ids and guild_id not in bot_guild_ids:
-            session.pop("active_guild", None)
-            flash("The bot is no longer in that server. Please select another.")
+        user_guilds = session.get("user_guilds", {})
+        guild_info  = user_guilds.get(guild_id)
+        if not guild_info:
+            flash("You no longer have access to that server.")
             return redirect(url_for("servers"))
-        channels_raw = []
-        roles_raw    = []
-        if BOT_TOKEN:
-            try:
-                req = urllib.request.Request(
-                    f"{DISCORD_API}/guilds/{guild_id}/channels",
-                    headers=_bot_headers(),
-                )
-                with urllib.request.urlopen(req, timeout=8) as resp:
-                    channels_raw = json.loads(resp.read())
-            except Exception:
-                pass
-            roles_raw = _fetch_guild_roles(guild_id)
-        text_channels = sorted(
-            [c for c in channels_raw if c.get("type") == 0],
-            key=lambda c: c.get("position", 0),
-        )
-        kwargs["guild_id"]  = guild_id
-        kwargs["channels"]  = text_channels
-        kwargs["roles"]     = roles_raw
+        perms = int(guild_info.get("permissions", 0))
+        if not (perms & ADMIN_PERMS):
+            flash("You need Administrator or Manage Server permission.")
+            return redirect(url_for("servers"))
+        if "guild_id" in f.__code__.co_varnames:
+            kwargs["guild_id"] = guild_id
+        session["active_guild"] = {
+            "id":   guild_id,
+            "name": guild_info.get("name", guild_id),
+            "icon": guild_info.get("icon", ""),
+        }
         return f(*args, **kwargs)
     return decorated
 
@@ -582,26 +592,29 @@ def logout():
     return redirect(url_for("landing"))
 
 
-# ── Server selection ───────────────────────────────────────────────────────
+# ── Server picker ──────────────────────────────────────────────────────────
 
 @app.route("/servers")
 @login_required
 def servers():
+    user_guilds = session.get("user_guilds", {})
     bot_guild_ids = _bot_guilds()
-    user_guilds   = session.get("user_guilds", {})
-    guilds = []
+    guilds_with_bot    = []
+    guilds_without_bot = []
     for gid, g in user_guilds.items():
-        bot_in = gid in bot_guild_ids
-        guilds.append({**g, "bot_in": bot_in})
-    guilds.sort(key=lambda g: (not g["bot_in"], g["name"].lower()))
-    total_members = sum(
-        _fetch_guild_member_count(g["id"]) for g in guilds if g["bot_in"]
-    )
+        entry = dict(g)
+        entry["has_bot"] = gid in bot_guild_ids
+        if entry["has_bot"]:
+            guilds_with_bot.append(entry)
+        else:
+            guilds_without_bot.append(entry)
+    guilds_with_bot.sort(key=lambda x: x["name"].lower())
+    guilds_without_bot.sort(key=lambda x: x["name"].lower())
     return render_template(
         "servers.html",
-        guilds=guilds,
+        guilds_with_bot=guilds_with_bot,
+        guilds_without_bot=guilds_without_bot,
         bot_invite_url=BOT_INVITE_URL,
-        total_members=total_members,
     )
 
 
@@ -612,47 +625,47 @@ def select_guild(guild_id):
     if guild_id not in user_guilds:
         flash("You don't have access to that server.")
         return redirect(url_for("servers"))
-    bot_guild_ids = _bot_guilds()
-    if bot_guild_ids and guild_id not in bot_guild_ids:
-        flash("The bot isn't in that server yet.")
+    perms = int(user_guilds[guild_id].get("permissions", 0))
+    if not (perms & ADMIN_PERMS):
+        flash("You need Administrator or Manage Server permission.")
         return redirect(url_for("servers"))
-    session["active_guild"] = guild_id
+    session["active_guild"] = {
+        "id":   guild_id,
+        "name": user_guilds[guild_id].get("name", guild_id),
+        "icon": user_guilds[guild_id].get("icon", ""),
+    }
     return redirect(url_for("index"))
 
+
+# ── Dashboard ──────────────────────────────────────────────────────────────
 
 @app.route("/dashboard")
 @login_required
 def index():
-    guild_id = session.get("active_guild", "")
-    if not guild_id:
+    guild = session.get("active_guild")
+    if not guild:
         return redirect(url_for("servers"))
-    stats = {
-        "members": _fetch_guild_member_count(guild_id),
-        "warnings": 0,
-        "bans": 0,
-        "kicks": 0,
-    }
+    guild_id = guild["id"]
+    user_guilds = session.get("user_guilds", {})
+    if guild_id not in user_guilds:
+        return redirect(url_for("servers"))
+    perms = int(user_guilds[guild_id].get("permissions", 0))
+    if not (perms & ADMIN_PERMS):
+        flash("You need Administrator or Manage Server permission.")
+        return redirect(url_for("servers"))
     try:
-        stats["warnings"] = db.count_warnings_sync(guild_id)
+        stats = db.log_stats_sync(guild_id)
     except Exception:
-        pass
+        stats = {"total": 0, "kicks": 0, "bans": 0, "timeouts": 0, "warnings": 0, "purges": 0}
     try:
-        stats["bans"] = db.count_bans_sync(guild_id)
+        logs = db.recent_logs_sync(guild_id, 15)
     except Exception:
-        pass
-    try:
-        stats["kicks"] = db.count_kicks_sync(guild_id)
-    except Exception:
-        pass
-    logs = []
-    try:
-        logs = db.get_recent_logs_sync(guild_id, limit=10)
-    except Exception:
-        pass
-    total_members = stats["members"]
+        logs = []
+    total_members = _fetch_guild_member_count(guild_id)
+    raw_master = db.get_setting_sync(_gkey(guild_id, "logging_enabled"), None)
     cfg = {
-        "prefix":          db.get_setting_sync(_gkey(guild_id, "prefix"),          "!"),
-        "mod_log_channel": db.get_setting_sync(_gkey(guild_id, "mod_log_channel"), ""),
+        "logging_enabled": "0" if raw_master == "0" else "1",
+        "log_channel_id":  db.get_setting_sync(_gkey(guild_id, "log_channel_id"), ""),
     }
     return render_template("dashboard.html", stats=stats, logs=logs,
                            total_members=total_members, guild_id=guild_id, cfg=cfg)
@@ -661,47 +674,70 @@ def index():
 @app.route("/api/status")
 @login_required
 def api_status():
-    return jsonify({"status": "ok", "bot_token": bool(BOT_TOKEN)})
+    return jsonify({"online": True, "name": "Mask", "age": 0})
 
 
 @app.route("/api/debug/bot-guilds")
 @login_required
 def api_debug_bot_guilds():
-    bot_guild_ids = _bot_guilds()
-    user_guilds   = session.get("user_guilds", {})
-    result = {}
+    bot_token_set = bool(BOT_TOKEN)
+    bot_guild_ids = set()
+    api_error = None
+    if bot_token_set:
+        try:
+            req = urllib.request.Request(
+                f"{DISCORD_API}/users/@me/guilds?limit=200",
+                headers=_bot_headers())
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                batch = json.loads(resp.read())
+                bot_guild_ids = {g["id"] for g in batch}
+        except urllib.error.HTTPError as e:
+            body = ""
+            try: body = e.read().decode()
+            except Exception: pass
+            api_error = f"HTTP {e.code}: {body}"
+        except Exception as ex:
+            api_error = f"{type(ex).__name__}: {ex}"
+    user_guilds = session.get("user_guilds", {})
+    comparison = []
     for gid, g in user_guilds.items():
-        result[gid] = {
-            "name":   g.get("name"),
-            "bot_in": gid in bot_guild_ids,
-        }
+        comparison.append({"id": gid, "name": g.get("name", gid), "bot_sees": gid in bot_guild_ids})
     return jsonify({
-        "bot_guilds":  list(bot_guild_ids),
-        "user_guilds": result,
+        "bot_token_set": bot_token_set,
+        "bot_token_prefix": BOT_TOKEN[:12] + "..." if BOT_TOKEN else None,
+        "api_error": api_error,
+        "bot_guild_count": len(bot_guild_ids),
+        "your_guilds": comparison,
     })
 
 
-# ── Utility ────────────────────────────────────────────────────────────────
-
 def _active_guild_id():
-    return session.get("active_guild", "")
+    g = session.get("active_guild")
+    if not g:
+        return None
+    return g["id"]
 
 
 def _require_guild():
     gid = _active_guild_id()
     if not gid:
-        return redirect(url_for("servers")), None
-    return None, gid
+        return redirect(url_for("servers"))
+    return gid
 
 
-# ── Superadmin panel ───────────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════════
+# ── SUPERADMIN ROUTES  (/admin/<token>/...)  ──────────────────────────────
+# ══════════════════════════════════════════════════════════════════════════
 
 @app.route("/admin/<token>")
 @superadmin_required
 def admin_panel(token=None):
     guilds = _bot_guilds_detailed()
     return render_template("admin.html",
-        token=token, guilds=guilds, message=None, error=None)
+        guilds_list=guilds,
+        send_result=None, dm_result=None,
+        broadcast_result=None, leave_result=None, wipe_result=None,
+    )
 
 
 @app.route("/admin/<token>/api/guild-count")
@@ -716,12 +752,14 @@ def admin_guild_count(token=None):
 def admin_send_message(token=None):
     channel_id = request.form.get("channel_id", "").strip()
     content    = request.form.get("content", "").strip()
+    ok, info   = _send_channel_message(channel_id, content)
     guilds     = _bot_guilds_detailed()
-    ok, err    = _send_channel_message(channel_id, content)
+    flash(info)
     return render_template("admin.html",
-        token=token, guilds=guilds,
-        message="Message sent!" if ok else None,
-        error=err if not ok else None)
+        guilds_list=guilds,
+        send_result=info, dm_result=None,
+        broadcast_result=None, leave_result=None, wipe_result=None,
+    )
 
 
 @app.route("/admin/<token>/dm-user", methods=["POST"])
@@ -729,370 +767,382 @@ def admin_send_message(token=None):
 def admin_dm_user(token=None):
     user_id = request.form.get("user_id", "").strip()
     content = request.form.get("content", "").strip()
-    guilds  = _bot_guilds_detailed()
     ch_id, err = _create_dm_channel(user_id)
-    if not ch_id:
-        return render_template("admin.html", token=token, guilds=guilds,
-            message=None, error=f"Could not create DM: {err}")
-    ok, err2 = _send_channel_message(ch_id, content)
+    if err:
+        result = f"Failed to open DM: {err}"
+    else:
+        ok, result = _send_channel_message(ch_id, content)
+    guilds = _bot_guilds_detailed()
+    flash(result)
     return render_template("admin.html",
-        token=token, guilds=guilds,
-        message="DM sent!" if ok else None,
-        error=err2 if not ok else None)
+        guilds_list=guilds,
+        send_result=None, dm_result=result,
+        broadcast_result=None, leave_result=None, wipe_result=None,
+    )
 
 
 @app.route("/admin/<token>/broadcast", methods=["POST"])
 @superadmin_required
 def admin_broadcast(token=None):
-    content = request.form.get("content", "").strip()
-    guilds  = _bot_guilds_detailed()
-    results = []
-    for g in guilds:
-        pass
+    content    = request.form.get("content", "").strip()
+    channel_id = request.form.get("channel_id", "").strip()
+    guilds     = _bot_guilds_detailed()
+    ok, info   = _send_channel_message(channel_id, content)
+    result     = f"Broadcast attempt to channel {channel_id}: {info}"
+    flash(result)
     return render_template("admin.html",
-        token=token, guilds=guilds,
-        message="Broadcast complete.", error=None)
+        guilds_list=guilds,
+        send_result=None, dm_result=None,
+        broadcast_result=result, leave_result=None, wipe_result=None,
+    )
 
 
 @app.route("/admin/<token>/leave-guild", methods=["POST"])
 @superadmin_required
 def admin_leave_guild(token=None):
     guild_id = request.form.get("guild_id", "").strip()
-    guilds   = _bot_guilds_detailed()
-    ok, err  = _leave_guild(guild_id)
+    ok, result = _leave_guild(guild_id)
+    guilds = _bot_guilds_detailed()
+    flash(result)
     return render_template("admin.html",
-        token=token, guilds=guilds,
-        message=f"Left guild {guild_id}." if ok else None,
-        error=err if not ok else None)
+        guilds_list=guilds,
+        send_result=None, dm_result=None,
+        broadcast_result=None, leave_result=result, wipe_result=None,
+    )
 
 
 @app.route("/admin/<token>/wipe-guild", methods=["POST"])
 @superadmin_required
 def admin_wipe_guild(token=None):
     guild_id = request.form.get("guild_id", "").strip()
-    guilds   = _bot_guilds_detailed()
-    try:
-        db.wipe_guild_sync(guild_id)
-        msg = f"Guild {guild_id} data wiped."
-        err = None
-    except AttributeError:
-        msg = None
-        err = "db.wipe_guild_sync not implemented."
-    except Exception as exc:
-        msg = None
-        err = str(exc)
+    confirm  = request.form.get("confirm", "").strip()
+    if confirm != "CONFIRM":
+        result = "Aborted: you must type CONFIRM exactly."
+    else:
+        try:
+            db.wipe_guild_sync(guild_id)
+            result = f"All data wiped for guild {guild_id}."
+        except AttributeError:
+            result = "wipe_guild_sync not implemented in database.py yet."
+        except Exception as e:
+            result = f"Error: {e}"
+    guilds = _bot_guilds_detailed()
+    flash(result)
     return render_template("admin.html",
-        token=token, guilds=guilds,
-        message=msg, error=err)
+        guilds_list=guilds,
+        send_result=None, dm_result=None,
+        broadcast_result=None, leave_result=None, wipe_result=result,
+    )
 
 
-# ── Settings ───────────────────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════════
+# ── Regular dashboard routes ──────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════════
 
 @app.route("/settings", methods=["GET", "POST"])
 @login_required
-@guild_required
-def settings(guild_id, channels, roles):
+def settings():
+    guild_id = _active_guild_id()
+    if not guild_id:
+        return redirect(url_for("servers"))
     if request.method == "POST":
-        db.set_setting_sync(_gkey(guild_id, "prefix"),          request.form.get("prefix", "!"))
-        db.set_setting_sync(_gkey(guild_id, "mod_log_channel"), request.form.get("mod_log_channel", ""))
-        db.set_setting_sync(_gkey(guild_id, "mute_role"),       request.form.get("mute_role", ""))
-        db.set_setting_sync(_gkey(guild_id, "dm_on_punish"),    "1" if request.form.get("dm_on_punish") else "0")
-        db.set_setting_sync(_gkey(guild_id, "delete_commands"), "1" if request.form.get("delete_commands") else "0")
+        db.set_setting_sync(_gkey(guild_id, "auto_role_id"), request.form.get("auto_role_id", ""))
+        db.set_setting_sync(_gkey(guild_id, "bad_words"),    request.form.get("bad_words", ""))
+        db.set_setting_sync(_gkey(guild_id, "spam_limit"),   request.form.get("spam_limit", ""))
+        db.set_setting_sync(_gkey(guild_id, "spam_window"),  request.form.get("spam_window", ""))
+        db.set_setting_sync(_gkey(guild_id, "spam_timeout"), request.form.get("spam_timeout", ""))
         flash("Settings saved.")
         return redirect(url_for("settings"))
     cfg = {
-        "prefix":          db.get_setting_sync(_gkey(guild_id, "prefix"),          "!"),
-        "mod_log_channel": db.get_setting_sync(_gkey(guild_id, "mod_log_channel"), ""),
-        "mute_role":       db.get_setting_sync(_gkey(guild_id, "mute_role"),        ""),
-        "dm_on_punish":    db.get_setting_sync(_gkey(guild_id, "dm_on_punish"),     "0") == "1",
-        "delete_commands": db.get_setting_sync(_gkey(guild_id, "delete_commands"),  "0") == "1",
+        "auto_role_id": db.get_setting_sync(_gkey(guild_id, "auto_role_id"), ""),
+        "bad_words":    db.get_setting_sync(_gkey(guild_id, "bad_words"),    os.getenv("BAD_WORDS", "")),
+        "spam_limit":   db.get_setting_sync(_gkey(guild_id, "spam_limit"),   os.getenv("SPAM_MESSAGE_LIMIT", "6")),
+        "spam_window":  db.get_setting_sync(_gkey(guild_id, "spam_window"),  os.getenv("SPAM_WINDOW_SECONDS", "8")),
+        "spam_timeout": db.get_setting_sync(_gkey(guild_id, "spam_timeout"), os.getenv("SPAM_TIMEOUT_MINUTES", "5")),
+        "client_id":    DISCORD_CLIENT_ID,
+        "redirect_uri": DISCORD_REDIRECT_URI,
     }
-    return render_template("settings.html", cfg=cfg, channels=channels, roles=roles)
+    return render_template("settings.html", cfg=cfg)
 
-
-# ── Moderation ─────────────────────────────────────────────────────────────
 
 @app.route("/moderation", methods=["GET", "POST"])
 @login_required
-@guild_required
-def moderation(guild_id, channels, roles):
+def moderation():
+    guild_id = _active_guild_id()
+    if not guild_id:
+        return redirect(url_for("servers"))
     if request.method == "POST":
-        action   = request.form.get("action")
-        user_id  = request.form.get("user_id", "").strip()
-        reason   = request.form.get("reason", "No reason provided").strip()
-        duration = request.form.get("duration", "").strip()
-        if action == "warn" and user_id:
-            try:
-                db.add_warning_sync(guild_id, user_id, reason, session.get("discord_id", ""))
-                flash(f"Warning issued to <@{user_id}>.")
-            except Exception as e:
-                flash(f"Error: {e}")
-        elif action == "ban" and user_id:
-            try:
-                db.add_ban_sync(guild_id, user_id, reason, session.get("discord_id", ""))
-                flash(f"Ban recorded for <@{user_id}>.")
-            except Exception as e:
-                flash(f"Error: {e}")
-        elif action == "kick" and user_id:
-            try:
-                db.add_kick_sync(guild_id, user_id, reason, session.get("discord_id", ""))
-                flash(f"Kick recorded for <@{user_id}>.")
-            except Exception as e:
-                flash(f"Error: {e}")
-        elif action == "mute" and user_id:
-            try:
-                db.add_mute_sync(guild_id, user_id, reason, duration, session.get("discord_id", ""))
-                flash(f"Mute recorded for <@{user_id}>.")
-            except Exception as e:
-                flash(f"Error: {e}")
+        action = request.form.get("action")
+        if action == "add_word":
+            word = request.form.get("word", "").strip()
+            if word:
+                db.add_blacklisted_word_sync(guild_id, word, "dashboard")
+                flash(f"Word '{word}' added.")
+        elif action == "remove_word":
+            db.remove_blacklisted_word_sync(guild_id, request.form.get("word", ""))
+            flash("Word removed.")
+        elif action == "add_user":
+            uid    = request.form.get("user_id", "").strip()
+            reason = request.form.get("reason", "").strip()
+            if uid:
+                db.add_blacklisted_user_sync(guild_id, uid, reason, "dashboard")
+                flash(f"User {uid} blacklisted.")
+        elif action == "remove_user":
+            uid = request.form.get("user_id", "").strip()
+            db.remove_blacklisted_user_sync(guild_id, uid)
+            flash(f"User {uid} removed.")
         return redirect(url_for("moderation"))
-    warnings = []
-    bans     = []
-    kicks    = []
-    mutes    = []
-    try: warnings = db.get_warnings_sync(guild_id)
-    except Exception: pass
-    try: bans     = db.get_bans_sync(guild_id)
-    except Exception: pass
-    try: kicks    = db.get_kicks_sync(guild_id)
-    except Exception: pass
-    try: mutes    = db.get_mutes_sync(guild_id)
-    except Exception: pass
-    return render_template("moderation.html",
-        warnings=warnings, bans=bans, kicks=kicks, mutes=mutes,
-        channels=channels, roles=roles)
+    words = db.get_blacklisted_words_sync(guild_id)
+    users = db.get_blacklisted_users_sync(guild_id)
+    return render_template("moderation.html", words=words, users=users)
 
-
-# ── Logging ────────────────────────────────────────────────────────────────
 
 @app.route("/logging", methods=["GET", "POST"])
 @login_required
-@guild_required
-def logging_page(guild_id, channels, roles):
+def logging_page():
+    guild_id = _active_guild_id()
+    if not guild_id:
+        return redirect(url_for("servers"))
     if request.method == "POST":
+        master = "1" if request.form.get("logging_enabled") else "0"
+        db.set_setting_sync(_gkey(guild_id, "logging_enabled"), master)
         db.set_setting_sync(_gkey(guild_id, "log_channel_id"), request.form.get("log_channel_id", ""))
         for key in LOG_TOGGLE_KEYS:
-            db.set_setting_sync(_gkey(guild_id, key), "1" if request.form.get(key) else "0")
-        flash("Logging settings saved.")
+            val = "1" if request.form.get(key) else "0"
+            db.set_setting_sync(_gkey(guild_id, key), val)
+        flash("Log settings saved.")
         return redirect(url_for("logging_page"))
+    raw_master = db.get_setting_sync(_gkey(guild_id, "logging_enabled"), None)
+    logging_enabled = (raw_master != "0")
     cfg = {
-        "log_channel_id": db.get_setting_sync(_gkey(guild_id, "log_channel_id"), ""),
+        "logging_enabled": logging_enabled,
+        "log_channel_id":  db.get_setting_sync(_gkey(guild_id, "log_channel_id"), ""),
     }
     for key in LOG_TOGGLE_KEYS:
-        cfg[key] = db.get_setting_sync(_gkey(guild_id, key), "0") == "1"
-    return render_template("logging.html", cfg=cfg, channels=channels, roles=roles)
+        raw = db.get_setting_sync(_gkey(guild_id, key), None)
+        cfg[key] = (raw == "1") if raw is not None else True
+    return render_template("logging.html", cfg=cfg)
 
-
-# ── Audit log ──────────────────────────────────────────────────────────────
 
 @app.route("/audit-log")
 @login_required
-@guild_required
-def audit_log(guild_id, channels, roles):
-    logs = []
+def audit_log():
+    guild_id = _active_guild_id()
+    if not guild_id:
+        return redirect(url_for("servers"))
+    page          = max(1, int(request.args.get("page", 1)))
+    per_page      = int(request.args.get("per_page", 50))
+    per_page      = per_page if per_page in (25, 50, 100) else 50
+    search        = request.args.get("q", "").strip()
+    action_filter = request.args.get("action", "").strip().lower()
     try:
-        logs = db.get_recent_logs_sync(guild_id, limit=50)
+        result = db.all_logs_sync(guild_id, page=page, per_page=per_page,
+                                  search=search, action_filter=action_filter)
     except Exception:
-        pass
-    return render_template("audit_log.html", logs=logs)
+        result = {"logs": [], "total": 0, "page": 1, "per_page": per_page, "pages": 1}
+    return render_template("audit_log.html", result=result, search=search,
+                           action_filter=action_filter, per_page=per_page)
 
 
-# ── User lookup ────────────────────────────────────────────────────────────
+# ── User Lookup ────────────────────────────────────────────────────────────
 
 @app.route("/user-lookup", methods=["GET", "POST"])
 @login_required
-@guild_required
-def user_lookup(guild_id, channels, roles):
-    profile     = None
-    error_msg   = None
-    search_query = request.form.get("query", "").strip() if request.method == "POST" else ""
-    if search_query:
-        # Try searching by username in the guild first
-        members = _search_guild_members(guild_id, search_query)
-        if members:
-            member   = members[0]
-            user_obj = member.get("user", {})
-            uid      = user_obj.get("id", "")
-        else:
-            # Fall back: treat the query as a user ID
-            uid      = search_query
-            user_obj = {}
-            member   = {}
-        if uid:
-            fetched_user, err = _fetch_discord_user(uid)
-            if err:
-                error_msg = err
+def user_lookup():
+    guild_id = _active_guild_id()
+    if not guild_id:
+        return redirect(url_for("servers"))
+
+    user_data   = None
+    member_data = {}
+    infraction_history = []
+    badges      = []
+    avatar      = ""
+    banner      = ""
+    accent      = "#5865F2"
+    bio         = ""
+    error       = None
+    query       = ""
+    search_results = []
+
+    if request.method == "POST":
+        query = request.form.get("query", "").strip()
+        if query:
+            # If it looks like a user ID, fetch directly
+            if query.isdigit() and len(query) >= 15:
+                user_data, err = _fetch_discord_user(query)
+                if err:
+                    error = err
+                else:
+                    member_data = _fetch_guild_member(guild_id, query)
+                    try:
+                        infraction_history = db.user_logs_sync(guild_id, query)
+                    except Exception:
+                        infraction_history = []
+                    badges = _get_badges(user_data.get("public_flags", 0))
+                    avatar = _avatar_url(user_data, member_data, guild_id)
+                    banner = _banner_url(user_data, member_data, guild_id)
+                    accent = _accent_hex(user_data)
+                    bio    = _bio(user_data)
             else:
-                if not user_obj:
-                    user_obj = fetched_user
-                if not member:
-                    member = _fetch_guild_member(guild_id, uid)
-                warnings = []
-                bans     = []
-                kicks    = []
-                mutes    = []
-                try: warnings = db.get_warnings_sync(guild_id, uid)
-                except Exception: pass
-                try: bans     = db.get_bans_sync(guild_id, uid)
-                except Exception: pass
-                try: kicks    = db.get_kicks_sync(guild_id, uid)
-                except Exception: pass
-                try: mutes    = db.get_mutes_sync(guild_id, uid)
-                except Exception: pass
-                roles_list = []
-                if member and BOT_TOKEN:
-                    all_roles = _fetch_guild_roles(guild_id)
-                    role_ids  = set(member.get("roles", []))
-                    roles_list = [r for r in all_roles if r["id"] in role_ids]
-                joined_at  = member.get("joined_at", "")
-                nick       = member.get("nick", "")
-                pf         = fetched_user.get("public_flags", 0) or 0
-                badges     = _get_badges(pf)
-                avatar_url = _avatar_url(fetched_user, member, guild_id)
-                banner_url = _banner_url(fetched_user, member, guild_id)
-                accent_hex = _accent_hex(fetched_user)
-                bio        = _bio(fetched_user)
-                profile = {
-                    "user":      fetched_user,
-                    "member":    member,
-                    "uid":       uid,
-                    "username":  fetched_user.get("global_name") or fetched_user.get("username", uid),
-                    "nick":      nick,
-                    "avatar":    avatar_url,
-                    "banner":    banner_url,
-                    "accent":    accent_hex,
-                    "bio":       bio,
-                    "badges":    badges,
-                    "joined_at": joined_at,
-                    "roles":     roles_list,
-                    "warnings":  warnings,
-                    "bans":      bans,
-                    "kicks":     kicks,
-                    "mutes":     mutes,
-                }
-        else:
-            error_msg = "Could not resolve that user."
-    return render_template("user_lookup.html",
-        profile=profile, error=error_msg, query=search_query)
+                # Search by username
+                members = _search_guild_members(guild_id, query)
+                if len(members) == 1:
+                    uid = members[0].get("user", {}).get("id", "")
+                    if uid:
+                        user_data, err = _fetch_discord_user(uid)
+                        if not err:
+                            member_data = members[0]
+                            try:
+                                infraction_history = db.user_logs_sync(guild_id, uid)
+                            except Exception:
+                                infraction_history = []
+                            badges = _get_badges(user_data.get("public_flags", 0))
+                            avatar = _avatar_url(user_data, member_data, guild_id)
+                            banner = _banner_url(user_data, member_data, guild_id)
+                            accent = _accent_hex(user_data)
+                            bio    = _bio(user_data)
+                        else:
+                            error = err
+                elif len(members) > 1:
+                    search_results = members
+                else:
+                    error = f"No members found matching '{query}'."
 
+    return render_template(
+        "user_lookup.html",
+        user_data=user_data,
+        member_data=member_data,
+        infraction_history=infraction_history,
+        badges=badges,
+        avatar=avatar,
+        banner=banner,
+        accent=accent,
+        bio=bio,
+        error=error,
+        query=query,
+        search_results=search_results,
+        guild_id=guild_id,
+    )
 
-# ── Reaction roles ─────────────────────────────────────────────────────────
 
 @app.route("/reaction-roles", methods=["GET", "POST"])
 @login_required
-@guild_required
-def reaction_roles(guild_id, channels, roles):
+def reaction_roles():
+    guild_id = _active_guild_id()
+    if not guild_id:
+        return redirect(url_for("servers"))
     if request.method == "POST":
-        action    = request.form.get("action")
-        channel_id = request.form.get("channel_id", "").strip()
-        message_id = request.form.get("message_id", "").strip()
-        emoji      = request.form.get("emoji", "").strip()
-        role_id    = request.form.get("role_id", "").strip()
-        if action == "add" and channel_id and message_id and emoji and role_id:
-            try:
-                db.add_reaction_role_sync(guild_id, channel_id, message_id, emoji, role_id)
-                flash("Reaction role added.")
-            except Exception as e:
-                flash(f"Error: {e}")
+        action = request.form.get("action")
+        if action == "add":
+            channel_id = request.form.get("channel_id", "").strip()
+            message_id = request.form.get("message_id", "").strip()
+            emoji      = request.form.get("emoji", "").strip()
+            role_id    = request.form.get("role_id", "").strip()
+            if channel_id and message_id and emoji and role_id:
+                try:
+                    db.add_reaction_role_sync(guild_id, channel_id, message_id, emoji, role_id)
+                    flash("Reaction role added.")
+                except Exception as e:
+                    flash(f"Error: {e}")
         elif action == "remove":
             rr_id = request.form.get("rr_id", "").strip()
             if rr_id:
                 try:
-                    db.remove_reaction_role_sync(guild_id, rr_id)
+                    db.remove_reaction_role_sync(guild_id, int(rr_id))
                     flash("Reaction role removed.")
                 except Exception as e:
                     flash(f"Error: {e}")
         return redirect(url_for("reaction_roles"))
-    rr_list = []
     try:
         rr_list = db.get_reaction_roles_sync(guild_id)
     except Exception:
-        pass
-    return render_template("reaction_roles.html", rr_list=rr_list,
-                           channels=channels, roles=roles)
+        rr_list = []
+    return render_template("reaction_roles.html", rr_list=rr_list)
 
-
-# ── Autoroles ──────────────────────────────────────────────────────────────
 
 @app.route("/autoroles", methods=["GET", "POST"])
 @login_required
-@guild_required
-def autoroles(guild_id, channels, roles):
+def autoroles():
+    guild_id = _active_guild_id()
+    if not guild_id:
+        return redirect(url_for("servers"))
     if request.method == "POST":
         action  = request.form.get("action")
         role_id = request.form.get("role_id", "").strip()
         if action == "add" and role_id:
             try:
                 db.add_autorole_sync(guild_id, role_id)
-                flash("Autorole added.")
+                flash(f"Auto-role {role_id} added.")
             except Exception as e:
                 flash(f"Error: {e}")
         elif action == "remove" and role_id:
             try:
                 db.remove_autorole_sync(guild_id, role_id)
-                flash("Autorole removed.")
+                flash(f"Auto-role {role_id} removed.")
             except Exception as e:
                 flash(f"Error: {e}")
         return redirect(url_for("autoroles"))
-    autorole_list = []
     try:
-        autorole_list = db.get_autoroles_sync(guild_id)
+        roles = db.get_autoroles_sync(guild_id)
     except Exception:
-        pass
-    return render_template("autoroles.html", autorole_list=autorole_list,
-                           channels=channels, roles=roles)
+        roles = []
+    guild_roles = _fetch_guild_roles(guild_id)
+    return render_template("autoroles.html", roles=roles, guild_roles=guild_roles)
 
-
-# ── Greetings ──────────────────────────────────────────────────────────────
 
 @app.route("/greetings", methods=["GET", "POST"])
 @login_required
-@guild_required
-def greetings(guild_id, channels, roles):
+def greetings():
+    guild_id = _active_guild_id()
+    if not guild_id:
+        return redirect(url_for("servers"))
     if request.method == "POST":
         db.set_setting_sync(_gkey(guild_id, "welcome_channel_id"),  request.form.get("welcome_channel_id", ""))
         db.set_setting_sync(_gkey(guild_id, "welcome_message"),     request.form.get("welcome_message", ""))
-        db.set_setting_sync(_gkey(guild_id, "goodbye_channel_id"),  request.form.get("goodbye_channel_id", ""))
-        db.set_setting_sync(_gkey(guild_id, "goodbye_message"),     request.form.get("goodbye_message", ""))
+        db.set_setting_sync(_gkey(guild_id, "farewell_channel_id"), request.form.get("farewell_channel_id", ""))
+        db.set_setting_sync(_gkey(guild_id, "farewell_message"),    request.form.get("farewell_message", ""))
         flash("Greeting settings saved.")
         return redirect(url_for("greetings"))
     cfg = {
-        "welcome_channel_id": db.get_setting_sync(_gkey(guild_id, "welcome_channel_id"), ""),
-        "welcome_message":    db.get_setting_sync(_gkey(guild_id, "welcome_message"),    ""),
-        "goodbye_channel_id": db.get_setting_sync(_gkey(guild_id, "goodbye_channel_id"), ""),
-        "goodbye_message":    db.get_setting_sync(_gkey(guild_id, "goodbye_message"),    ""),
+        "welcome_channel_id":  db.get_setting_sync(_gkey(guild_id, "welcome_channel_id"), ""),
+        "welcome_message":     db.get_setting_sync(_gkey(guild_id, "welcome_message"),    "Welcome {user} to {server}!"),
+        "farewell_channel_id": db.get_setting_sync(_gkey(guild_id, "farewell_channel_id"), ""),
+        "farewell_message":    db.get_setting_sync(_gkey(guild_id, "farewell_message"),   "Goodbye {user}!"),
     }
-    return render_template("greetings.html", cfg=cfg, channels=channels, roles=roles)
+    return render_template("greetings.html", cfg=cfg)
 
-
-# ── Tags ───────────────────────────────────────────────────────────────────
 
 @app.route("/tags", methods=["GET", "POST"])
 @login_required
-@guild_required
-def tags(guild_id, channels, roles):
+def tags():
+    guild_id = _active_guild_id()
+    if not guild_id:
+        return redirect(url_for("servers"))
     if request.method == "POST":
-        action   = request.form.get("action")
-        tag_name = request.form.get("name", "").strip()
-        content  = request.form.get("content", "").strip()
-        if action == "add" and tag_name and content:
-            try:
-                db.add_tag_sync(guild_id, tag_name, content, session.get("discord_id", ""))
-                flash(f"Tag '{tag_name}' added.")
-            except Exception as e:
-                flash(f"Error: {e}")
-        elif action == "remove" and tag_name:
-            try:
-                db.remove_tag_sync(guild_id, tag_name)
-                flash(f"Tag '{tag_name}' removed.")
-            except Exception as e:
-                flash(f"Error: {e}")
+        action = request.form.get("action")
+        if action == "add":
+            name    = request.form.get("name", "").strip().lower()
+            content = request.form.get("content", "").strip()
+            if name and content:
+                try:
+                    db.add_tag_sync(guild_id, name, content, session.get("discord_id", ""))
+                    flash(f"Tag '{name}' added.")
+                except Exception as e:
+                    flash(f"Error: {e}")
+        elif action == "remove":
+            name = request.form.get("name", "").strip().lower()
+            if name:
+                try:
+                    db.remove_tag_sync(guild_id, name)
+                    flash(f"Tag '{name}' removed.")
+                except Exception as e:
+                    flash(f"Error: {e}")
         return redirect(url_for("tags"))
-    tag_list = []
     try:
         tag_list = db.get_tags_sync(guild_id)
     except Exception:
-        pass
+        tag_list = []
     return render_template("tags.html", tag_list=tag_list)
 
 
@@ -1141,8 +1191,10 @@ def triggers():
 
 @app.route("/starboard", methods=["GET", "POST"])
 @login_required
-@guild_required
-def starboard(guild_id, channels, roles):
+def starboard():
+    guild_id = _active_guild_id()
+    if not guild_id:
+        return redirect(url_for("servers"))
     if request.method == "POST":
         db.set_setting_sync(_gkey(guild_id, "starboard_channel_id"), request.form.get("starboard_channel_id", ""))
         db.set_setting_sync(_gkey(guild_id, "starboard_threshold"),  request.form.get("starboard_threshold", "3"))
@@ -1152,17 +1204,19 @@ def starboard(guild_id, channels, roles):
     cfg = {
         "starboard_channel_id": db.get_setting_sync(_gkey(guild_id, "starboard_channel_id"), ""),
         "starboard_threshold":  db.get_setting_sync(_gkey(guild_id, "starboard_threshold"),  "3"),
-        "starboard_enabled":    db.get_setting_sync(_gkey(guild_id, "starboard_enabled"),    "0") == "1",
+        "starboard_enabled":    db.get_setting_sync(_gkey(guild_id, "starboard_enabled"),    "1") != "0",
     }
-    return render_template("starboard.html", cfg=cfg, channels=channels, roles=roles)
+    return render_template("starboard.html", cfg=cfg)
 
 
 # ── Suggestions ────────────────────────────────────────────────────────────
 
 @app.route("/suggestions", methods=["GET", "POST"])
 @login_required
-@guild_required
-def suggestions(guild_id, channels, roles):
+def suggestions():
+    guild_id = _active_guild_id()
+    if not guild_id:
+        return redirect(url_for("servers"))
     if request.method == "POST":
         db.set_setting_sync(_gkey(guild_id, "suggestions_channel_id"), request.form.get("suggestions_channel_id", ""))
         db.set_setting_sync(_gkey(guild_id, "suggestions_enabled"),    "1" if request.form.get("suggestions_enabled") else "0")
@@ -1170,21 +1224,23 @@ def suggestions(guild_id, channels, roles):
         return redirect(url_for("suggestions"))
     cfg = {
         "suggestions_channel_id": db.get_setting_sync(_gkey(guild_id, "suggestions_channel_id"), ""),
-        "suggestions_enabled":    db.get_setting_sync(_gkey(guild_id, "suggestions_enabled"),    "0") == "1",
+        "suggestions_enabled":    db.get_setting_sync(_gkey(guild_id, "suggestions_enabled"),    "1") != "0",
     }
-    return render_template("suggestions.html", cfg=cfg, channels=channels, roles=roles)
+    return render_template("suggestions.html", cfg=cfg)
 
 
-# ── Command settings ───────────────────────────────────────────────────────
+# ── Command Settings ───────────────────────────────────────────────────────
 
 @app.route("/command-settings", methods=["GET", "POST"])
 @login_required
-@guild_required
-def command_settings(guild_id, channels, roles):
+def command_settings():
+    guild_id = _active_guild_id()
+    if not guild_id:
+        return redirect(url_for("servers"))
     if request.method == "POST":
-        db.set_setting_sync(_gkey(guild_id, "commands_prefix"),     request.form.get("commands_prefix", "!"))
-        db.set_setting_sync(_gkey(guild_id, "commands_channel_id"), request.form.get("commands_channel_id", ""))
-        db.set_setting_sync(_gkey(guild_id, "commands_restrict"),   "1" if request.form.get("commands_restrict") else "0")
+        db.set_setting_sync(_gkey(guild_id, "commands_prefix"),        request.form.get("commands_prefix", "!"))
+        db.set_setting_sync(_gkey(guild_id, "commands_channel_id"),    request.form.get("commands_channel_id", ""))
+        db.set_setting_sync(_gkey(guild_id, "commands_restrict"),      "1" if request.form.get("commands_restrict") else "0")
         flash("Command settings saved.")
         return redirect(url_for("command_settings"))
     cfg = {
@@ -1193,15 +1249,6 @@ def command_settings(guild_id, channels, roles):
         "commands_restrict":   db.get_setting_sync(_gkey(guild_id, "commands_restrict"),   "0") == "1",
     }
     return render_template("command_settings.html", cfg=cfg)
-
-
-# ── Switch guild ───────────────────────────────────────────────────────────
-
-@app.route("/switch-guild")
-@login_required
-def switch_guild():
-    session.pop("active_guild", None)
-    return redirect(url_for("servers"))
 
 
 if __name__ == "__main__":
