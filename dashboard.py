@@ -16,6 +16,7 @@ from flask import (
 load_dotenv(dotenv_path=Path(__file__).resolve().parent / ".env", override=True)
 
 import database as db
+import panel_admins as pa
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "modpanel-secret-key-change-me")
@@ -48,16 +49,14 @@ ADMIN_PERMS         = PERM_ADMINISTRATOR | PERM_MANAGE_GUILD
 _UA = "DiscordBot (https://github.com/zenyell/discord-moderation-bot, 1.0) Python/3 urllib"
 
 # ── Superadmin config ──────────────────────────────────────────────────────
-# Only this Discord user ID can access the admin panel.
 SUPERADMIN_ID = "923615726940590150"
-# Secret URL token — generated once at startup, stored in env or falls back to random.
-# Set ADMIN_TOKEN in your .env to make it persistent across restarts.
 ADMIN_TOKEN = os.getenv("ADMIN_TOKEN") or secrets.token_urlsafe(32)
 print(f"[Superadmin] Admin panel at: /admin/{ADMIN_TOKEN}", flush=True)
 
 print(f"[Dashboard] BOT_TOKEN present={bool(BOT_TOKEN)}  CLIENT_ID={DISCORD_CLIENT_ID!r}", flush=True)
 
 db.init_db_sync()
+pa.init_table_sync()
 
 LOG_TOGGLE_KEYS = [
     "log_message_delete", "log_message_edit", "log_bulk_delete",
@@ -164,7 +163,6 @@ def _bot_guilds() -> set:
 
 
 def _bot_guilds_detailed() -> list:
-    """Return list of guild dicts (with id, name, approximate_member_count)."""
     if not BOT_TOKEN:
         return []
     guilds = []
@@ -189,7 +187,6 @@ def _bot_guilds_detailed() -> list:
 
 
 def _send_channel_message(channel_id: str, content: str) -> tuple[bool, str]:
-    """Send a message to a channel via the bot. Returns (success, info)."""
     if not BOT_TOKEN:
         return False, "BOT_TOKEN not set"
     payload = json.dumps({"content": content}).encode()
@@ -210,7 +207,6 @@ def _send_channel_message(channel_id: str, content: str) -> tuple[bool, str]:
 
 
 def _create_dm_channel(user_id: str) -> tuple[str, str]:
-    """Create a DM channel with a user. Returns (channel_id, error)."""
     if not BOT_TOKEN:
         return "", "BOT_TOKEN not set"
     payload = json.dumps({"recipient_id": user_id}).encode()
@@ -231,7 +227,6 @@ def _create_dm_channel(user_id: str) -> tuple[str, str]:
 
 
 def _leave_guild(guild_id: str) -> tuple[bool, str]:
-    """Make the bot leave a guild."""
     if not BOT_TOKEN:
         return False, "BOT_TOKEN not set"
     try:
@@ -387,16 +382,12 @@ def login_required(f):
 
 
 def superadmin_required(f):
-    """Only the hardcoded SUPERADMIN_ID can access this route.
-    Must also be logged in. Returns 404 (not 403) to hide existence.
-    """
     @wraps(f)
     def decorated(*args, **kwargs):
         if not session.get("logged_in"):
             return redirect(url_for("login"))
         if session.get("discord_id") != SUPERADMIN_ID:
             abort(404)
-        # Validate token in URL matches runtime token
         token = kwargs.pop("token", None)
         if token != ADMIN_TOKEN:
             abort(404)
@@ -587,7 +578,6 @@ def callback():
     session["discord_id"] = user_id
     session["user_guilds"] = admin_guilds
     session.pop("active_guild", None)
-    # Superadmin: redirect straight to admin panel
     if user_id == SUPERADMIN_ID:
         return redirect(f"/admin/{ADMIN_TOKEN}")
     return redirect(url_for("servers"))
@@ -830,7 +820,6 @@ def admin_wipe_guild(token=None):
             db.wipe_guild_sync(guild_id)
             result = f"All data wiped for guild {guild_id}."
         except AttributeError:
-            # wipe_guild_sync may not exist yet — fall back
             result = "wipe_guild_sync not implemented in database.py yet."
         except Exception as e:
             result = f"Error: {e}"
@@ -844,7 +833,60 @@ def admin_wipe_guild(token=None):
 
 
 # ══════════════════════════════════════════════════════════════════════════
-# ── Regular dashboard routes (unchanged below) ────────────────────────────
+# ── ADMIN CONTROLS  (/admin/<token>/controls/...)  ────────────────────────
+# ══════════════════════════════════════════════════════════════════════════
+
+@app.route("/admin/<token>/controls")
+@superadmin_required
+def admin_controls(token=None):
+    admins = pa.get_all_sync()
+    return render_template(
+        "admin_controls.html",
+        admins=admins,
+        all_permissions=pa.ALL_PERMISSIONS,
+        perm_labels=pa.PERM_LABELS,
+    )
+
+
+@app.route("/admin/<token>/controls/add", methods=["POST"])
+@superadmin_required
+def admin_controls_add(token=None):
+    discord_id  = request.form.get("discord_id", "").strip()
+    label       = request.form.get("label", "").strip()
+    permissions = request.form.getlist("permissions")
+    if not discord_id:
+        flash("Discord ID is required.")
+        return redirect(f"/admin/{ADMIN_TOKEN}/controls")
+    ok = pa.add_admin_sync(discord_id, label, permissions)
+    if ok:
+        flash(f"✅ Admin {label or discord_id} added successfully.")
+    else:
+        flash(f"⚠️ Could not add {discord_id} — they may already exist.")
+    return redirect(f"/admin/{ADMIN_TOKEN}/controls")
+
+
+@app.route("/admin/<token>/controls/update", methods=["POST"])
+@superadmin_required
+def admin_controls_update(token=None):
+    discord_id  = request.form.get("discord_id", "").strip()
+    label       = request.form.get("label", "").strip()
+    permissions = request.form.getlist("permissions")
+    pa.update_admin_sync(discord_id, label, permissions)
+    flash(f"✅ Updated admin {label or discord_id}.")
+    return redirect(f"/admin/{ADMIN_TOKEN}/controls")
+
+
+@app.route("/admin/<token>/controls/remove", methods=["POST"])
+@superadmin_required
+def admin_controls_remove(token=None):
+    discord_id = request.form.get("discord_id", "").strip()
+    pa.remove_admin_sync(discord_id)
+    flash(f"🗑️ Admin {discord_id} removed.")
+    return redirect(f"/admin/{ADMIN_TOKEN}/controls")
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# ── Regular dashboard routes ──────────────────────────────────────────────
 # ══════════════════════════════════════════════════════════════════════════
 
 @app.route("/settings", methods=["GET", "POST"])
@@ -960,4 +1002,147 @@ def reaction_roles():
         return redirect(url_for("servers"))
     if request.method == "POST":
         action = request.form.get("action")
-   
+        if action == "add":
+            message_id = request.form.get("message_id", "").strip()
+            emoji      = request.form.get("emoji", "").strip()
+            role_id    = request.form.get("role_id", "").strip()
+            if message_id and emoji and role_id:
+                db.add_reaction_role_sync(guild_id, message_id, emoji, role_id)
+                flash("Reaction role added.")
+        elif action == "remove":
+            db.remove_reaction_role_sync(guild_id,
+                request.form.get("message_id", ""), request.form.get("emoji", ""))
+            flash("Reaction role removed.")
+        return redirect(url_for("reaction_roles"))
+    roles = db.get_reaction_roles_sync(guild_id)
+    return render_template("reaction_roles.html", roles=roles)
+
+
+@app.route("/autoroles", methods=["GET", "POST"])
+@login_required
+def autoroles():
+    guild_id = _active_guild_id()
+    if not guild_id:
+        return redirect(url_for("servers"))
+    if request.method == "POST":
+        action = request.form.get("action")
+        if action == "add":
+            role_id = request.form.get("role_id", "").strip()
+            if role_id:
+                db.add_autorole_sync(guild_id, role_id)
+                flash(f"Auto-role {role_id} added.")
+        elif action == "remove":
+            db.remove_autorole_sync(guild_id, request.form.get("role_id", ""))
+            flash("Auto-role removed.")
+        return redirect(url_for("autoroles"))
+    roles = db.get_autoroles_sync(guild_id)
+    return render_template("autoroles.html", roles=roles)
+
+
+@app.route("/tags", methods=["GET", "POST"])
+@login_required
+def tags():
+    guild_id = _active_guild_id()
+    if not guild_id:
+        return redirect(url_for("servers"))
+    if request.method == "POST":
+        action = request.form.get("action")
+        if action == "add":
+            name    = request.form.get("name", "").strip()
+            content = request.form.get("content", "").strip()
+            if name and content:
+                db.add_tag_sync(guild_id, name, content, "dashboard")
+                flash(f"Tag '{name}' added.")
+        elif action == "remove":
+            db.remove_tag_sync(guild_id, request.form.get("name", ""))
+            flash("Tag removed.")
+        return redirect(url_for("tags"))
+    all_tags = db.get_tags_sync(guild_id)
+    return render_template("tags.html", tags=all_tags)
+
+
+@app.route("/triggers", methods=["GET", "POST"])
+@login_required
+def triggers():
+    guild_id = _active_guild_id()
+    if not guild_id:
+        return redirect(url_for("servers"))
+    if request.method == "POST":
+        action = request.form.get("action")
+        if action == "add":
+            trigger  = request.form.get("trigger", "").strip()
+            response = request.form.get("response", "").strip()
+            if trigger and response:
+                db.add_trigger_sync(guild_id, trigger, response, "dashboard")
+                flash(f"Trigger added.")
+        elif action == "remove":
+            db.remove_trigger_sync(guild_id, request.form.get("trigger", ""))
+            flash("Trigger removed.")
+        return redirect(url_for("triggers"))
+    all_triggers = db.get_triggers_sync(guild_id)
+    return render_template("triggers.html", triggers=all_triggers)
+
+
+@app.route("/suggestions")
+@login_required
+def suggestions():
+    guild_id = _active_guild_id()
+    if not guild_id:
+        return redirect(url_for("servers"))
+    all_suggestions = db.get_suggestions_sync(guild_id)
+    return render_template("suggestions.html", suggestions=all_suggestions)
+
+
+@app.route("/starboard")
+@login_required
+def starboard():
+    guild_id = _active_guild_id()
+    if not guild_id:
+        return redirect(url_for("servers"))
+    cfg = {
+        "starboard_channel": db.get_setting_sync(_gkey(guild_id, "starboard_channel"), ""),
+        "starboard_threshold": db.get_setting_sync(_gkey(guild_id, "starboard_threshold"), "3"),
+    }
+    return render_template("starboard.html", cfg=cfg)
+
+
+@app.route("/command-settings", methods=["GET", "POST"])
+@login_required
+def command_settings():
+    guild_id = _active_guild_id()
+    if not guild_id:
+        return redirect(url_for("servers"))
+    if request.method == "POST":
+        db.set_setting_sync(_gkey(guild_id, "disabled_commands"), request.form.get("disabled_commands", ""))
+        flash("Command settings saved.")
+        return redirect(url_for("command_settings"))
+    cfg = {
+        "disabled_commands": db.get_setting_sync(_gkey(guild_id, "disabled_commands"), ""),
+    }
+    return render_template("command_settings.html", cfg=cfg)
+
+
+@app.route("/greetings", methods=["GET", "POST"])
+@login_required
+def greetings():
+    guild_id = _active_guild_id()
+    if not guild_id:
+        return redirect(url_for("servers"))
+    if request.method == "POST":
+        db.set_setting_sync(_gkey(guild_id, "welcome_channel"), request.form.get("welcome_channel", ""))
+        db.set_setting_sync(_gkey(guild_id, "welcome_message"), request.form.get("welcome_message", ""))
+        db.set_setting_sync(_gkey(guild_id, "goodbye_channel"), request.form.get("goodbye_channel", ""))
+        db.set_setting_sync(_gkey(guild_id, "goodbye_message"), request.form.get("goodbye_message", ""))
+        flash("Greeting settings saved.")
+        return redirect(url_for("greetings"))
+    cfg = {
+        "welcome_channel": db.get_setting_sync(_gkey(guild_id, "welcome_channel"), ""),
+        "welcome_message": db.get_setting_sync(_gkey(guild_id, "welcome_message"), ""),
+        "goodbye_channel": db.get_setting_sync(_gkey(guild_id, "goodbye_channel"), ""),
+        "goodbye_message": db.get_setting_sync(_gkey(guild_id, "goodbye_message"), ""),
+    }
+    return render_template("greetings.html", cfg=cfg)
+
+
+if __name__ == "__main__":
+    app.run(debug=True, host="0.0.0.0", port=5000)
