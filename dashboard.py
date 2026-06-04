@@ -1146,6 +1146,120 @@ def tags():
     return render_template("tags.html", tag_list=tag_list)
 
 
+# ── Triggers ───────────────────────────────────────────────────────────────
+
+@app.route("/triggers", methods=["GET", "POST"])
+@login_required
+def triggers():
+    guild_id = _active_guild_id()
+    if not guild_id:
+        return redirect(url_for("servers"))
+    if request.method == "POST":
+        action = request.form.get("action")
+        if action == "add":
+            pattern  = request.form.get("pattern", "").strip()
+            response = request.form.get("response", "").strip()
+            if pattern and response:
+                try:
+                    db.add_trigger_sync(guild_id, pattern, response, session.get("discord_id", ""))
+                    flash(f"Trigger '{pattern}' added.")
+                except AttributeError:
+                    flash("Trigger support not yet implemented in database.py.")
+                except Exception as e:
+                    flash(f"Error: {e}")
+        elif action == "remove":
+            pattern = request.form.get("pattern", "").strip()
+            if pattern:
+                try:
+                    db.remove_trigger_sync(guild_id, pattern)
+                    flash(f"Trigger '{pattern}' removed.")
+                except AttributeError:
+                    flash("Trigger support not yet implemented in database.py.")
+                except Exception as e:
+                    flash(f"Error: {e}")
+        return redirect(url_for("triggers"))
+    try:
+        trigger_list = db.get_triggers_sync(guild_id)
+    except AttributeError:
+        trigger_list = []
+    except Exception:
+        trigger_list = []
+    return render_template("triggers.html", trigger_list=trigger_list)
+
+
+# ── Starboard ──────────────────────────────────────────────────────────────
+
+@app.route("/starboard", methods=["GET", "POST"])
+@login_required
+def starboard():
+    guild_id = _active_guild_id()
+    if not guild_id:
+        return redirect(url_for("servers"))
+    if request.method == "POST":
+        db.set_setting_sync(_gkey(guild_id, "starboard_channel_id"), request.form.get("starboard_channel_id", ""))
+        db.set_setting_sync(_gkey(guild_id, "starboard_threshold"),  request.form.get("starboard_threshold", "3"))
+        db.set_setting_sync(_gkey(guild_id, "starboard_enabled"),    "1" if request.form.get("starboard_enabled") else "0")
+        flash("Starboard settings saved.")
+        return redirect(url_for("starboard"))
+    cfg = {
+        "starboard_channel_id": db.get_setting_sync(_gkey(guild_id, "starboard_channel_id"), ""),
+        "starboard_threshold":  db.get_setting_sync(_gkey(guild_id, "starboard_threshold"),  "3"),
+        "starboard_enabled":    db.get_setting_sync(_gkey(guild_id, "starboard_enabled"),    "1") != "0",
+    }
+    return render_template("starboard.html", cfg=cfg)
+
+
+# ── Suggestions ────────────────────────────────────────────────────────────
+
+@app.route("/suggestions", methods=["GET", "POST"])
+@login_required
+def suggestions():
+    guild_id = _active_guild_id()
+    if not guild_id:
+        return redirect(url_for("servers"))
+    if request.method == "POST":
+        db.set_setting_sync(_gkey(guild_id, "suggestions_channel_id"), request.form.get("suggestions_channel_id", ""))
+        db.set_setting_sync(_gkey(guild_id, "suggestions_enabled"),    "1" if request.form.get("suggestions_enabled") else "0")
+        flash("Suggestions settings saved.")
+        return redirect(url_for("suggestions"))
+    cfg = {
+        "suggestions_channel_id": db.get_setting_sync(_gkey(guild_id, "suggestions_channel_id"), ""),
+        "suggestions_enabled":    db.get_setting_sync(_gkey(guild_id, "suggestions_enabled"),    "1") != "0",
+    }
+    return render_template("suggestions.html", cfg=cfg)
+
+
+# ── Command Settings ───────────────────────────────────────────────────────
+
+@app.route("/command-settings", methods=["GET", "POST"])
+@login_required
+def command_settings():
+    guild_id = _active_guild_id()
+    if not guild_id:
+        return redirect(url_for("servers"))
+    if request.method == "POST":
+        db.set_setting_sync(_gkey(guild_id, "commands_prefix"),        request.form.get("commands_prefix", "!"))
+        db.set_setting_sync(_gkey(guild_id, "commands_channel_id"),    request.form.get("commands_channel_id", ""))
+        db.set_setting_sync(_gkey(guild_id, "commands_restrict"),      "1" if request.form.get("commands_restrict") else "0")
+        flash("Command settings saved.")
+        return redirect(url_for("command_settings"))
+    cfg = {
+        "commands_prefix":     db.get_setting_sync(_gkey(guild_id, "commands_prefix"),     "!"),
+        "commands_channel_id": db.get_setting_sync(_gkey(guild_id, "commands_channel_id"), ""),
+        "commands_restrict":   db.get_setting_sync(_gkey(guild_id, "commands_restrict"),   "0") == "1",
+    }
+    return render_template("command_settings.html", cfg=cfg)
+
+
+# ── Switch guild ───────────────────────────────────────────────────────────
+
+@app.route("/switch-guild")
+@login_required
+def switch_guild():
+    session.pop("active_guild", None)
+    return redirect(url_for("servers"))
+
+
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)
