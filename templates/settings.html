@@ -15,97 +15,57 @@
     <div class="card-body">
       <div class="form-group" style="margin-bottom:0">
         <label class="form-label" style="margin-bottom:16px">Theme</label>
-        <div class="theme-picker" id="themePicker" style="grid-template-columns:repeat(4,1fr);gap:14px">
+        <div class="theme-grid" id="themePicker">
 
           <!-- Dark -->
           <label class="theme-swatch" data-theme="dark">
             <input type="radio" name="theme" value="dark">
-            <div class="swatch-preview" style="background:linear-gradient(135deg,#0d0a2e 0%,#0a0720 60%,#07061a 100%);">
-              <div class="swatch-orbs">
-                <div style="position:absolute;width:48px;height:48px;border-radius:50%;background:rgba(191,90,242,0.55);filter:blur(14px);top:4px;left:6px;"></div>
-                <div style="position:absolute;width:36px;height:36px;border-radius:50%;background:rgba(255,45,150,0.40);filter:blur(12px);top:8px;right:8px;"></div>
-              </div>
-              <div class="swatch-dots" style="position:relative;z-index:1">
-                <div class="swatch-dot" style="background:#bf5af2;"></div>
-                <div class="swatch-dot" style="background:#ff375f;"></div>
-                <div class="swatch-dot" style="background:#0a84ff;"></div>
-              </div>
-              <div class="swatch-bar" style="background:rgba(191,90,242,0.55);margin-top:auto;position:relative;z-index:1"></div>
-              <div class="swatch-bar-sm" style="background:rgba(255,255,255,0.22);position:relative;z-index:1"></div>
+            <div class="theme-swatch-preview" style="background:linear-gradient(135deg,#0d0a2e 0%,#0a0720 60%,#07061a 100%);">
+              <div class="theme-swatch-bar" style="background:#bf5af2;"></div>
+              <div class="theme-swatch-body" style="background:rgba(191,90,242,0.3);"></div>
+              <div class="theme-swatch-bar" style="background:rgba(255,255,255,0.15);width:60%;"></div>
             </div>
-            <div class="swatch-label">Dark</div>
-            <div class="swatch-check"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <div class="theme-swatch-label">Dark</div>
           </label>
 
           <!-- Light -->
           <label class="theme-swatch" data-theme="light">
             <input type="radio" name="theme" value="light">
-            <div class="swatch-preview" style="background:linear-gradient(135deg,#e8e4f8 0%,#eef0fb 50%,#f2f2f7 100%);">
-              <div class="swatch-orbs">
-                <div style="position:absolute;width:44px;height:44px;border-radius:50%;background:rgba(94,92,230,0.25);filter:blur(12px);top:4px;left:6px;"></div>
-                <div style="position:absolute;width:32px;height:32px;border-radius:50%;background:rgba(255,45,150,0.18);filter:blur(10px);top:6px;right:8px;"></div>
-              </div>
-              <div class="swatch-dots" style="position:relative;z-index:1">
-                <div class="swatch-dot" style="background:#5e5ce6;"></div>
-                <div class="swatch-dot" style="background:#ff375f;"></div>
-                <div class="swatch-dot" style="background:#0a84ff;"></div>
-              </div>
-              <div class="swatch-bar" style="background:rgba(94,92,230,0.55);margin-top:auto;position:relative;z-index:1"></div>
-              <div class="swatch-bar-sm" style="background:rgba(0,0,0,0.18);position:relative;z-index:1"></div>
+            <div class="theme-swatch-preview" style="background:linear-gradient(135deg,#e8e4f8 0%,#eef0fb 50%,#f2f2f7 100%);">
+              <div class="theme-swatch-bar" style="background:#5e5ce6;"></div>
+              <div class="theme-swatch-body" style="background:rgba(94,92,230,0.25);"></div>
+              <div class="theme-swatch-bar" style="background:rgba(0,0,0,0.15);width:60%;"></div>
             </div>
-            <div class="swatch-label" style="background:linear-gradient(transparent,rgba(80,60,160,0.45));">Light</div>
-            <div class="swatch-check" style="background:#5e5ce6;box-shadow:0 2px 8px rgba(94,92,230,0.5);"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <div class="theme-swatch-label" style="color:#fff;background:linear-gradient(transparent,rgba(80,60,160,0.55));">Light</div>
           </label>
 
           <!-- Midnight -->
           <label class="theme-swatch" data-theme="midnight">
             <input type="radio" name="theme" value="midnight">
-            <div class="swatch-preview" style="background:linear-gradient(135deg,#050010 0%,#03000e 60%,#000000 100%);">
-              <div class="swatch-orbs">
-                <div style="position:absolute;width:40px;height:40px;border-radius:50%;background:rgba(80,30,180,0.60);filter:blur(14px);top:4px;left:6px;"></div>
-                <div style="position:absolute;width:30px;height:30px;border-radius:50%;background:rgba(20,20,140,0.45);filter:blur(10px);top:8px;right:8px;"></div>
-              </div>
-              <div class="swatch-dots" style="position:relative;z-index:1">
-                <div class="swatch-dot" style="background:#7d6af7;"></div>
-                <div class="swatch-dot" style="background:#5040cc;"></div>
-                <div class="swatch-dot" style="background:#3020aa;"></div>
-              </div>
-              <div class="swatch-bar" style="background:rgba(125,106,247,0.55);margin-top:auto;position:relative;z-index:1"></div>
-              <div class="swatch-bar-sm" style="background:rgba(255,255,255,0.16);position:relative;z-index:1"></div>
+            <div class="theme-swatch-preview" style="background:linear-gradient(135deg,#050010 0%,#03000e 60%,#000000 100%);">
+              <div class="theme-swatch-bar" style="background:#7d6af7;"></div>
+              <div class="theme-swatch-body" style="background:rgba(125,106,247,0.3);"></div>
+              <div class="theme-swatch-bar" style="background:rgba(255,255,255,0.12);width:60%;"></div>
             </div>
-            <div class="swatch-label">Midnight</div>
-            <div class="swatch-check" style="background:#7d6af7;box-shadow:0 2px 8px rgba(125,106,247,0.5);"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <div class="theme-swatch-label">Midnight</div>
           </label>
 
           <!-- Space -->
           <label class="theme-swatch" data-theme="space">
             <input type="radio" name="theme" value="space">
-            <div class="swatch-preview" style="background:linear-gradient(135deg,#020614 0%,#040920 60%,#010310 100%);position:relative;overflow:hidden;">
-              <!-- Stars -->
-              <div class="swatch-stars" style="position:absolute;inset:0;">
+            <div class="theme-swatch-preview" style="background:linear-gradient(135deg,#020614 0%,#040920 60%,#010310 100%);position:relative;overflow:hidden;">
+              <div style="position:absolute;inset:0;pointer-events:none;">
                 <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#fff;opacity:0.9;top:8px;left:14px;"></div>
                 <div style="position:absolute;width:1.5px;height:1.5px;border-radius:50%;background:#fff;opacity:0.7;top:16px;left:44px;"></div>
-                <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#c8d8ff;opacity:0.8;top:24px;left:28px;"></div>
-                <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#fff;opacity:0.6;top:36px;left:8px;"></div>
+                <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#c8d8ff;opacity:0.8;top:5px;left:28px;"></div>
+                <div style="position:absolute;width:2px;height:2px;border-radius:50%;background:#fff;opacity:0.6;top:20px;left:8px;"></div>
                 <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#fff;opacity:0.9;top:12px;left:60px;"></div>
-                <div style="position:absolute;width:1.5px;height:1.5px;border-radius:50%;background:#b0c8ff;opacity:0.7;top:44px;left:52px;"></div>
-                <div style="position:absolute;width:1px;height:1px;border-radius:50%;background:#fff;opacity:0.5;top:30px;left:38px;"></div>
               </div>
-              <div class="swatch-orbs">
-                <div style="position:absolute;width:52px;height:52px;border-radius:50%;background:rgba(20,60,255,0.45);filter:blur(16px);top:0;left:-4px;"></div>
-                <div style="position:absolute;width:36px;height:36px;border-radius:50%;background:rgba(120,0,255,0.40);filter:blur(12px);bottom:2px;right:2px;"></div>
-                <div style="position:absolute;width:28px;height:28px;border-radius:50%;background:rgba(0,200,255,0.25);filter:blur(10px);bottom:4px;left:24px;"></div>
-              </div>
-              <div class="swatch-dots" style="position:relative;z-index:1">
-                <div class="swatch-dot" style="background:#4fc3f7;"></div>
-                <div class="swatch-dot" style="background:#7c4dff;"></div>
-                <div class="swatch-dot" style="background:#00e5ff;"></div>
-              </div>
-              <div class="swatch-bar" style="background:rgba(79,195,247,0.55);margin-top:auto;position:relative;z-index:1"></div>
-              <div class="swatch-bar-sm" style="background:rgba(255,255,255,0.20);position:relative;z-index:1"></div>
+              <div class="theme-swatch-bar" style="background:#4fc3f7;position:relative;z-index:1;"></div>
+              <div class="theme-swatch-body" style="background:rgba(79,195,247,0.2);position:relative;z-index:1;"></div>
+              <div class="theme-swatch-bar" style="background:rgba(255,255,255,0.15);width:60%;position:relative;z-index:1;"></div>
             </div>
-            <div class="swatch-label">Space</div>
-            <div class="swatch-check" style="background:#4fc3f7;box-shadow:0 2px 8px rgba(79,195,247,0.5);"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <div class="theme-swatch-label">Space</div>
           </label>
 
         </div>
