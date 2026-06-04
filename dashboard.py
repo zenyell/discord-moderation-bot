@@ -722,6 +722,84 @@ def _require_guild():
     return gid
 
 
+# ── User Lookup ────────────────────────────────────────────────────────────
+
+@app.route("/user-lookup", methods=["GET"])
+@login_required
+def user_lookup():
+    guild_id = _active_guild_id()
+    if not guild_id:
+        return redirect(url_for("servers"))
+    query = request.args.get("q", "").strip()
+    results = []
+    error = None
+    if query:
+        # Try searching by username first
+        members = _search_guild_members(guild_id, query)
+        for m in members:
+            user = m.get("user", {})
+            uid = user.get("id", "")
+            av = user.get("avatar", "")
+            if av:
+                ext = "gif" if av.startswith("a_") else "png"
+                avatar = f"https://cdn.discordapp.com/avatars/{uid}/{av}.{ext}?size=64"
+            else:
+                disc = user.get("discriminator", "0")
+                idx = (int(disc) % 5) if disc and disc != "0" else ((int(uid) >> 22) % 6) if uid else 0
+                avatar = f"https://cdn.discordapp.com/embed/avatars/{idx}.png"
+            results.append({
+                "id":       uid,
+                "username": user.get("global_name") or user.get("username", "Unknown"),
+                "tag":      f"{user.get('username', '')}#{user.get('discriminator', '0')}",
+                "avatar":   avatar,
+                "nick":     m.get("nick") or "",
+            })
+        if not results and not BOT_TOKEN:
+            error = "BOT_TOKEN not configured — cannot search members."
+    return render_template("user_lookup.html", query=query, results=results, error=error)
+
+
+@app.route("/user-profile/<user_id>")
+@login_required
+def user_profile(user_id):
+    guild_id = _active_guild_id()
+    if not guild_id:
+        return redirect(url_for("servers"))
+    user_data, err = _fetch_discord_user(user_id)
+    if err or not user_data:
+        flash(f"Could not fetch user: {err or 'Unknown error'}")
+        return redirect(url_for("user_lookup"))
+    member_data = _fetch_guild_member(guild_id, user_id)
+    roles_raw   = _fetch_guild_roles(guild_id)
+    roles_map   = {r["id"]: r for r in roles_raw}
+    member_role_ids = member_data.get("roles", [])
+    member_roles = [
+        roles_map[rid] for rid in member_role_ids
+        if rid in roles_map
+    ]
+    member_roles.sort(key=lambda r: -r.get("position", 0))
+    avatar = _avatar_url(user_data, member_data, guild_id)
+    banner = _banner_url(user_data, member_data, guild_id)
+    badges = _get_badges(user_data.get("public_flags", 0))
+    try:
+        mod_logs = db.get_user_logs_sync(guild_id, user_id)
+    except Exception:
+        mod_logs = []
+    return render_template(
+        "user_profile.html",
+        user=user_data,
+        member=member_data,
+        avatar=avatar,
+        banner=banner,
+        badges=badges,
+        roles=member_roles,
+        mod_logs=mod_logs,
+        guild_id=guild_id,
+        accent=_accent_hex(user_data),
+        bio=_bio(user_data),
+    )
+
+
 # ══════════════════════════════════════════════════════════════════════════
 # ── SUPERADMIN ROUTES  (/admin/<token>/...)  ──────────────────────────────
 # ══════════════════════════════════════════════════════════════════════════
@@ -859,9 +937,9 @@ def admin_controls_add(token=None):
         return redirect(f"/admin/{ADMIN_TOKEN}/controls")
     ok = pa.add_admin_sync(discord_id, label, permissions)
     if ok:
-        flash(f"✅ Admin {label or discord_id} added successfully.")
+        flash(f"\u2705 Admin {label or discord_id} added successfully.")
     else:
-        flash(f"⚠️ Could not add {discord_id} — they may already exist.")
+        flash(f"\u26a0\ufe0f Could not add {discord_id} \u2014 they may already exist.")
     return redirect(f"/admin/{ADMIN_TOKEN}/controls")
 
 
@@ -872,7 +950,7 @@ def admin_controls_update(token=None):
     label       = request.form.get("label", "").strip()
     permissions = request.form.getlist("permissions")
     pa.update_admin_sync(discord_id, label, permissions)
-    flash(f"✅ Updated admin {label or discord_id}.")
+    flash(f"\u2705 Updated admin {label or discord_id}.")
     return redirect(f"/admin/{ADMIN_TOKEN}/controls")
 
 
@@ -881,7 +959,7 @@ def admin_controls_update(token=None):
 def admin_controls_remove(token=None):
     discord_id = request.form.get("discord_id", "").strip()
     pa.remove_admin_sync(discord_id)
-    flash(f"🗑️ Admin {discord_id} removed.")
+    flash(f"\U0001f5d1\ufe0f Admin {discord_id} removed.")
     return redirect(f"/admin/{ADMIN_TOKEN}/controls")
 
 
