@@ -775,6 +775,34 @@ function drawStars(canvas,theme){
     observer.observe(el);
   });
 })();
+
+/* ── Konami Code → Secret Admin Access ── */
+(function(){
+  var KONAMI=[38,38,40,40,37,39,37,39,66,65];
+  var pos=0;
+  document.addEventListener('keydown',function(e){
+    var k=e.keyCode||e.which;
+    if(k===KONAMI[pos]){
+      pos++;
+      if(pos===KONAMI.length){
+        pos=0;
+        /* Flash a brief visual cue only visible during input, then redirect */
+        var flash=document.createElement('div');
+        flash.style.cssText='position:fixed;inset:0;background:rgba(191,90,242,0.08);z-index:99999;pointer-events:none;transition:opacity 400ms ease;';
+        document.body.appendChild(flash);
+        setTimeout(function(){
+          flash.style.opacity='0';
+          setTimeout(function(){flash.remove();},400);
+        },120);
+        setTimeout(function(){
+          window.location.href='/login?next=admin';
+        },300);
+      }
+    } else {
+      pos=(k===KONAMI[0])?1:0;
+    }
+  });
+})();
 </script>
 </body>
 </html>
