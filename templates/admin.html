@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>⚡ Superadmin — Mask</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..800&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+    :root{
+      --p:#bf5af2;--b:#0a84ff;--g:#30d158;--r:#ff453a;--o:#ff9f0a;
+      --text:#f2f2f7;--text2:rgba(242,242,247,.65);--text3:rgba(242,242,247,.38);
+      --gb:rgba(255,255,255,.055);--gbl:rgba(255,255,255,.08);--gbh:rgba(255,255,255,.09);
+      --gborder:rgba(255,255,255,.10);--gborders:rgba(255,255,255,.22);
+      --gblur:blur(28px) saturate(180%);
+      --ginset:inset 0 1px 0 rgba(255,255,255,.14),inset 0 -1px 0 rgba(0,0,0,.12);
+      --shadow:0 8px 32px rgba(0,0,0,.45),0 2px 8px rgba(0,0,0,.25);
+      --t:220ms cubic-bezier(.16,1,.3,1);
+      --r-sm:10px;--r-md:14px;--r-lg:18px;
+    }
+    body{font-family:'Inter',sans-serif;background:#0a0a0f;color:var(--text);min-height:100dvh;overflow-x:hidden}
+    /* ambient */
+    .ambient{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+    .orb{position:absolute;border-radius:50%;filter:blur(80px);animation:drift 20s ease-in-out infinite}
+    @keyframes drift{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(3%,-2%) scale(1.05)}66%{transform:translate(-2%,3%) scale(.97)}}
+    /* nav */
+    .topnav{
+      position:fixed;top:0;left:0;right:0;z-index:100;
+      display:flex;align-items:center;justify-content:space-between;
+      padding:0 28px;height:58px;
+      background:var(--gb);backdrop-filter:var(--gblur);-webkit-backdrop-filter:var(--gblur);
+      border-bottom:1px solid var(--gborder);
+    }
+    .nav-brand{display:flex;align-items:center;gap:9px;text-decoration:none;color:var(--text);font-weight:700;font-size:15px}
+    .brand-icon{
+      width:30px;height:30px;border-radius:9px;
+      background:linear-gradient(135deg,var(--r),var(--o));
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:0 2px 10px rgba(255,69,58,.4);color:#fff;
+    }
+    .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase}
+    .badge-danger{background:rgba(255,69,58,.18);border:1px solid rgba(255,69,58,.35);color:var(--r)}
+    .badge-success{background:rgba(48,209,88,.18);border:1px solid rgba(48,209,88,.35);color:var(--g)}
+    .nav-right{display:flex;align-items:center;gap:10px}
+    .nav-user{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2)}
+    .nav-user img{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--gborder)}
+    /* layout */
+    .page{position:relative;z-index:1;padding-top:58px;display:flex;min-height:100dvh}
+    .sidebar{
+      width:230px;flex-shrink:0;position:sticky;top:58px;height:calc(100dvh - 58px);
+      overflow-y:auto;
+      background:var(--gb);border-right:1px solid var(--gborder);
+      padding:16px 10px;
+      display:flex;flex-direction:column;gap:4px;
+    }
+    .sidebar-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3);padding:12px 10px 4px}
+    .nav-item{
+      display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:var(--r-sm);
+      text-decoration:none;color:var(--text2);font-size:13px;font-weight:500;
+      transition:background var(--t),color var(--t);
+      cursor:pointer;border:none;background:none;width:100%;text-align:left;
+    }
+    .nav-item:hover{background:var(--gbh);color:var(--text)}
+    .nav-item.active{background:rgba(191,90,242,.15);color:var(--p);border:1px solid rgba(191,90,242,.2)}
+    .nav-item.danger{color:rgba(255,69,58,.8)}
+    .nav-item.danger:hover{background:rgba(255,69,58,.12);color:var(--r)}
+    .nav-item svg{flex-shrink:0;opacity:.7}
+    .nav-item.active svg,.nav-item:hover svg{opacity:1}
+    .main{flex:1;padding:32px 36px;max-width:1100px}
+    /* panels */
+    .panel{display:none}
+    .panel.active{display:block}
+    .panel-title{font-size:22px;font-weight:800;letter-spacing:-.03em;margin-bottom:6px}
+    .panel-sub{font-size:13px;color:var(--text2);margin-bottom:28px}
+    /* cards */
+    .card{
+      background:var(--gb);border:1px solid var(--gborder);border-radius:var(--r-lg);
+      padding:24px;backdrop-filter:var(--gblur);box-shadow:var(--ginset),0 2px 8px rgba(0,0,0,.3);
+      margin-bottom:16px;
+    }
+    .card-title{font-size:14px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+    /* stat */
+    .stat-card{
+      background:var(--gb);border:1px solid var(--gborder);border-radius:var(--r-lg);
+      padding:20px;text-align:center;
+    }
+    .stat-num{font-size:2rem;font-weight:800;letter-spacing:-.04em;background:linear-gradient(135deg,#fff,var(--text2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .stat-label{font-size:11px;color:var(--text3);font-weight:600;letter-spacing:.3px;margin-top:4px}
+    /* form */
+    .form-group{margin-bottom:16px}
+    .form-label{display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;letter-spacing:.2px}
+    .form-input,.form-select,.form-textarea{
+      width:100%;padding:10px 14px;border-radius:var(--r-sm);
+      background:rgba(255,255,255,.07);border:1px solid var(--gborder);
+      color:var(--text);font-family:inherit;font-size:13px;
+      transition:border-color var(--t),box-shadow var(--t);
+      outline:none;
+    }
+    .form-input:focus,.form-select:focus,.form-textarea:focus{
+      border-color:rgba(191,90,242,.5);box-shadow:0 0 0 3px rgba(191,90,242,.12);
+    }
+    .form-textarea{resize:vertical;min-height:90px}
+    .form-select option{background:#1c1c1e;color:var(--text)}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    /* buttons */
+    .btn{
+      display:inline-flex;align-items:center;gap:7px;
+      padding:10px 20px;border-radius:var(--r-md);
+      font-family:inherit;font-size:13px;font-weight:600;
+      cursor:pointer;text-decoration:none;border:1px solid var(--gborder);
+      background:var(--gbl);color:var(--text);
+      box-shadow:var(--ginset);backdrop-filter:blur(20px);
+      transition:background var(--t),transform var(--t),box-shadow var(--t);
+    }
+    .btn:hover{background:var(--gbh);transform:translateY(-1px)}
+    .btn:active{transform:translateY(0) scale(.98)}
+    .btn-primary{background:linear-gradient(135deg,rgba(191,90,242,.45),rgba(10,132,255,.35));border-color:rgba(191,90,242,.35);box-shadow:var(--ginset),0 4px 20px rgba(191,90,242,.3)}
+    .btn-danger{background:linear-gradient(135deg,rgba(255,69,58,.4),rgba(255,100,80,.25));border-color:rgba(255,69,58,.35);box-shadow:var(--ginset),0 4px 16px rgba(255,69,58,.25)}
+    .btn-success{background:linear-gradient(135deg,rgba(48,209,88,.35),rgba(30,170,60,.25));border-color:rgba(48,209,88,.3)}
+    .btn-sm{padding:7px 14px;font-size:12px;border-radius:var(--r-sm)}
+    .btn-full{width:100%;justify-content:center}
+    /* table */
+    .table-wrap{overflow-x:auto;border-radius:var(--r-md);border:1px solid var(--gborder)}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th{padding:10px 14px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);border-bottom:1px solid var(--gborder);background:rgba(255,255,255,.03)}
+    td{padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.05);color:var(--text2)}
+    tr:last-child td{border-bottom:none}
+    tr:hover td{background:rgba(255,255,255,.03);color:var(--text)}
+    /* alert */
+    .alert{padding:12px 16px;border-radius:var(--r-sm);font-size:13px;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+    .alert-success{background:rgba(48,209,88,.15);border:1px solid rgba(48,209,88,.3);color:#30d158}
+    .alert-error{background:rgba(255,69,58,.15);border:1px solid rgba(255,69,58,.3);color:#ff453a}
+    .alert-warn{background:rgba(255,159,10,.15);border:1px solid rgba(255,159,10,.3);color:#ff9f0a}
+    /* tag */
+    .tag{display:inline-flex;align-items:center;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:600}
+    .tag-purple{background:rgba(191,90,242,.18);color:var(--p)}
+    .tag-blue{background:rgba(10,132,255,.18);color:var(--b)}
+    .tag-green{background:rgba(48,209,88,.18);color:var(--g)}
+    .tag-red{background:rgba(255,69,58,.18);color:var(--r)}
+    /* flash */
+    .flash-list{list-style:none;margin-bottom:16px}
+    .flash-item{padding:11px 16px;border-radius:var(--r-sm);font-size:13px;margin-bottom:8px;background:rgba(191,90,242,.15);border:1px solid rgba(191,90,242,.3);color:var(--p)}
+    /* divider */
+    .divider{border:none;border-top:1px solid var(--gborder);margin:20px 0}
+    /* output box */
+    .output-box{
+      background:rgba(0,0,0,.4);border:1px solid var(--gborder);border-radius:var(--r-sm);
+      padding:14px;font-family:monospace;font-size:12px;color:var(--g);
+      min-height:60px;white-space:pre-wrap;word-break:break-all;
+      margin-top:12px;
+    }
+    @media(max-width:768px){
+      .sidebar{display:none}
+      .main{padding:20px 16px}
+      .grid-2,.grid-3,.form-row{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+
+<div class="ambient">
+  <div class="orb" style="width:600px;height:600px;top:-150px;left:-100px;background:radial-gradient(circle,rgba(255,69,58,.12),transparent 70%)"></div>
+  <div class="orb" style="width:500px;height:500px;bottom:-80px;right:-80px;background:radial-gradient(circle,rgba(191,90,242,.10),transparent 70%);animation-delay:-7s"></div>
+</div>
+
+<nav class="topnav">
+  <a class="nav-brand" href="/admin/{{ admin_token }}">
+    <div class="brand-icon">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+    </div>
+    Mask Superadmin
+  </a>
+  <div class="nav-right">
+    <span class="badge badge-danger">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+      RESTRICTED
+    </span>
+    <div class="nav-user">
+      {% if current_user.avatar %}<img src="{{ current_user.avatar }}" alt="">{% endif %}
+      <span>{{ current_user.username }}</span>
+    </div>
+    <a href="/logout" class="btn btn-sm" style="margin-left:4px">Logout</a>
+  </div>
+</nav>
+
+<div class="page">
+  <aside class="sidebar">
+    <div class="sidebar-label">Overview</div>
+    <button class="nav-item active" onclick="showPanel('overview')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </button>
+
+    <div class="sidebar-label">Bot Control</div>
+    <button class="nav-item" onclick="showPanel('message')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Send Message
+    </button>
+    <button class="nav-item" onclick="showPanel('dm')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      DM User
+    </button>
+    <button class="nav-item" onclick="showPanel('broadcast')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.18 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 6 6l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+      Broadcast
+    </button>
+
+    <div class="sidebar-label">Guilds</div>
+    <button class="nav-item" onclick="showPanel('guilds')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      All Guilds
+    </button>
+    <button class="nav-item" onclick="showPanel('leave_guild')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Leave Guild
+    </button>
+
+    <div class="sidebar-label">Database</div>
+    <button class="nav-item" onclick="showPanel('db_wipe')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+      Wipe Guild Data
+    </button>
+
+    <div style="flex:1"></div>
+    <a href="/dashboard" class="nav-item" style="margin-top:8px">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      Back to Dashboard
+    </a>
+  </aside>
+
+  <main class="main">
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <ul class="flash-list">
+          {% for m in messages %}<li class="flash-item">{{ m }}</li>{% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <!-- OVERVIEW -->
+    <div id="panel-overview" class="panel active">
+      <div class="panel-title">⚡ Superadmin Panel</div>
+      <div class="panel-sub">Full bot control. Only you can see this.</div>
+
+      <div class="grid-3" style="margin-bottom:24px">
+        <div class="stat-card">
+          <div class="stat-num" id="stat-guilds">—</div>
+          <div class="stat-label">Guilds</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="stat-status">—</div>
+          <div class="stat-label">Bot Status</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">1</div>
+          <div class="stat-label">Admin (you)</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Quick Actions
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px">
+          <button class="btn btn-sm" onclick="showPanel('message')">📨 Send Message</button>
+          <button class="btn btn-sm" onclick="showPanel('dm')">💬 DM User</button>
+          <button class="btn btn-sm" onclick="showPanel('broadcast')">📢 Broadcast</button>
+          <button class="btn btn-sm" onclick="showPanel('guilds')">🌐 View Guilds</button>
+          <button class="btn btn-sm btn-danger" onclick="showPanel('db_wipe')">🗑 Wipe Guild</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="color:rgba(255,159,10,.9)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          Access Warning
+        </div>
+        <p style="font-size:13px;color:var(--text2);line-height:1.6">This panel is accessible only to you via a secret URL token. Do not share your admin URL with anyone. Actions here affect all guilds and cannot be undone.</p>
+      </div>
+    </div>
+
+    <!-- SEND MESSAGE -->
+    <div id="panel-message" class="panel">
+      <div class="panel-title">📨 Send Message</div>
+      <div class="panel-sub">Send a message as the bot to any channel in any guild.</div>
+      <div class="card">
+        <form method="POST" action="/admin/{{ admin_token }}/send-message">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Guild ID</label>
+              <input class="form-input" name="guild_id" placeholder="e.g. 123456789" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Channel ID</label>
+              <input class="form-input" name="channel_id" placeholder="e.g. 987654321" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Message</label>
+            <textarea class="form-textarea" name="content" placeholder="Type your message..." required></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary">Send Message</button>
+        </form>
+        {% if send_result %}<div class="output-box">{{ send_result }}</div>{% endif %}
+      </div>
+    </div>
+
+    <!-- DM USER -->
+    <div id="panel-dm" class="panel">
+      <div class="panel-title">💬 DM User</div>
+      <div class="panel-sub">Send a direct message to any Discord user via the bot.</div>
+      <div class="card">
+        <form method="POST" action="/admin/{{ admin_token }}/dm-user">
+          <div class="form-group">
+            <label class="form-label">User ID</label>
+            <input class="form-input" name="user_id" placeholder="e.g. 923615726940590150" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Message</label>
+            <textarea class="form-textarea" name="content" placeholder="Type your DM..." required></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary">Send DM</button>
+        </form>
+        {% if dm_result %}<div class="output-box">{{ dm_result }}</div>{% endif %}
+      </div>
+    </div>
+
+    <!-- BROADCAST -->
+    <div id="panel-broadcast" class="panel">
+      <div class="panel-title">📢 Broadcast</div>
+      <div class="panel-sub">Send a message to a specific channel in every guild the bot is in.</div>
+      <div class="card">
+        <div class="alert alert-warn">⚠ This sends to ALL guilds that have a matching channel ID. Use with caution.</div>
+        <form method="POST" action="/admin/{{ admin_token }}/broadcast">
+          <div class="form-group">
+            <label class="form-label">Message</label>
+            <textarea class="form-textarea" name="content" placeholder="Broadcast message..." required></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Target Channel ID (must exist in each guild)</label>
+            <input class="form-input" name="channel_id" placeholder="Channel ID" required>
+          </div>
+          <button type="submit" class="btn btn-danger">Broadcast to All Guilds</button>
+        </form>
+        {% if broadcast_result %}<div class="output-box">{{ broadcast_result }}</div>{% endif %}
+      </div>
+    </div>
+
+    <!-- ALL GUILDS -->
+    <div id="panel-guilds" class="panel">
+      <div class="panel-title">🌐 All Guilds</div>
+      <div class="panel-sub">Every server the bot is currently in.</div>
+      <div class="card">
+        {% if guilds_list %}
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Guild ID</th><th>Name</th><th>Members</th><th>Action</th></tr></thead>
+            <tbody>
+              {% for g in guilds_list %}
+              <tr>
+                <td><code style="font-size:11px">{{ g.id }}</code></td>
+                <td>{{ g.name }}</td>
+                <td>{{ g.approximate_member_count or '—' }}</td>
+                <td>
+                  <form method="POST" action="/admin/{{ admin_token }}/leave-guild" style="display:inline">
+                    <input type="hidden" name="guild_id" value="{{ g.id }}">
+                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Leave {{ g.name }}?')">Leave</button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p style="color:var(--text3);font-size:13px">No guilds found or bot token not set.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- LEAVE GUILD -->
+    <div id="panel-leave_guild" class="panel">
+      <div class="panel-title">🚪 Leave Guild</div>
+      <div class="panel-sub">Force the bot to leave a specific guild by ID.</div>
+      <div class="card">
+        <form method="POST" action="/admin/{{ admin_token }}/leave-guild">
+          <div class="form-group">
+            <label class="form-label">Guild ID</label>
+            <input class="form-input" name="guild_id" placeholder="Guild ID to leave" required>
+          </div>
+          <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure?')">Leave Guild</button>
+        </form>
+        {% if leave_result %}<div class="output-box">{{ leave_result }}</div>{% endif %}
+      </div>
+    </div>
+
+    <!-- WIPE GUILD DATA -->
+    <div id="panel-db_wipe" class="panel">
+      <div class="panel-title">🗑 Wipe Guild Data</div>
+      <div class="panel-sub">Permanently delete all database records for a guild. This cannot be undone.</div>
+      <div class="card">
+        <div class="alert alert-error">⛔ This deletes ALL logs, settings, moderation records, tags, triggers, and more for the specified guild.</div>
+        <form method="POST" action="/admin/{{ admin_token }}/wipe-guild">
+          <div class="form-group">
+            <label class="form-label">Guild ID</label>
+            <input class="form-input" name="guild_id" placeholder="Guild ID to wipe" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Type <strong>CONFIRM</strong> to proceed</label>
+            <input class="form-input" name="confirm" placeholder="CONFIRM" required>
+          </div>
+          <button type="submit" class="btn btn-danger">⚠ Wipe All Data</button>
+        </form>
+        {% if wipe_result %}<div class="output-box">{{ wipe_result }}</div>{% endif %}
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+function showPanel(name){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+  var p=document.getElementById('panel-'+name);
+  if(p)p.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(b=>{
+    if(b.getAttribute('onclick')&&b.getAttribute('onclick').includes("'"+name+"'"))
+      b.classList.add('active');
+  });
+}
+// Load overview stats
+fetch('/api/status').then(r=>r.json()).then(d=>{
+  document.getElementById('stat-status').textContent=d.online?'Online':'Offline';
+});
+fetch('/admin/{{ admin_token }}/api/guild-count').then(r=>r.json()).then(d=>{
+  document.getElementById('stat-guilds').textContent=d.count||'—';
+}).catch(()=>{});
+// open correct panel if URL hash present
+if(location.hash){showPanel(location.hash.slice(1));}
+</script>
+</body>
+</html>
