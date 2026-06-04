@@ -102,11 +102,45 @@ async def init_db():
             content TEXT NOT NULL, created_at TEXT DEFAULT (datetime('now')), UNIQUE(guild_id, name))""", []),
         ("""CREATE TABLE IF NOT EXISTS triggers (
             id INTEGER PRIMARY KEY AUTOINCREMENT, guild_id TEXT NOT NULL, phrase TEXT NOT NULL,
-            response TEXT NOT NULL, UNIQUE(guild_id, phrase))""", []),
+            response TEXT NOT NULL, match_type TEXT DEFAULT 'contains', enabled INTEGER DEFAULT 1,
+            created_by TEXT, use_count INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT (datetime('now')), UNIQUE(guild_id, phrase))""", []),
         ("""CREATE TABLE IF NOT EXISTS suggestions (
             id INTEGER PRIMARY KEY AUTOINCREMENT, guild_id TEXT NOT NULL, author_id TEXT NOT NULL,
             content TEXT NOT NULL, upvotes INTEGER DEFAULT 0, downvotes INTEGER DEFAULT 0,
             message_id TEXT, created_at TEXT DEFAULT (datetime('now')))""", []),
+        # ── NEW: mod presets ──────────────────────────────────────────────
+        ("""CREATE TABLE IF NOT EXISTS mod_presets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, guild_id TEXT NOT NULL,
+            name TEXT NOT NULL, action TEXT NOT NULL,
+            reason TEXT DEFAULT '', duration_minutes INTEGER DEFAULT 0,
+            dm_user INTEGER DEFAULT 1, delete_days INTEGER DEFAULT 0,
+            created_by TEXT, created_at TEXT DEFAULT (datetime('now')),
+            UNIQUE(guild_id, name))""", []),
+        # ── NEW: appeals ──────────────────────────────────────────────────
+        ("""CREATE TABLE IF NOT EXISTS appeals (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, guild_id TEXT NOT NULL,
+            user_id TEXT NOT NULL, username TEXT DEFAULT '',
+            action_type TEXT NOT NULL, original_reason TEXT DEFAULT '',
+            appeal_reason TEXT NOT NULL,
+            status TEXT DEFAULT 'pending',
+            reviewer_id TEXT DEFAULT '', reviewer_note TEXT DEFAULT '',
+            created_at TEXT DEFAULT (datetime('now')),
+            reviewed_at TEXT DEFAULT NULL)""", []),
+        # ── NEW: automation rules ─────────────────────────────────────────
+        ("""CREATE TABLE IF NOT EXISTS automation_rules (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, guild_id TEXT NOT NULL,
+            name TEXT NOT NULL, enabled INTEGER DEFAULT 1,
+            trigger_type TEXT NOT NULL, trigger_value TEXT DEFAULT '',
+            action_type TEXT NOT NULL, action_value TEXT DEFAULT '',
+            cooldown_seconds INTEGER DEFAULT 0, last_fired TEXT DEFAULT NULL,
+            fire_count INTEGER DEFAULT 0,
+            created_by TEXT, created_at TEXT DEFAULT (datetime('now')))""", []),
+        # ── NEW: per-category log channels ────────────────────────────────
+        ("""CREATE TABLE IF NOT EXISTS log_channels (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, guild_id TEXT NOT NULL,
+            category TEXT NOT NULL, channel_id TEXT NOT NULL,
+            UNIQUE(guild_id, category))""", []),
     ]
     try:
         await _exec_many(tables)
@@ -134,12 +168,46 @@ async def get_warnings(guild_id, user_id):
 async def clear_warnings(guild_id, user_id):
     await _exec("DELETE FROM warnings WHERE guild_id=? AND user_id=?", (guild_id, user_id))
 
+async def delete_warning(warning_id, guild_id):
+    await _exec("DELETE FROM warnings WHERE id=? AND guild_id=?", (warning_id, guild_id))
+
+async def all_warnings(guild_id, page=1, per_page=50, search=""):
+    offset = (page - 1) * per_page
+    args = [guild_id]
+    where = "WHERE guild_id=?"
+    if search:
+        like = f"%{search}%"
+        where += " AND (user_id LIKE ? OR moderator_id LIKE ? OR reason LIKE ?)"
+        args += [like, like, like]
+    count_rs = await _exec(f"SELECT COUNT(*) as cnt FROM warnings {where}", args)
+    total = (_one(count_rs) or {}).get("cnt", 0)
+    args_page = args + [per_page, offset]
+    rs = await _exec(
+        f"SELECT * FROM warnings {where} ORDER BY created_at DESC LIMIT ? OFFSET ?",
+        args_page
+    )
+    return {"warnings": _rows(rs), "total": total, "page": page, "per_page": per_page,
+            "pages": max(1, -(-total // per_page))}
+
+async def user_logs(guild_id, user_id, limit=50):
+    rs = await _exec(
+        "SELECT * FROM mod_logs WHERE guild_id=? AND target_id=? ORDER BY created_at DESC LIMIT ?",
+        (guild_id, user_id, limit)
+    )
+    return _rows(rs)
+
 def add_warning_sync(guild_id, user_id, moderator_id, reason=None):
     _sync(add_warning(guild_id, user_id, moderator_id, reason))
 def get_warnings_sync(guild_id, user_id):
     return _sync(get_warnings(guild_id, user_id))
 def clear_warnings_sync(guild_id, user_id):
     _sync(clear_warnings(guild_id, user_id))
+def delete_warning_sync(warning_id, guild_id):
+    _sync(delete_warning(warning_id, guild_id))
+def all_warnings_sync(guild_id, page=1, per_page=50, search=""):
+    return _sync(all_warnings(guild_id, page, per_page, search))
+def user_logs_sync(guild_id, user_id, limit=50):
+    return _sync(user_logs(guild_id, user_id, limit))
 
 
 # ── mod logs ──────────────────────────────────────────────────────────────
@@ -166,30 +234,25 @@ async def log_stats(guild_id):
             "timeouts": counts.get("timeout",0), "warnings": counts.get("warn",0), "purges": counts.get("purge",0)}
 
 async def all_logs(guild_id, page=1, per_page=50, search="", action_filter=""):
-    """Paginated mod logs with optional search (target_id / moderator_id / reason) and action filter."""
     offset = (page - 1) * per_page
     args = [guild_id]
     where = "WHERE guild_id=?"
-
     if action_filter:
         where += " AND action=?"
         args.append(action_filter)
-
     if search:
         like = f"%{search}%"
         where += " AND (target_id LIKE ? OR moderator_id LIKE ? OR reason LIKE ?)"
         args += [like, like, like]
-
     count_rs = await _exec(f"SELECT COUNT(*) as cnt FROM mod_logs {where}", args)
     total = (_one(count_rs) or {}).get("cnt", 0)
-
     args_page = args + [per_page, offset]
     rs = await _exec(
         f"SELECT * FROM mod_logs {where} ORDER BY created_at DESC LIMIT ? OFFSET ?",
         args_page
     )
     return {"logs": _rows(rs), "total": total, "page": page, "per_page": per_page,
-            "pages": max(1, -(-total // per_page))}  # ceiling division
+            "pages": max(1, -(-total // per_page))}
 
 def recent_logs_sync(guild_id, limit=20):      return _sync(recent_logs(guild_id, limit))
 def logs_for_user_sync(guild_id, uid, lim=50): return _sync(logs_for_user(guild_id, uid, lim))
@@ -307,7 +370,6 @@ async def get_cached_profile(user_id):
     return _one(rs)
 
 async def search_profile_cache(query: str, limit: int = 20):
-    """Search profile_cache by username or global_name (case-insensitive partial match)."""
     pattern = f"%{query.lower()}%"
     rs = await _exec(
         """SELECT * FROM profile_cache
@@ -383,27 +445,35 @@ async def get_tag(guild_id, name):
     return _one(rs)
 
 def get_tags_sync(guild_id):                 return _sync(get_tags(guild_id))
-def add_tag_sync(guild_id, name, content):   _sync(add_tag(guild_id, name, content))
+def add_tag_sync(guild_id, name, content, created_by=None):  _sync(add_tag(guild_id, name, content))
 def remove_tag_sync(guild_id, name):         _sync(remove_tag(guild_id, name))
 
 
 # ── triggers ──────────────────────────────────────────────────────────────────
 
 async def get_all_triggers(guild_id):
-    rs = await _exec("SELECT * FROM triggers WHERE guild_id=?", (guild_id,))
+    rs = await _exec("SELECT * FROM triggers WHERE guild_id=? ORDER BY created_at DESC", (guild_id,))
     return _rows(rs)
 
-async def add_trigger(guild_id, phrase, response):
-    await _exec("INSERT OR REPLACE INTO triggers (guild_id, phrase, response) VALUES (?,?,?)",
-                (guild_id, phrase.lower().strip(), response))
+async def add_trigger(guild_id, phrase, response, match_type="contains", created_by=None):
+    await _exec(
+        """INSERT OR REPLACE INTO triggers (guild_id, phrase, response, match_type, created_by)
+           VALUES (?,?,?,?,?)""",
+        (guild_id, phrase.lower().strip(), response, match_type, created_by)
+    )
 
 async def remove_trigger(trigger_id):
     await _exec("DELETE FROM triggers WHERE id=?", (trigger_id,))
 
-def get_all_triggers_sync(guild_id):               return _sync(get_all_triggers(guild_id))
-def get_triggers_sync(guild_id):                   return _sync(get_all_triggers(guild_id))  # alias
-def add_trigger_sync(guild_id, phrase, response):  _sync(add_trigger(guild_id, phrase, response))
-def remove_trigger_sync(trigger_id):               _sync(remove_trigger(trigger_id))
+async def toggle_trigger(trigger_id, guild_id, enabled):
+    await _exec("UPDATE triggers SET enabled=? WHERE id=? AND guild_id=?", (1 if enabled else 0, trigger_id, guild_id))
+
+def get_all_triggers_sync(guild_id):  return _sync(get_all_triggers(guild_id))
+def get_triggers_sync(guild_id):      return _sync(get_all_triggers(guild_id))
+def add_trigger_sync(guild_id, phrase, response, match_type="contains", created_by=None):
+    _sync(add_trigger(guild_id, phrase, response, match_type, created_by))
+def remove_trigger_sync(trigger_id):          _sync(remove_trigger(trigger_id))
+def toggle_trigger_sync(trigger_id, guild_id, enabled): _sync(toggle_trigger(trigger_id, guild_id, enabled))
 
 
 # ── suggestions ───────────────────────────────────────────────────────────────
@@ -425,3 +495,161 @@ async def vote_suggestion(suggestion_id, upvote: bool):
 
 def get_suggestions_sync(guild_id):                               return _sync(get_suggestions(guild_id))
 def add_suggestion_sync(guild_id, author_id, content, mid=None):  _sync(add_suggestion(guild_id, author_id, content, mid))
+
+
+# ── mod presets ───────────────────────────────────────────────────────────────
+
+async def get_mod_presets(guild_id):
+    rs = await _exec("SELECT * FROM mod_presets WHERE guild_id=? ORDER BY name", (guild_id,))
+    return _rows(rs)
+
+async def get_mod_preset(preset_id, guild_id):
+    rs = await _exec("SELECT * FROM mod_presets WHERE id=? AND guild_id=?", (preset_id, guild_id))
+    return _one(rs)
+
+async def add_mod_preset(guild_id, name, action, reason="", duration_minutes=0,
+                          dm_user=1, delete_days=0, created_by=None):
+    await _exec(
+        """INSERT OR REPLACE INTO mod_presets
+           (guild_id, name, action, reason, duration_minutes, dm_user, delete_days, created_by)
+           VALUES (?,?,?,?,?,?,?,?)""",
+        (guild_id, name.strip(), action, reason, duration_minutes, dm_user, delete_days, created_by)
+    )
+
+async def remove_mod_preset(preset_id, guild_id):
+    await _exec("DELETE FROM mod_presets WHERE id=? AND guild_id=?", (preset_id, guild_id))
+
+def get_mod_presets_sync(guild_id):     return _sync(get_mod_presets(guild_id))
+def get_mod_preset_sync(pid, gid):      return _sync(get_mod_preset(pid, gid))
+def add_mod_preset_sync(guild_id, name, action, reason="", duration_minutes=0,
+                        dm_user=1, delete_days=0, created_by=None):
+    _sync(add_mod_preset(guild_id, name, action, reason, duration_minutes, dm_user, delete_days, created_by))
+def remove_mod_preset_sync(pid, gid):   _sync(remove_mod_preset(pid, gid))
+
+
+# ── appeals ───────────────────────────────────────────────────────────────────
+
+async def get_appeals(guild_id, status=None, page=1, per_page=25):
+    offset = (page - 1) * per_page
+    args = [guild_id]
+    where = "WHERE guild_id=?"
+    if status:
+        where += " AND status=?"
+        args.append(status)
+    count_rs = await _exec(f"SELECT COUNT(*) as cnt FROM appeals {where}", args)
+    total = (_one(count_rs) or {}).get("cnt", 0)
+    rs = await _exec(
+        f"SELECT * FROM appeals {where} ORDER BY created_at DESC LIMIT ? OFFSET ?",
+        args + [per_page, offset]
+    )
+    return {"appeals": _rows(rs), "total": total, "page": page, "per_page": per_page,
+            "pages": max(1, -(-total // per_page))}
+
+async def get_appeal(appeal_id, guild_id):
+    rs = await _exec("SELECT * FROM appeals WHERE id=? AND guild_id=?", (appeal_id, guild_id))
+    return _one(rs)
+
+async def add_appeal(guild_id, user_id, username, action_type, original_reason, appeal_reason):
+    await _exec(
+        """INSERT INTO appeals (guild_id, user_id, username, action_type, original_reason, appeal_reason)
+           VALUES (?,?,?,?,?,?)""",
+        (guild_id, user_id, username, action_type, original_reason, appeal_reason)
+    )
+
+async def review_appeal(appeal_id, guild_id, status, reviewer_id, reviewer_note=""):
+    await _exec(
+        """UPDATE appeals SET status=?, reviewer_id=?, reviewer_note=?,
+           reviewed_at=datetime('now') WHERE id=? AND guild_id=?""",
+        (status, reviewer_id, reviewer_note, appeal_id, guild_id)
+    )
+
+async def delete_appeal(appeal_id, guild_id):
+    await _exec("DELETE FROM appeals WHERE id=? AND guild_id=?", (appeal_id, guild_id))
+
+def get_appeals_sync(guild_id, status=None, page=1, per_page=25):
+    return _sync(get_appeals(guild_id, status, page, per_page))
+def get_appeal_sync(appeal_id, guild_id):   return _sync(get_appeal(appeal_id, guild_id))
+def add_appeal_sync(guild_id, user_id, username, action_type, original_reason, appeal_reason):
+    _sync(add_appeal(guild_id, user_id, username, action_type, original_reason, appeal_reason))
+def review_appeal_sync(appeal_id, guild_id, status, reviewer_id, reviewer_note=""):
+    _sync(review_appeal(appeal_id, guild_id, status, reviewer_id, reviewer_note))
+def delete_appeal_sync(appeal_id, guild_id): _sync(delete_appeal(appeal_id, guild_id))
+
+
+# ── automation rules ──────────────────────────────────────────────────────────
+
+async def get_automation_rules(guild_id):
+    rs = await _exec("SELECT * FROM automation_rules WHERE guild_id=? ORDER BY created_at DESC", (guild_id,))
+    return _rows(rs)
+
+async def get_automation_rule(rule_id, guild_id):
+    rs = await _exec("SELECT * FROM automation_rules WHERE id=? AND guild_id=?", (rule_id, guild_id))
+    return _one(rs)
+
+async def add_automation_rule(guild_id, name, trigger_type, trigger_value,
+                               action_type, action_value, cooldown_seconds=0, created_by=None):
+    await _exec(
+        """INSERT INTO automation_rules
+           (guild_id, name, trigger_type, trigger_value, action_type, action_value, cooldown_seconds, created_by)
+           VALUES (?,?,?,?,?,?,?,?)""",
+        (guild_id, name.strip(), trigger_type, trigger_value,
+         action_type, action_value, cooldown_seconds, created_by)
+    )
+
+async def update_automation_rule(rule_id, guild_id, **kwargs):
+    for k, v in kwargs.items():
+        await _exec(
+            f"UPDATE automation_rules SET {k}=? WHERE id=? AND guild_id=?",
+            (v, rule_id, guild_id)
+        )
+
+async def toggle_automation_rule(rule_id, guild_id, enabled):
+    await _exec("UPDATE automation_rules SET enabled=? WHERE id=? AND guild_id=?",
+                (1 if enabled else 0, rule_id, guild_id))
+
+async def delete_automation_rule(rule_id, guild_id):
+    await _exec("DELETE FROM automation_rules WHERE id=? AND guild_id=?", (rule_id, guild_id))
+
+def get_automation_rules_sync(guild_id):        return _sync(get_automation_rules(guild_id))
+def get_automation_rule_sync(rid, gid):         return _sync(get_automation_rule(rid, gid))
+def add_automation_rule_sync(guild_id, name, trigger_type, trigger_value,
+                              action_type, action_value, cooldown_seconds=0, created_by=None):
+    _sync(add_automation_rule(guild_id, name, trigger_type, trigger_value,
+                               action_type, action_value, cooldown_seconds, created_by))
+def toggle_automation_rule_sync(rid, gid, enabled): _sync(toggle_automation_rule(rid, gid, enabled))
+def delete_automation_rule_sync(rid, gid):      _sync(delete_automation_rule(rid, gid))
+
+
+# ── per-category log channels ─────────────────────────────────────────────────
+
+async def get_log_channels(guild_id):
+    rs = await _exec("SELECT * FROM log_channels WHERE guild_id=?", (guild_id,))
+    return {r["category"]: r["channel_id"] for r in _rows(rs)}
+
+async def set_log_channel(guild_id, category, channel_id):
+    if channel_id:
+        await _exec(
+            "INSERT OR REPLACE INTO log_channels (guild_id, category, channel_id) VALUES (?,?,?)",
+            (guild_id, category, channel_id)
+        )
+    else:
+        await _exec("DELETE FROM log_channels WHERE guild_id=? AND category=?", (guild_id, category))
+
+def get_log_channels_sync(guild_id):                       return _sync(get_log_channels(guild_id))
+def set_log_channel_sync(guild_id, category, channel_id):  _sync(set_log_channel(guild_id, category, channel_id))
+
+
+# ── wipe guild ────────────────────────────────────────────────────────────────
+
+async def wipe_guild(guild_id):
+    tables = [
+        "warnings", "mod_logs", "blacklisted_words", "blacklisted_users",
+        "command_settings", "reaction_roles", "autoroles", "tags", "triggers",
+        "suggestions", "mod_presets", "appeals", "automation_rules", "log_channels",
+    ]
+    stmts = [(f"DELETE FROM {t} WHERE guild_id=?", [guild_id]) for t in tables]
+    # settings uses composite key format guild_id:key
+    stmts.append(("DELETE FROM settings WHERE key LIKE ?", [f"{guild_id}:%"]))
+    await _exec_many(stmts)
+
+def wipe_guild_sync(guild_id): _sync(wipe_guild(guild_id))
