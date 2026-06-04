@@ -1,0 +1,858 @@
+{% extends "base.html" %}
+{% block title %}Bot Panel{% endblock %}
+{% block topbar_title %}Bot Control Panel{% endblock %}
+
+{% block topbar_right %}
+<div style="display:flex;align-items:center;gap:8px;">
+  {% if current_user.logged_in %}
+  <div style="display:flex;align-items:center;gap:8px;padding:4px 10px 4px 4px;background:var(--glass-bg-light);border:1px solid var(--glass-border);border-radius:var(--r-xl);box-shadow:var(--glass-inset);">
+    {% if current_user.avatar %}
+    <img src="{{ current_user.avatar }}" alt="{{ current_user.username }}" width="26" height="26" style="border-radius:50%;object-fit:cover;">
+    {% else %}
+    <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--ios-purple),var(--ios-blue));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;">{{ current_user.username[:1].upper() }}</div>
+    {% endif %}
+    <span style="font-size:12px;font-weight:600;color:var(--text-2);">{{ current_user.username }}</span>
+    <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px;background:linear-gradient(90deg,rgba(191,90,242,0.35),rgba(10,132,255,0.35));border:1px solid rgba(191,90,242,0.40);color:var(--ios-purple);letter-spacing:0.5px;">OWNER</span>
+  </div>
+  {% endif %}
+  <a href="{{ url_for('logout') }}" class="btn btn-sm" style="color:var(--ios-red);border-color:rgba(255,69,58,0.30);">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    Logout
+  </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+  .bp-nav {
+    display:flex;gap:6px;flex-wrap:wrap;
+    margin-bottom:28px;
+    padding:8px;
+    background:var(--glass-bg);
+    backdrop-filter:var(--glass-blur);
+    -webkit-backdrop-filter:var(--glass-blur);
+    border:1px solid var(--glass-border);
+    border-radius:var(--r-lg);
+    box-shadow:var(--glass-inset);
+  }
+  .bp-tab {
+    display:flex;align-items:center;gap:6px;
+    padding:8px 16px;
+    border-radius:var(--r-md);
+    font-size:13px;font-weight:600;
+    color:var(--text-2);
+    cursor:pointer;
+    border:1px solid transparent;
+    transition:all var(--t-ease);
+    user-select:none;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .bp-tab:hover { background:var(--glass-bg-hover);color:var(--text);border-color:var(--glass-border); }
+  .bp-tab.active {
+    background:linear-gradient(135deg,rgba(191,90,242,0.22),rgba(10,132,255,0.16));
+    border-color:rgba(191,90,242,0.35);
+    color:var(--text);
+    box-shadow:0 2px 12px rgba(191,90,242,0.20);
+  }
+  [data-theme="midnight"] .bp-tab.active { background:linear-gradient(135deg,rgba(0,180,255,0.22),rgba(0,80,200,0.16));border-color:rgba(0,200,255,0.32); }
+  [data-theme="space"] .bp-tab.active { background:linear-gradient(135deg,rgba(160,140,255,0.22),rgba(100,170,255,0.14));border-color:rgba(180,160,255,0.32); }
+
+  .bp-section { display:none;animation:page-enter 320ms cubic-bezier(0.34,1.20,0.64,1) both; }
+  .bp-section.active { display:block; }
+
+  .bp-grid { display:grid;gap:16px; }
+  .bp-grid-2 { grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); }
+  .bp-grid-4 { grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); }
+
+  .stat-row {
+    display:flex;align-items:center;gap:14px;
+    padding:18px 20px;
+    background:var(--glass-bg);
+    backdrop-filter:var(--glass-blur);
+    -webkit-backdrop-filter:var(--glass-blur);
+    border:1px solid var(--glass-border);
+    border-radius:var(--r-lg);
+    box-shadow:var(--shadow-glass);
+    opacity:0;
+    animation:card-spring 500ms cubic-bezier(0.34,1.46,0.64,1) forwards;
+  }
+  .stat-icon {
+    width:44px;height:44px;border-radius:var(--r-md);
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+  }
+  .stat-label { font-size:11px;color:var(--text-2);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px; }
+  .stat-value { font-size:24px;font-weight:800;letter-spacing:-1px;line-height:1; }
+
+  .server-row {
+    display:flex;align-items:center;gap:14px;
+    padding:14px 18px;
+    background:var(--glass-bg);
+    backdrop-filter:var(--glass-blur);
+    -webkit-backdrop-filter:var(--glass-blur);
+    border:1px solid var(--glass-border);
+    border-radius:var(--r-md);
+    transition:all var(--t-ease);
+    opacity:0;
+    animation:card-spring 500ms cubic-bezier(0.34,1.46,0.64,1) forwards;
+  }
+  .server-row:hover { border-color:var(--glass-border-strong);box-shadow:var(--shadow-md); }
+  .server-icon {
+    width:40px;height:40px;border-radius:var(--r-sm);
+    display:flex;align-items:center;justify-content:center;
+    font-size:15px;font-weight:800;flex-shrink:0;
+    background:linear-gradient(135deg,rgba(191,90,242,0.30),rgba(10,132,255,0.25));
+    color:var(--text);
+    overflow:hidden;
+  }
+  .server-icon img { width:100%;height:100%;object-fit:cover; }
+  .server-name { font-size:13px;font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+  .server-meta { font-size:11px;color:var(--text-2); }
+  .server-actions { display:flex;gap:6px;flex-shrink:0; }
+
+  .msg-card {
+    background:var(--glass-bg);
+    backdrop-filter:var(--glass-blur);
+    -webkit-backdrop-filter:var(--glass-blur);
+    border:1px solid var(--glass-border);
+    border-radius:var(--r-lg);
+    box-shadow:var(--shadow-glass);
+    padding:22px;
+    opacity:0;
+    animation:card-spring 500ms cubic-bezier(0.34,1.46,0.64,1) forwards;
+  }
+  .msg-card-title {
+    font-size:13px;font-weight:700;text-transform:uppercase;
+    letter-spacing:0.6px;color:var(--text-2);margin-bottom:16px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .msg-card-title svg { color:var(--ios-purple); }
+  [data-theme="midnight"] .msg-card-title svg { color:var(--ios-blue); }
+  [data-theme="space"] .msg-card-title svg { color:var(--ios-purple); }
+
+  .result-banner {
+    display:flex;align-items:flex-start;gap:10px;
+    padding:12px 16px;border-radius:var(--r-md);margin-bottom:16px;
+    font-size:13px;font-weight:500;
+    animation:flash-bounce 360ms cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+  .result-ok  { background:rgba(48,209,88,0.15);border:1px solid rgba(48,209,88,0.30);color:var(--ios-green); }
+  .result-err { background:rgba(255,69,58,0.15);border:1px solid rgba(255,69,58,0.30);color:var(--ios-red); }
+
+  .status-dot {
+    display:inline-block;width:9px;height:9px;border-radius:50%;
+    margin-right:6px;
+    animation:pulse-dot 2s ease-in-out infinite;
+  }
+  .status-dot.online  { background:var(--ios-green);box-shadow:0 0 0 0 rgba(48,209,88,0.5); }
+  .status-dot.offline { background:var(--ios-red); }
+  @keyframes pulse-dot {
+    0%,100% { box-shadow:0 0 0 0 rgba(48,209,88,0.5); }
+    50%      { box-shadow:0 0 0 6px rgba(48,209,88,0); }
+  }
+
+  .server-search {
+    display:flex;gap:10px;margin-bottom:14px;
+  }
+  .server-search input {
+    flex:1;background:rgba(255,255,255,0.07);
+    border:1px solid var(--glass-border);
+    border-radius:var(--r-sm);
+    padding:9px 12px;
+    font-family:var(--font-body);font-size:13px;
+    color:var(--text);
+    transition:border-color var(--t-ease),box-shadow var(--t-ease);
+  }
+  .server-search input:focus {
+    outline:none;border-color:var(--ios-purple);
+    box-shadow:0 0 0 3px rgba(191,90,242,0.20);
+  }
+  .server-search input::placeholder { color:var(--text-3); }
+
+  .modal-overlay {
+    display:none;position:fixed;inset:0;z-index:500;
+    background:rgba(0,0,0,0.55);
+    backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    align-items:center;justify-content:center;
+  }
+  .modal-overlay.open { display:flex; }
+  .modal-box {
+    width:min(440px,calc(100vw - 32px));
+    background:rgba(24,16,44,0.92);
+    backdrop-filter:blur(44px) saturate(200%);
+    -webkit-backdrop-filter:blur(44px) saturate(200%);
+    border:1px solid var(--glass-border);
+    border-radius:var(--r-xl);
+    box-shadow:var(--shadow-lg),var(--glass-inset);
+    padding:24px;
+    animation:card-spring 380ms cubic-bezier(0.34,1.46,0.64,1) both;
+  }
+  [data-theme="light"] .modal-box { background:rgba(240,236,255,0.95); }
+  [data-theme="midnight"] .modal-box { background:rgba(0,8,22,0.94); }
+  [data-theme="space"] .modal-box { background:rgba(0,0,10,0.96); }
+  .modal-title {
+    font-size:16px;font-weight:800;margin-bottom:4px;
+  }
+  .modal-sub {
+    font-size:12px;color:var(--text-2);margin-bottom:18px;
+  }
+  .modal-actions { display:flex;gap:8px;justify-content:flex-end;margin-top:18px; }
+
+  .log-item {
+    display:flex;align-items:flex-start;gap:10px;
+    padding:10px 14px;
+    border-left:2px solid var(--glass-border);
+    margin-bottom:6px;
+    font-size:12px;
+  }
+  .log-item-time { color:var(--text-3);font-size:11px;white-space:nowrap;flex-shrink:0;margin-top:1px; }
+  .log-item-msg  { color:var(--text-2); }
+  .log-item.ok   { border-color:var(--ios-green); }
+  .log-item.err  { border-color:var(--ios-red); }
+  .log-item.info { border-color:var(--ios-blue); }
+
+  .section-header {
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:16px;
+  }
+  .section-title {
+    font-size:18px;font-weight:800;letter-spacing:-0.5px;
+    display:flex;align-items:center;gap:10px;
+  }
+  .section-title-icon {
+    width:34px;height:34px;border-radius:var(--r-sm);
+    display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg,rgba(191,90,242,0.30),rgba(10,132,255,0.20));
+  }
+  [data-theme="midnight"] .section-title-icon { background:linear-gradient(135deg,rgba(0,180,255,0.28),rgba(0,80,200,0.18)); }
+  [data-theme="space"] .section-title-icon { background:linear-gradient(135deg,rgba(160,140,255,0.26),rgba(100,170,255,0.14)); }
+
+  .badge-pill {
+    font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;
+    background:rgba(191,90,242,0.18);border:1px solid rgba(191,90,242,0.30);
+    color:var(--ios-purple);
+  }
+  [data-theme="midnight"] .badge-pill { background:rgba(0,180,255,0.16);border-color:rgba(0,200,255,0.28);color:var(--ios-blue); }
+  [data-theme="space"] .badge-pill { background:rgba(160,140,255,0.16);border-color:rgba(180,160,255,0.28);color:var(--ios-purple); }
+</style>
+
+<!-- ── Tab Navigation ───────────────────────────────────────────────── -->
+<nav class="bp-nav">
+  <button class="bp-tab active" onclick="switchTab('overview',this)">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    Overview
+  </button>
+  <button class="bp-tab" onclick="switchTab('servers',this)">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/></svg>
+    Servers
+  </button>
+  <button class="bp-tab" onclick="switchTab('messaging',this)">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    Messaging
+  </button>
+  <button class="bp-tab" onclick="switchTab('broadcast',this)">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+    Broadcast
+  </button>
+  <button class="bp-tab" onclick="switchTab('status',this)">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    Status
+  </button>
+  <button class="bp-tab" onclick="switchTab('danger',this)">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    Danger Zone
+  </button>
+</nav>
+
+<!-- Flash results at top -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for cat, msg in messages %}
+      <div class="result-banner {{ 'result-ok' if 'error' not in cat else 'result-err' }}">
+        {% if 'error' not in cat %}
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        {% else %}
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        {% endif %}
+        {{ msg }}
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+<!-- ═══════════════════════════════════════════════
+     OVERVIEW TAB
+═══════════════════════════════════════════════ -->
+<section id="tab-overview" class="bp-section active">
+  <div class="section-header">
+    <div class="section-title">
+      <div class="section-title-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      </div>
+      Bot Overview
+    </div>
+    <span id="bot-status-badge" style="display:flex;align-items:center;font-size:12px;font-weight:700;padding:5px 12px;border-radius:999px;background:rgba(48,209,88,0.15);border:1px solid rgba(48,209,88,0.28);color:var(--ios-green);">
+      <span class="status-dot online"></span> Online
+    </span>
+  </div>
+
+  <!-- Stats grid -->
+  <div class="bp-grid bp-grid-4" style="margin-bottom:20px;">
+    <div class="stat-row" style="animation-delay:0ms">
+      <div class="stat-icon" style="background:linear-gradient(135deg,rgba(191,90,242,0.30),rgba(10,132,255,0.20));">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--ios-purple)" stroke-width="2" stroke-linecap="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/></svg>
+      </div>
+      <div>
+        <div class="stat-label">Servers</div>
+        <div class="stat-value" id="stat-servers">{{ guild_count }}</div>
+      </div>
+    </div>
+    <div class="stat-row" style="animation-delay:60ms">
+      <div class="stat-icon" style="background:linear-gradient(135deg,rgba(48,209,88,0.25),rgba(50,173,230,0.18));">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--ios-green)" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <div>
+        <div class="stat-label">Est. Members</div>
+        <div class="stat-value" id="stat-members">{{ total_members }}</div>
+      </div>
+    </div>
+    <div class="stat-row" style="animation-delay:120ms">
+      <div class="stat-icon" style="background:linear-gradient(135deg,rgba(255,159,10,0.25),rgba(255,69,58,0.18));">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--ios-orange)" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <div>
+        <div class="stat-label">Msgs Sent</div>
+        <div class="stat-value">{{ msgs_sent }}</div>
+      </div>
+    </div>
+    <div class="stat-row" style="animation-delay:180ms">
+      <div class="stat-icon" style="background:linear-gradient(135deg,rgba(50,173,230,0.25),rgba(10,132,255,0.20));">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--ios-teal)" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <div>
+        <div class="stat-label">Uptime</div>
+        <div class="stat-value" id="stat-uptime" style="font-size:16px;">--</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick actions -->
+  <div class="msg-card" style="animation-delay:240ms;margin-bottom:16px;">
+    <div class="msg-card-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      Quick Actions
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+      <button class="btn btn-primary" onclick="switchTab('messaging',document.querySelector('[onclick*=messaging]'))">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Send Message
+      </button>
+      <button class="btn" onclick="switchTab('servers',document.querySelector('[onclick*=servers]'))">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/></svg>
+        View Servers
+      </button>
+      <button class="btn" onclick="switchTab('broadcast',document.querySelector('[onclick*=broadcast]'))">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/></svg>
+        Broadcast
+      </button>
+      <a href="{{ url_for('servers') }}" class="btn btn-glass">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Server Dashboard
+      </a>
+    </div>
+  </div>
+
+  <!-- Activity log -->
+  <div class="msg-card" style="animation-delay:300ms;">
+    <div class="msg-card-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Panel Activity Log
+    </div>
+    <div id="activity-log" style="max-height:260px;overflow-y:auto;">
+      {% if activity_log %}
+        {% for entry in activity_log %}
+        <div class="log-item {{ 'ok' if entry.status == 'ok' else 'err' if entry.status == 'err' else 'info' }}">
+          <span class="log-item-time">{{ entry.time }}</span>
+          <span class="log-item-msg">{{ entry.msg }}</span>
+        </div>
+        {% endfor %}
+      {% else %}
+      <div style="padding:20px;text-align:center;color:var(--text-3);font-size:13px;">
+        No activity recorded yet.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     SERVERS TAB
+═══════════════════════════════════════════════ -->
+<section id="tab-servers" class="bp-section">
+  <div class="section-header">
+    <div class="section-title">
+      <div class="section-title-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/></svg>
+      </div>
+      All Servers
+    </div>
+    <span class="badge-pill">{{ guild_count }} total</span>
+  </div>
+
+  <div class="server-search">
+    <input type="text" id="server-filter" placeholder="Filter by name or ID…" oninput="filterServers()">
+  </div>
+
+  <div id="servers-list" style="display:flex;flex-direction:column;gap:8px;">
+    {% for g in guilds_list %}
+    <div class="server-row" data-name="{{ g.name|lower }}" data-id="{{ g.id }}" style="animation-delay:{{ loop.index0 * 30 }}ms">
+      <div class="server-icon">
+        {% if g.icon %}
+        <img src="https://cdn.discordapp.com/icons/{{ g.id }}/{{ g.icon }}.{{ 'gif' if g.icon.startswith('a_') else 'png' }}?size=64" alt="{{ g.name }}">
+        {% else %}
+        {{ g.name[:2].upper() }}
+        {% endif %}
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div class="server-name">{{ g.name }}</div>
+        <div class="server-meta">ID: {{ g.id }}{% if g.approximate_member_count %} · ~{{ g.approximate_member_count }} members{% endif %}</div>
+      </div>
+      <div class="server-actions">
+        <!-- Send message to server -->
+        <button class="btn btn-sm btn-glass"
+          onclick="openSendModal('{{ g.id }}','{{ g.name|replace("'","\\'") }}')"
+          title="Send message to a channel in this server">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Message
+        </button>
+        <!-- Leave server -->
+        <button class="btn btn-sm btn-danger"
+          onclick="openLeaveModal('{{ g.id }}','{{ g.name|replace("'","\\'") }}')"
+          title="Make the bot leave this server">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Leave
+        </button>
+        <!-- Wipe data -->
+        <button class="btn btn-sm btn-warning"
+          onclick="openWipeModal('{{ g.id }}','{{ g.name|replace("'","\\'") }}')"
+          title="Wipe all bot data for this server">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          Wipe
+        </button>
+      </div>
+    </div>
+    {% else %}
+    <div style="padding:40px;text-align:center;color:var(--text-3);font-size:13px;">
+      The bot is not in any servers yet.
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     MESSAGING TAB
+═══════════════════════════════════════════════ -->
+<section id="tab-messaging" class="bp-section">
+  <div class="section-header">
+    <div class="section-title">
+      <div class="section-title-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      Messaging Tools
+    </div>
+  </div>
+  <div class="bp-grid bp-grid-2">
+
+    <!-- Send to Channel -->
+    <div class="msg-card" style="animation-delay:0ms">
+      <div class="msg-card-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Send Channel Message
+      </div>
+      {% if send_result %}
+      <div class="result-banner {{ 'result-ok' if send_ok else 'result-err' }}">
+        {{ send_result }}
+      </div>
+      {% endif %}
+      <form method="POST" action="{{ url_for('admin_send_message', token=admin_token) }}" style="display:flex;flex-direction:column;gap:12px;">
+        <div class="form-group">
+          <label class="form-label">Channel ID</label>
+          <input name="channel_id" class="form-input" placeholder="e.g. 1234567890123456" required autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Message Content</label>
+          <textarea name="content" class="form-textarea" placeholder="Type your message…" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          Send Message
+        </button>
+      </form>
+    </div>
+
+    <!-- Send DM -->
+    <div class="msg-card" style="animation-delay:80ms">
+      <div class="msg-card-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        Send Direct Message
+      </div>
+      {% if dm_result %}
+      <div class="result-banner {{ 'result-ok' if dm_ok else 'result-err' }}">
+        {{ dm_result }}
+      </div>
+      {% endif %}
+      <form method="POST" action="{{ url_for('admin_dm_user', token=admin_token) }}" style="display:flex;flex-direction:column;gap:12px;">
+        <div class="form-group">
+          <label class="form-label">User ID</label>
+          <input name="user_id" class="form-input" placeholder="e.g. 923615726940590150" required autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Message Content</label>
+          <textarea name="content" class="form-textarea" placeholder="Type your DM…" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          Send DM
+        </button>
+      </form>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     BROADCAST TAB
+═══════════════════════════════════════════════ -->
+<section id="tab-broadcast" class="bp-section">
+  <div class="section-header">
+    <div class="section-title">
+      <div class="section-title-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+      </div>
+      Broadcast
+    </div>
+  </div>
+  <div class="msg-card">
+    <div class="msg-card-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/></svg>
+      Broadcast to Channel
+    </div>
+    <p style="font-size:13px;color:var(--text-2);margin-bottom:16px;line-height:1.6;">Send a message to any specific channel. For true multi-server broadcast, enter channel IDs one at a time.</p>
+    {% if broadcast_result %}
+    <div class="result-banner result-ok">{{ broadcast_result }}</div>
+    {% endif %}
+    <form method="POST" action="{{ url_for('admin_broadcast', token=admin_token) }}" style="display:flex;flex-direction:column;gap:12px;max-width:560px;">
+      <div class="form-group">
+        <label class="form-label">Target Channel ID</label>
+        <input name="channel_id" class="form-input" placeholder="Channel ID to broadcast to" required autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Broadcast Message</label>
+        <textarea name="content" class="form-textarea" style="min-height:120px;" placeholder="Your broadcast message…" required></textarea>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button type="submit" class="btn btn-warning">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/></svg>
+          Broadcast
+        </button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     STATUS TAB
+═══════════════════════════════════════════════ -->
+<section id="tab-status" class="bp-section">
+  <div class="section-header">
+    <div class="section-title">
+      <div class="section-title-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
+      Bot Status
+    </div>
+  </div>
+  <div class="bp-grid bp-grid-2" style="margin-bottom:16px;">
+    <div class="msg-card" style="animation-delay:0ms">
+      <div class="msg-card-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/></svg>
+        Connection Status
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 0;">
+        <span class="status-dot online"></span>
+        <div>
+          <div style="font-size:15px;font-weight:700;">Online &amp; Operational</div>
+          <div style="font-size:12px;color:var(--text-2);">Discord Gateway connected</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:8px 0;border-bottom:1px solid var(--glass-border);">
+          <span style="color:var(--text-2);">Bot Username</span>
+          <span style="font-weight:600;">{{ bot_username }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:8px 0;border-bottom:1px solid var(--glass-border);">
+          <span style="color:var(--text-2);">Bot ID</span>
+          <span style="font-weight:600;font-family:monospace;">{{ bot_id }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:8px 0;border-bottom:1px solid var(--glass-border);">
+          <span style="color:var(--text-2);">Server Count</span>
+          <span style="font-weight:600;">{{ guild_count }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:8px 0;">
+          <span style="color:var(--text-2);">Est. Total Members</span>
+          <span style="font-weight:600;">{{ total_members }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="msg-card" style="animation-delay:80ms">
+      <div class="msg-card-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Change Bot Status
+      </div>
+      <form method="POST" action="{{ url_for('admin_set_status', token=admin_token) }}" style="display:flex;flex-direction:column;gap:12px;">
+        <div class="form-group">
+          <label class="form-label">Activity Type</label>
+          <select name="activity_type" class="form-select">
+            <option value="playing">🎮 Playing</option>
+            <option value="watching">👀 Watching</option>
+            <option value="listening">🎵 Listening to</option>
+            <option value="competing">🏆 Competing in</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status Text</label>
+          <input name="status_text" class="form-input" placeholder="e.g. /help | {{ guild_count }} servers" value="{{ current_status }}" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Presence</label>
+          <select name="presence" class="form-select">
+            <option value="online">🟢 Online</option>
+            <option value="idle">🌙 Idle</option>
+            <option value="dnd">🔴 Do Not Disturb</option>
+            <option value="invisible">⚫ Invisible</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Apply Status
+        </button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     DANGER ZONE TAB
+═══════════════════════════════════════════════ -->
+<section id="tab-danger" class="bp-section">
+  <div class="section-header">
+    <div class="section-title">
+      <div class="section-title-icon" style="background:linear-gradient(135deg,rgba(255,69,58,0.25),rgba(255,159,10,0.18));">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ios-red)" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      Danger Zone
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:14px;">
+
+    <!-- Wipe guild data -->
+    <div class="msg-card" style="border-color:rgba(255,69,58,0.22);animation-delay:0ms">
+      <div class="msg-card-title" style="color:var(--ios-red);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        Wipe Guild Data
+      </div>
+      <p style="font-size:13px;color:var(--text-2);margin-bottom:14px;line-height:1.6;">Permanently erase all bot data (logs, settings, blacklists) for a server. The bot stays in the server.</p>
+      {% if wipe_result %}
+      <div class="result-banner result-err">{{ wipe_result }}</div>
+      {% endif %}
+      <form method="POST" action="{{ url_for('admin_wipe_guild', token=admin_token) }}" style="display:flex;flex-direction:column;gap:10px;max-width:420px;">
+        <div class="form-group">
+          <label class="form-label">Guild ID</label>
+          <input name="guild_id" class="form-input" placeholder="Guild ID to wipe" required autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Type <code style="background:rgba(255,255,255,0.10);padding:1px 5px;border-radius:4px;">CONFIRM</code> to continue</label>
+          <input name="confirm" class="form-input" placeholder="CONFIRM" required autocomplete="off">
+        </div>
+        <button type="submit" class="btn btn-danger">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+          Wipe Guild Data
+        </button>
+      </form>
+    </div>
+
+    <!-- Leave guild -->
+    <div class="msg-card" style="border-color:rgba(255,159,10,0.22);animation-delay:80ms">
+      <div class="msg-card-title" style="color:var(--ios-orange);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Leave a Server
+      </div>
+      <p style="font-size:13px;color:var(--text-2);margin-bottom:14px;line-height:1.6;">Force the bot to leave a server by ID.</p>
+      {% if leave_result %}
+      <div class="result-banner result-err">{{ leave_result }}</div>
+      {% endif %}
+      <form method="POST" action="{{ url_for('admin_leave_guild', token=admin_token) }}" style="display:flex;gap:10px;max-width:420px;align-items:flex-end;">
+        <div class="form-group" style="flex:1">
+          <label class="form-label">Guild ID</label>
+          <input name="guild_id" class="form-input" placeholder="Guild ID to leave" required autocomplete="off">
+        </div>
+        <button type="submit" class="btn btn-warning" style="flex-shrink:0;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/></svg>
+          Leave
+        </button>
+      </form>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══ MODALS ════════════════════════════════════════════════════════ -->
+
+<!-- Send-to-server modal -->
+<div class="modal-overlay" id="modal-send">
+  <div class="modal-box">
+    <div class="modal-title">Send Message</div>
+    <div class="modal-sub" id="modal-send-sub">to server</div>
+    <form method="POST" action="{{ url_for('admin_send_message', token=admin_token) }}" style="display:flex;flex-direction:column;gap:12px;">
+      <input type="hidden" name="_from_modal" value="1">
+      <div class="form-group">
+        <label class="form-label">Channel ID</label>
+        <input name="channel_id" id="modal-channel-id" class="form-input" placeholder="Channel ID in this server" required autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Message</label>
+        <textarea name="content" class="form-textarea" placeholder="Your message…" required></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-glass" onclick="closeModal('modal-send')">Cancel</button>
+        <button type="submit" class="btn btn-primary">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          Send
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Leave-guild modal -->
+<div class="modal-overlay" id="modal-leave">
+  <div class="modal-box">
+    <div class="modal-title" style="color:var(--ios-red);">Leave Server?</div>
+    <div class="modal-sub" id="modal-leave-sub">The bot will leave this server immediately.</div>
+    <form method="POST" action="{{ url_for('admin_leave_guild', token=admin_token) }}">
+      <input type="hidden" name="guild_id" id="modal-leave-id">
+      <div class="modal-actions">
+        <button type="button" class="btn btn-glass" onclick="closeModal('modal-leave')">Cancel</button>
+        <button type="submit" class="btn btn-danger">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Leave Server
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Wipe-guild modal -->
+<div class="modal-overlay" id="modal-wipe">
+  <div class="modal-box">
+    <div class="modal-title" style="color:var(--ios-red);">Wipe Guild Data?</div>
+    <div class="modal-sub" id="modal-wipe-sub">All bot data for this server will be permanently deleted.</div>
+    <form method="POST" action="{{ url_for('admin_wipe_guild', token=admin_token) }}" style="display:flex;flex-direction:column;gap:10px;">
+      <input type="hidden" name="guild_id" id="modal-wipe-id">
+      <div class="form-group">
+        <label class="form-label">Type <code style="background:rgba(255,255,255,0.10);padding:1px 5px;border-radius:4px;">CONFIRM</code> to proceed</label>
+        <input name="confirm" class="form-input" placeholder="CONFIRM" required autocomplete="off">
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-glass" onclick="closeModal('modal-wipe')">Cancel</button>
+        <button type="submit" class="btn btn-danger">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+          Wipe Data
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // ── Tab switching ──────────────────────────────
+  function switchTab(id, btn) {
+    document.querySelectorAll('.bp-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.bp-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + id).classList.add('active');
+    if (btn) btn.classList.add('active');
+  }
+
+  // ── Modals ─────────────────────────────────────
+  function openSendModal(guildId, guildName) {
+    document.getElementById('modal-send-sub').textContent = '→ ' + guildName;
+    document.getElementById('modal-send').classList.add('open');
+  }
+  function openLeaveModal(guildId, guildName) {
+    document.getElementById('modal-leave-sub').textContent = guildName + ' — The bot will leave immediately.';
+    document.getElementById('modal-leave-id').value = guildId;
+    document.getElementById('modal-leave').classList.add('open');
+  }
+  function openWipeModal(guildId, guildName) {
+    document.getElementById('modal-wipe-sub').textContent = guildName + ' — All data will be permanently deleted.';
+    document.getElementById('modal-wipe-id').value = guildId;
+    document.getElementById('modal-wipe').classList.add('open');
+  }
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+  }
+  document.querySelectorAll('.modal-overlay').forEach(el => {
+    el.addEventListener('click', e => {
+      if (e.target === el) el.classList.remove('open');
+    });
+  });
+
+  // ── Server filter ──────────────────────────────
+  function filterServers() {
+    const q = document.getElementById('server-filter').value.toLowerCase();
+    document.querySelectorAll('#servers-list .server-row').forEach(row => {
+      const match = row.dataset.name.includes(q) || row.dataset.id.includes(q);
+      row.style.display = match ? '' : 'none';
+    });
+  }
+
+  // ── Stagger card animation delays ─────────────
+  document.querySelectorAll('.stat-row, .server-row, .msg-card').forEach((el, i) => {
+    if (!el.style.animationDelay) el.style.animationDelay = (i * 40) + 'ms';
+  });
+
+  // ── Uptime counter ─────────────────────────────
+  const startTime = Date.now();
+  function updateUptime() {
+    const s = Math.floor((Date.now() - startTime) / 1000);
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    const el = document.getElementById('stat-uptime');
+    if (el) el.textContent = (h ? h + 'h ' : '') + (m ? m + 'm ' : '') + sec + 's';
+  }
+  setInterval(updateUptime, 1000);
+  updateUptime();
+
+  // ── Ripple on buttons ──────────────────────────
+  document.querySelectorAll('.btn').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      const r = document.createElement('span');
+      r.className = 'lg-ripple';
+      const rect = this.getBoundingClientRect();
+      r.style.left = (e.clientX - rect.left) + 'px';
+      r.style.top  = (e.clientY - rect.top)  + 'px';
+      this.appendChild(r);
+      setTimeout(() => r.remove(), 600);
+    });
+  });
+
+  // ── Restore tab from hash ──────────────────────
+  const hash = location.hash.replace('#','');
+  if (['overview','servers','messaging','broadcast','status','danger'].includes(hash)) {
+    const btn = document.querySelector(`[onclick*="'${hash}'"]`);
+    if (btn) switchTab(hash, btn);
+  }
+</script>
+{% endblock %}
